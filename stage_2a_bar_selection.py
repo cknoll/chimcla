@@ -68,7 +68,7 @@ def get_bbox_list(img, plot=False):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Apply thresholding to binarize the image
-    _, thresh = cv2.threshold(gray, thresh=127, maxval=255, type=cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(gray, thresh=70, maxval=255, type=cv2.THRESH_BINARY)
 
 
     inverted_thresh = 255 - thresh
@@ -182,8 +182,12 @@ def handle_missing_boxes(bbox_list):
     missing_boxes = find_missing_boxes(bbox_list)
 
     if len(missing_boxes) > 0:
-        IPS()
-        raise NotImplementedError
+        # IPS()
+
+        print(f"!!  problems with {args.img_fpath}")
+        exit()
+
+        # raise NotImplementedError
 
     # TODO:
     # next steps:
@@ -199,7 +203,7 @@ def convert_to_dict(bbox_list, img):
     idcs = index_combinations()
     res = {}
     for idx_pair, bbox in zip(idcs, bbox_list):
-        assert list(idx_pair) == bbox[-2:], f"{list(idx_pair)=}  {bbox[-2:]=}"
+        assert list(idx_pair) == list(bbox[-2:]), f"{list(idx_pair)=}  {bbox[-2:]=}"
         x, y, w, h = bbox[:4]
         res[idx_pair] = img[y:y+h, x:x + w, :]
 
@@ -210,7 +214,7 @@ def convert_to_dict(bbox_list, img):
 def select_bar_from_file(fpath, hr_row, hr_col):
 
     img = load_img(fpath)
-    bbox_list = get_bbox_list(img, plot=True)
+    bbox_list = get_bbox_list(img, plot=False)
 
     assign_row_col(bbox_list)
     handle_missing_boxes(bbox_list)
@@ -219,7 +223,7 @@ def select_bar_from_file(fpath, hr_row, hr_col):
     row_col_dict = convert_to_dict(bbox_list, img)
 
     assert hr_row in ("a", "b", "c")
-    row_idx = {"a": 0, "b": 1, "c": 2}
+    row_idx = {"a": 0, "b": 1, "c": 2}[hr_row]
     col_idx = int(hr_col) - 1
     assert 0 <= col_idx <= 26
 
@@ -232,7 +236,20 @@ def main():
 
     part_img = select_bar_from_file(args.img_fpath, args.row, args.col)
     plt.imshow(rgb(part_img))
-    plt.show()
+
+    prefix, fname = os.path.split(args.img_fpath)
+    fname, ext = os.path.splitext(fname)
+    col = int(args.col)
+    new_fname = f"{fname}__{args.row}{col:02d}{ext}"
+    new_fpath = os.path.join(prefix, "..", new_fname)
+
+    res = cv2.imwrite(new_fpath, part_img, [cv2.IMWRITE_JPEG_QUALITY, 98])
+    assert res, f"Something went wrong during the creation of {new_fpath}"
+    print(f"file written: {new_fpath}")
+
+    # plt.show()
+
+
 
 
 if __name__ == "__main__":
@@ -240,4 +257,5 @@ if __name__ == "__main__":
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
 
-    asyncio.run(main())
+    # asyncio.run(main())
+    main()
