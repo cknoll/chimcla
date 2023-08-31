@@ -461,13 +461,22 @@ def process_column(img, j, plot=False):
     return p
 
 
-def get_angle(img):
+def get_angle(img, dc=None):
 
     column_indices = [1, 2, -2, -1]
     angles = []
     for j in column_indices:
-        a = process_column(img, j).estimated_slope / 3.31 * np.sign(j)
+        res = process_column(img, j)
+        a = res.estimated_slope / 3.31 * np.sign(j)
         angles.append(a)
+
+        # collect debug data
+        if dc is not None:
+            if not hasattr(dc, "angle_res"):
+                dc.angle_res = []
+
+            dc.angle_res.append(res)
+            dc.get_angle_image = img
 
     angles.sort()
 
@@ -475,9 +484,9 @@ def get_angle(img):
     return np.mean(angles[1:-1])
 
 
-def correct_angle(img, y_offset=5):
+def correct_angle(img, y_offset=5, dc=None):
     roi = img[y_offset:-y_offset, :]
-    a = get_angle(roi)
+    a = get_angle(roi, dc=dc)
     res = rotate_img(img, -a)
 
     return res, a
@@ -507,13 +516,18 @@ def symlog_transform(x, linthresh):
     )
 
 
-def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3):
+class Container:
+    pass
+
+
+def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3, dc=None):
     """
 
+    :param dc:  debug container
     """
 
     img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
-    corrected_img, angle = correct_angle(img)
+    corrected_img, angle = correct_angle(img, dc=dc)
 
     # trim border (which was increased before rotation)
     data = corrected_img[ex2:-ex2, ey2:-ey2].flatten()
@@ -524,6 +538,12 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3):
 
     sl_hist1 = symlog_transform(hist, linthresh=0.1)
     sl_hist2 = symlog_transform(hist2, linthresh=0.1)
+
+    if dc is not None:
+        dc.angle = angle
+        dc.hist_img = corrected_img[ex2:-ex2, ey2:-ey2]
+
+
 
     return sl_hist1, sl_hist2
 
