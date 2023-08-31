@@ -7,8 +7,15 @@ import argparse
 import itertools as it
 import asyncio
 
+import itertools as it
+import random
+import warnings
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+from scipy import optimize
+
 
 
 from skimage.transform import hough_line, hough_line_peaks, rotate
@@ -182,6 +189,354 @@ def handle_missing_boxes(bbox_list, fpath):
     # -> identify candidates for non-C0 images
     pass
 
+
+img_bbox_cache = {}
+
+def get_img_and_bbox_list(fpath):
+
+    if res := img_bbox_cache.get(fpath):
+        return res
+
+    img = load_img(fpath)
+    bbox_list = get_bbox_list(img, plot=False)
+
+    res = (img, bbox_list)
+    img_bbox_cache[fpath] = res
+
+    return res
+
+
+def get_raw_cell(fpath, hr_row, hr_col, e=0, f=0, plot=False):
+
+    # hr_row, hr_col = "c", "8"
+
+    img, bbox_list = get_img_and_bbox_list(fpath)
+
+    assign_row_col(bbox_list)
+    handle_missing_boxes(bbox_list, fpath)
+
+    assert len(bbox_list) == 81
+
+    assert hr_row in ("a", "b", "c")
+    row_idx = {"a": 0, "b": 1, "c": 2}[hr_row]
+    col_idx = int(hr_col) - 1
+
+    idcs = bbox_list[row_idx*27 + col_idx]
+    x, y, w, h = idcs[:4]
+    part_img = img[y-e:y+h+e, x-f:x+w+f, :]
+
+    # convert to Lightness A, B and then split to get lightness
+    L, _, _ = cv2.split(cv2.cvtColor(part_img, cv2.COLOR_BGR2LAB)   )
+
+    if plot:
+        # plt.imshow(rgb(part_img))
+        plt.imshow(L)
+
+    return L
+
+
+
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+
+# code for angle identification
+# ######################################################################
+
+
+class Attr_Array(np.ndarray):
+    """
+    Special layer on top of numpy arrays which accept custom attributes
+    """
+    def __new__(cls, input_array, **kwargs):
+        obj = np.asarray(input_array).view(cls)
+        for k, v in kwargs.items():
+            setattr(obj, k, v)
+        return obj
+
+def rotate_img(img, angle, border_value=255):
+    height, width = img.shape[:2]
+
+    # Calculate the rotation matrix
+    center = (width // 2, height // 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1)
+
+    # Apply the rotation to the image
+    rotated_image = cv2.warpAffine(img, rotation_matrix, (width, height), borderValue=border_value)
+    return rotated_image
+
+
+
+def piecewise_linear2(x, x0, y0, k1, k2):
+    # model of two linear functions meeting in x0, y0
+    return np.piecewise(x, [x < x0, x >= x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
+
+
+def piecewise_linear3(x, x0, y0, x1, k1, k2, k3):
+    # model of two linear functions meeting in x0, y0
+    return np.piecewise(
+        x,
+        [x < x0, np.logical_and(x0 < x, x < x1), x1 <= x],
+        [
+            lambda x: k1*x + y0 - k1*x0,
+            lambda x: k2*x + y0 - k2*x0,
+            lambda x: k3*x + (k2*x1 + y0 -k2*x0) - k3*x1,
+        ]
+    )
+
+
+class Fitter:
+    def __init__(self, ii):
+        self.ii = ii
+
+        # reservoir for initial guesses
+        # x0, y0, x1, k1, k2, k3
+
+        res3 = [
+            [20, 35, 50],
+            [100, 250],
+            [60, 75, 90],
+            [-3, 0, 3],
+            [-3, 0, 3],
+            [-3, 0, 3],
+        ]
+
+        random.seed(1946)
+        self.res3_p0 = list(it.product(*res3))
+        random.shuffle(self.res3_p0)
+
+    def fit_sequence2(self, seq, p0=None):
+        if p0 is None:
+            p0 = (40, 250, 2.5, 0)
+        p , e = optimize.curve_fit(piecewise_linear2, self.ii, seq, p0=p0)
+        # print(f"{e=}")
+        return p
+
+
+    def fit_sequence3(self, seq, p0=None):
+        if p0 is None:
+            p0 = (40, 250, 80, 2.5, 0, 0)
+        p, err = optimize.curve_fit(piecewise_linear3, self.ii, seq, p0=p0)
+
+        # err is full cov matrix
+        perr = np.sqrt(np.diag(err))
+        p = Attr_Array(p, err=err, perr=perr)
+
+        # print(f"{e=}")
+        return p
+
+
+    def smart_fit_sequence3(self, seq):
+
+        best_params = None
+        best_errors = [np.inf, np.inf, np.inf]
+        N = len(best_errors)
+        bad_counter = 0
+
+        for p0_guess in self.res3_p0:
+            with warnings.catch_warnings():
+                # see also
+                # https://stackoverflow.com/questions/31301017/catch-optimizewarning-as-an-exception
+                # warnings.simplefilter("error", optimize.OptimizeWarning)
+                warnings.simplefilter("ignore", optimize.OptimizeWarning)
+
+                try:
+                    p = self.fit_sequence3(seq, p0=p0_guess)
+                except optimize.OptimizeWarning:
+                    # note: due to the ignore-policy this get not triggered anymore
+
+                    # why this warning is triggered is unclear
+                    # we use the result anyway
+
+                    # try again with other initial values
+                    # print("warning raised")
+                    # continue
+                    pass
+
+            total_err = self.pw_err(piecewise_linear3, p, seq)[2]
+
+            idx = np.searchsorted(best_errors, total_err)
+            if idx >= N:
+                bad_counter += 1
+                if bad_counter >= 3:
+                    # could not find better value
+                    break
+
+                # this initial guess was bad but we have some tries left
+                continue
+
+            # the result is quite good -> we have not yet explored sufficiently yet
+            bad_counter = 0
+
+            # print(idx, total_err)
+            best_errors.insert(idx, total_err)
+            worst = best_errors.pop()  # drop the worst value
+            if worst == best_errors[0]:
+                # we probably wont get better
+                break
+
+            if idx == 0:
+                best_params = p
+
+        return best_params
+
+
+    def pw_err(self, model, params, seq):
+
+        L = len(params)
+        assert L % 2 == 0
+
+        # extract x0, x1, etc assuming that y0 has index 1
+        borders = list(params[:L // 2])
+        borders.pop(1)
+
+        # the last (right) boder is infinity (because we use `<`)
+        borders.append(np.inf)
+
+        # now compile a list of index-arrays which corresspond to the borders
+        all_idcs = np.arange(self.ii.shape[0])
+        L_all_idcs = self.ii.shape[0]
+
+        idcs_list = []
+        tmp_ii = self.ii*1 # working copy of independent array
+        for b in borders:
+            mask = tmp_ii < b
+            idcs = all_idcs[mask]
+            idcs_list.append(idcs)
+
+            # remaining indices and values
+            all_idcs = all_idcs[np.logical_not(mask)]
+            tmp_ii = tmp_ii[np.logical_not(mask)]
+
+        model_seq = model(self.ii, *params)
+        diff = np.abs(model_seq - seq)
+
+        section_diffs = []
+        fractions = []
+
+        for idcs in idcs_list:
+
+            # for every section calculate the mean difference and its share of the total length
+            if len(idcs) == 0:
+                section_diffs.append(0)
+            else:
+                section_diffs.append(np.mean(diff[idcs]))
+            fractions.append(len(idcs)/L_all_idcs)
+
+        # only for debug printing
+        # idcs_list2 = [idcs[[0, -1]] for idcs in idcs_list]
+        # print(borders, idcs_list2)
+
+        total_diff = np.mean(diff)
+
+        return fractions, section_diffs, total_diff
+
+
+
+
+def process_column(img, j, plot=False):
+    fitter = Fitter(ii=np.arange(img.shape[0]))
+    # p = fitter.fit_sequence3(img[:, j])
+    p = fitter.smart_fit_sequence3(img[:, j])
+    p.errors = fitter.pw_err(piecewise_linear3, p, img[:, j])
+    if plot:
+        color = colors[j]
+        plt.plot(img[:, j], color=color)
+        plt.plot(fitter.ii, piecewise_linear3(fitter.ii, *p), "--", lw=2, color=color)
+
+    p.scored_slopes = []  # will contain tuples
+    fractions = p.errors[0]
+    # assume pw3 model
+    max_abs_slope = np.max(np.abs(p[3:]))
+    for i, slope in enumerate(p[3:]):
+
+        # score heuristic
+        p.scored_slopes.append((
+            slope,
+            int(i == 1) + fractions[i]*3 + np.abs(slope)/5 + np.abs(slope) - max_abs_slope
+        ))
+
+    p.scored_slopes.sort(key = lambda tup: tup[1])
+    p.estimated_slope = p.scored_slopes[-1][0]
+
+    return p
+
+
+def get_angle(img):
+
+    column_indices = [1, 2, -2, -1]
+    angles = []
+    for j in column_indices:
+        a = process_column(img, j).estimated_slope / 3.31 * np.sign(j)
+        angles.append(a)
+
+    angles.sort()
+
+    # drop extreme values
+    return np.mean(angles[1:-1])
+
+
+def correct_angle(img, y_offset=5):
+    roi = img[y_offset:-y_offset, :]
+    a = get_angle(roi)
+    res = rotate_img(img, -a)
+
+    return res, a
+
+
+###############################################################
+
+
+def convert_to_dict(bbox_list, img, desired_idx_pair=None):
+
+    idcs = index_combinations()
+    res = {}
+    for idx_pair, bbox in zip(idcs, bbox_list):
+        if desired_idx_pair is not None:
+            if idx_pair != desired_idx_pair:
+                continue
+
+        assert list(idx_pair) == list(bbox[-2:]), f"{list(idx_pair)=}  {bbox[-2:]=}"
+
+        part_img = adapt_rotation_and_margin(bbox, img, forced_angle=None)
+
+        # without rotation:
+        if 0:
+            x, y, w, h = bbox[:4]
+            part_img = img[y:y+h, x:x + w, :]
+        res[idx_pair] = part_img
+
+    # prevent non-match from passing silently (could happen for bad desired_idx_pair)
+    assert res
+
+    return res
+
+
+def select_bar_from_file(fpath, hr_row, hr_col):
+
+    img = load_img(fpath)
+    bbox_list = get_bbox_list(img, plot=False)
+
+    assign_row_col(bbox_list)
+    handle_missing_boxes(bbox_list, fpath)
+
+    assert hr_row in ("a", "b", "c")
+    row_idx = {"a": 0, "b": 1, "c": 2}[hr_row]
+    col_idx = int(hr_col) - 1
+    assert 0 <= col_idx <= 26
+
+    # TODO: introduce caching of image data (row_col_dict)
+    row_col_dict = convert_to_dict(bbox_list, img, desired_idx_pair=(row_idx, col_idx))
+
+    part_img = row_col_dict[(row_idx, col_idx)]
+
+    return part_img
+
+
+###############################################################
+
+
+# this is old hough-transform based code
+
 def adapt_rotation_and_margin(bbox, img, forced_angle=None, plot=True):
 
     x, y, w, h = bbox[:4]
@@ -268,51 +623,6 @@ def adapt_rotation_and_margin(bbox, img, forced_angle=None, plot=True):
 
     return rotated_image[e:-e, e:-e, :]
 
-
-def convert_to_dict(bbox_list, img, desired_idx_pair=None):
-
-    idcs = index_combinations()
-    res = {}
-    for idx_pair, bbox in zip(idcs, bbox_list):
-        if desired_idx_pair is not None:
-            if idx_pair != desired_idx_pair:
-                continue
-
-        assert list(idx_pair) == list(bbox[-2:]), f"{list(idx_pair)=}  {bbox[-2:]=}"
-
-        part_img = adapt_rotation_and_margin(bbox, img, forced_angle=None)
-
-        # without rotation:
-        if 0:
-            x, y, w, h = bbox[:4]
-            part_img = img[y:y+h, x:x + w, :]
-        res[idx_pair] = part_img
-
-    # prevent non-match from passing silently (could happen for bad desired_idx_pair)
-    assert res
-
-    return res
-
-
-def select_bar_from_file(fpath, hr_row, hr_col):
-
-    img = load_img(fpath)
-    bbox_list = get_bbox_list(img, plot=False)
-
-    assign_row_col(bbox_list)
-    handle_missing_boxes(bbox_list, fpath)
-
-    assert hr_row in ("a", "b", "c")
-    row_idx = {"a": 0, "b": 1, "c": 2}[hr_row]
-    col_idx = int(hr_col) - 1
-    assert 0 <= col_idx <= 26
-
-    # TODO: introduce caching of image data (row_col_dict)
-    row_col_dict = convert_to_dict(bbox_list, img, desired_idx_pair=(row_idx, col_idx))
-
-    part_img = row_col_dict[(row_idx, col_idx)]
-
-    return part_img
 
 def main():
 
