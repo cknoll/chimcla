@@ -1,13 +1,10 @@
 import os
-import cv2
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
-import importlib as il
 import glob
 import itertools as it
-import random
-import warnings
 import collections
+import argparse
 
 import dill
 
@@ -30,20 +27,55 @@ from stage_2a_bar_selection import (
 
 import asyncio_tools as aiot
 
+parser = argparse.ArgumentParser(
+    prog='stage_2b_bar_C0_hist_dict',
+    description='This program creates histogram dicts of one or more files',
+)
 
 
-img_dir = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0"
+
+parser.add_argument(
+    '--img_dir',
+    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0",
+    default=None,
+)
+
+parser.add_argument(
+    '--img',
+    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-17-41_C50.jpg",
+    default=None,
+)
+
+args = parser.parse_args()
 
 
-@aiot.background
+
+END = None
+cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:END]
+
+
+dict_dir = "dicts"
+os.makedirs(dict_dir, exist_ok=True)
+
+
 def process_img(img_fpath):
+
+    hist_cache = collections.defaultdict(list)
+    hist_cache["bad_cells"] = collections.defaultdict(list)
+
     for cell_tup in cell_tups:
         # print("".join(cell_tup), end="; ")
         try:
             hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup)
         except RuntimeError:
-            bad_cells[img_fpath].append(cell_tup)
+            hist_cache["bad_cells"][img_fpath].append(cell_tup)
         hist_cache[cell_tup].append(hist_smooth)
+
+    _, img_fname = os.path.split(img_fpath)
+    img_fname, _ = os.path.splitext(img_fname)
+    fpath = os.path.join(dict_dir, f"hist_{img_fname}.dill")
+    with open(fpath, "wb") as fp:
+        dill.dump(hist_cache, fp)
 
 
 def get_img_list(img_dir):
@@ -67,34 +99,31 @@ def get_img_list(img_dir):
     return img_path_list2
 
 
-end = None
+@aiot.background
+def run_this_script(img_path):
+    cmd = f"{sys.executable} {__file__} --img {img_path}"
+    # print(cmd)
+    os.system(cmd)
 
 
-cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:end]
+def aio_main():
 
-hist_cache = collections.defaultdict(list)
-bad_cells = collections.defaultdict(list)
+    img_path_list = get_img_list(args.img_dir)[:25]
+    aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
 
-
-def _main():
-
-    img_path_list = get_img_list(img_dir)[:end]
-    for img_fpath in img_path_list:
-        print(img_fpath)
-        process_img(img_fpath)
-
-        break
-
-if __name__ == "__main__":
-
-    img_path_list = get_img_list(img_dir)[:25]
-    aiot.run(aiot.main(func=process_img, arg_list=img_path_list))
-
-
-    hist_cache["bad_cells"] = bad_cells
-    fname = "hist_cache.dill"
-    with open(fname, "wb") as fp:
-        dill.dump(hist_cache, fp)
 
     from ipydex import IPS
     IPS()
+
+
+def main():
+
+    if args.img:
+        process_img(args.img)
+    elif args.img_dir:
+        aio_main()
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
