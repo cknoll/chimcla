@@ -483,6 +483,51 @@ def correct_angle(img, y_offset=5):
     return res, a
 
 
+# histogram creation
+
+def gaussian_kernel(size, sigma):
+    x = np.arange(-(size // 2), size // 2 + 1)
+    kernel = np.exp(-x**2 / (2 * sigma**2))
+    return kernel / np.sum(kernel)
+
+def gaussian_smooth(data, kernel_size, sigma):
+    kernel = gaussian_kernel(kernel_size, sigma)
+    smoothed = np.convolve(data, kernel, mode='same')
+    return smoothed
+
+def symlog_transform(x, linthresh):
+    eps = 1e-8  # correction for places where x is near 0
+    # this prevents warnings, but changes nothing for the value (as long as linthresh > eps)
+
+
+    return np.where(
+        np.abs(x) > linthresh,
+        np.sign(x) * np.log(np.abs(x)/linthresh + eps*(np.abs(x)/linthresh < eps)) + np.sign(x),
+        x/linthresh
+    )
+
+
+def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3):
+    """
+
+    """
+
+    img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
+    corrected_img, angle = correct_angle(img)
+
+    # trim border (which was increased before rotation)
+    data = corrected_img[ex2:-ex2, ey2:-ey2].flatten()
+
+
+    hist = np.histogram(data, bins=np.arange(256))[0]
+    hist2 = gaussian_smooth(hist, 20, sigma=5)
+
+    sl_hist1 = symlog_transform(hist, linthresh=0.1)
+    sl_hist2 = symlog_transform(hist2, linthresh=0.1)
+
+    return sl_hist1, sl_hist2
+
+
 ###############################################################
 
 
