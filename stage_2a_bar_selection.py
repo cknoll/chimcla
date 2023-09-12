@@ -461,9 +461,54 @@ def process_column(img, j, plot=False):
     return p
 
 
+BAR_TRESHOLD = 110
+
+def get_test_column_idcs(img, plot=False):
+    """
+    Support for angle detection of a bar: find out which columns are relevant to test
+    """
+
+    n_rows, n_cols = img.shape
+    dark_pixel_share = np.sum(img < BAR_TRESHOLD, axis=0)/n_rows
+
+    jj = np.arange(n_cols)
+
+    dark_pixel_indices = jj[dark_pixel_share > .8]
+
+    j_first, j_last = dark_pixel_indices[[0, -1]]
+
+    # actual test indices:
+    j_left1 = np.max([j_first - 2, 0])
+    j_left2 = j_left1 + 1
+
+    # on the right side: calculate the corresponding negativ indices
+    # i.e. right most col has index -1
+    j_right1 = np.min([j_last + 2, n_cols - 1]) - n_cols
+    j_right2 = j_right1 -1
+
+
+    if plot:
+
+        plt.plot(jj[dark_pixel_indices], dark_pixel_share[dark_pixel_indices], "o", label="chocolate bar columns")
+        plt.plot(jj[[j_first, j_last]], dark_pixel_share[[j_first, j_last]], "o", ms=3, label="border columns")
+        plt.plot(
+            jj[[j_left1, j_left2, j_right1, j_right2]],
+            dark_pixel_share[[j_left1, j_left2, j_right1, j_right2]],
+            "x", color="tab:red", ms=8, label="test columns"
+        )
+
+        plt.plot(jj, dark_pixel_share, "o-", label="dark pixel share", color="tab:blue", alpha=0.3, zorder=0)
+
+        plt.legend()
+
+
+    return [j_left1, j_left2, j_right1, j_right2]
+
+
 def get_angle(img, dc=None):
 
-    column_indices = [1, 2, -2, -1]
+    # column_indices = [1, 2, -2, -1]
+    column_indices = get_test_column_idcs(img)
     angles = []
     for j in column_indices:
         res = process_column(img, j)
@@ -477,11 +522,19 @@ def get_angle(img, dc=None):
 
             dc.angle_res.append(res)
             dc.get_angle_image = img
+            return 0
 
     angles.sort()
-
     # drop extreme values
-    return np.mean(angles[1:-1])
+
+    angles2 = angles[1:-1]
+
+    # print(angles, np.var(angles2))
+    if np.var(angles2) > 0.4:
+        msg = f"could not determine consistent angles: {angles2}"
+        raise ValueError(msg)
+
+    return np.mean(angles2)
 
 
 def correct_angle(img, y_offset=5, dc=None):
