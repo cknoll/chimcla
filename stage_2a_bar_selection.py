@@ -794,6 +794,107 @@ def main():
     # plt.show()
 
 
+class CavityCarrierImageAnalyzier:
+    def __init__(self, img_fpath):
+        self.img_fpath = img_fpath
+        self.img = load_img(img_fpath)
+
+        self.make_sorted_bbox_list()
+        # self.make_row_col_dict()
+
+    def make_sorted_bbox_list(self, plot=False):
+        self.bbox_list = get_bbox_list(self.img, plot=plot)
+        assign_row_col(self.bbox_list)
+        handle_missing_boxes(self.bbox_list, self.img_fpath)
+
+    def get_bbox_for_cell(self, hr_row, hr_col):
+        # hr_row, hr_col = "c", "8"
+        assert len(self.bbox_list) == 81
+
+        assert hr_row in ("a", "b", "c")
+        row_idx = {"a": 0, "b": 1, "c": 2}[hr_row]
+        col_idx = int(hr_col) - 1
+
+        bbox = self.bbox_list[row_idx*27 + col_idx]
+
+        return bbox
+
+    def get_raw_cell(self, hr_row, hr_col, e=0, f=0, plot=False):
+        bbox = self.get_bbox_for_cell(hr_row, hr_col)
+        x, y, w, h = bbox[:4]
+        part_img = self.img[y-e:y+h+e, x-f:x+w+f, :]
+
+        # convert to Lightness A, B and then split to get lightness
+        L, _, _ = cv2.split(cv2.cvtColor(part_img, cv2.COLOR_BGR2LAB)   )
+
+        if plot:
+            # plt.imshow(rgb(part_img))
+            plt.imshow(L)
+
+        return L
+
+    def find_cell_corners(self, hr_row, hr_col, plot=False, dc=None):
+        """
+        return absolute coordinates of the upper left corner of a cell
+        """
+        bbox = self.get_bbox_for_cell(hr_row, hr_col)
+
+        # additional margins (rows and cols)
+        e = 3
+        f = 3
+
+        cell_img = self.get_raw_cell(hr_row, hr_col, e, f)
+
+        bb_col, bb_row, bb_delta_col, bb_delta_row = bbox[:4]
+
+        left, right = get_border_columns(cell_img)
+        up, down = get_border_columns(cell_img.T)
+
+        res = Container()
+        res.upper_left = (left + bb_col - e, up + bb_row - f)
+        res.upper_right = (right + bb_col - e, up + bb_row - f)
+
+        res.lower_left = (left + bb_col - e, down + bb_row - f)
+        res.lower_right = (right + bb_col - e, down + bb_row - f)
+
+        corner_col_idx = get_border_columns(cell_img)[0] + bb_col - f
+        corner_row_idx = get_border_columns(cell_img.T)[0] + bb_row - e
+
+        if plot:
+            # plt.imshow(self.img[:200, :200])
+            a = .99
+            plt.plot([res.upper_left[0]], [res.upper_left[1]], ".", color=colors[4], alpha=a)
+            plt.plot([res.lower_left[0]], [res.lower_left[1]], ".", color=colors[1], alpha=a)
+            plt.plot([res.lower_right[0]], [res.lower_right[1]], ".", color=colors[2], alpha=a)
+            plt.plot([res.upper_right[0]], [res.upper_right[1]], ".", color=colors[3], alpha=a)
+
+        # fill debug container
+        if dc:
+            assert isinstance(dc, ipydex.Container)
+            dc.fetch_locals()
+
+        return res
+
+
+def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=None):
+    """
+    For a given cell image return the indices of columns, that are the border of the chocolate bar
+    """
+    n_rows, n_cols = cell_img.shape
+    dark_pixel_share = np.sum(cell_img < dark_value_tresh, axis=0)/n_rows
+
+    jj = np.arange(n_cols)
+
+    dark_pixel_indices = jj[dark_pixel_share > dark_share_tresh]
+
+    j_first, j_last = dark_pixel_indices[[0, -1]]
+
+    # fill debug container
+    if dc:
+        assert isinstance(dc, ipydex.Container)
+        dc.fetch_locals()
+
+    return j_first, j_last
 
 
 if __name__ == "__main__":
