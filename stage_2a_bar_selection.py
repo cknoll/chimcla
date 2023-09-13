@@ -847,18 +847,18 @@ class CavityCarrierImageAnalyzier:
 
         bb_col, bb_row, bb_delta_col, bb_delta_row = bbox[:4]
 
-        left, right = get_border_columns(cell_img)
+        # get left and right col in the upper and lower part separately
+
+        left1, right1 = get_border_columns(cell_img[:bb_delta_row//3, :])
+        left2, right2 = get_border_columns(cell_img[-bb_delta_row//3:, :])
         up, down = get_border_columns(cell_img.T)
 
         res = Container()
-        res.upper_left = (left + bb_col - e, up + bb_row - f)
-        res.upper_right = (right + bb_col - e, up + bb_row - f)
+        res.upper_left = (left1 + bb_col - e, up + bb_row - f)
+        res.upper_right = (right1 + bb_col - e, up + bb_row - f)
 
-        res.lower_left = (left + bb_col - e, down + bb_row - f)
-        res.lower_right = (right + bb_col - e, down + bb_row - f)
-
-        corner_col_idx = get_border_columns(cell_img)[0] + bb_col - f
-        corner_row_idx = get_border_columns(cell_img.T)[0] + bb_row - e
+        res.lower_left = (left2 + bb_col - e, down + bb_row - f)
+        res.lower_right = (right2 + bb_col - e, down + bb_row - f)
 
         if plot:
             # plt.imshow(self.img[:200, :200])
