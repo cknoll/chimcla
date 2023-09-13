@@ -22,11 +22,13 @@ from skimage.transform import hough_line, hough_line_peaks, rotate
 from skimage.feature import canny
 from skimage.io import imread
 
+import ipydex
 from ipydex import IPS
 
 
 def load_img(fpath):
 
+    assert os.path.isfile(fpath)
     image1  = cv2.imread(fpath)
 
     # image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
@@ -152,6 +154,9 @@ def assign_row_col(bbox_list):
 
 def index_combinations():
     return list(it.product(range(3), range(27)))
+
+
+cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))
 
 
 def find_missing_boxes(bbox_list):
@@ -440,7 +445,7 @@ def process_column(img, j, plot=False):
     p.errors = fitter.pw_err(piecewise_linear3, p, img[:, j])
     if plot:
         color = colors[j]
-        plt.plot(img[:, j], color=color)
+        plt.plot(img[:, j], color=color, label=f"col {j}")
         plt.plot(fitter.ii, piecewise_linear3(fitter.ii, *p), "--", lw=2, color=color)
 
     p.scored_slopes = []  # will contain tuples
@@ -512,7 +517,8 @@ def get_angle(img, dc=None):
     angles = []
     for j in column_indices:
         res = process_column(img, j)
-        a = res.estimated_slope / 3.31 * np.sign(j)
+        # j is an integer index. sign(0) = 0 -> prevent this by adding 0.5
+        a = res.estimated_slope / 3.31 * np.sign(j+.5)
         angles.append(a)
 
         # collect debug data
@@ -522,17 +528,15 @@ def get_angle(img, dc=None):
 
             dc.angle_res.append(res)
             dc.get_angle_image = img
-            return 0
 
     angles.sort()
     # drop extreme values
-
     angles2 = angles[1:-1]
 
     # print(angles, np.var(angles2))
     if np.var(angles2) > 0.4:
         msg = f"could not determine consistent angles: {angles2}"
-        raise ValueError(msg)
+        raise InconsistentAngle(msg)
 
     return np.mean(angles2)
 
@@ -572,6 +576,9 @@ def symlog_transform(x, linthresh):
 class Container:
     pass
 
+class InconsistentAngle(ValueError):
+    pass
+
 
 def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3, dc=None):
     """
@@ -580,7 +587,12 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3, dc=No
     """
 
     img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
-    corrected_img, angle = correct_angle(img, dc=dc)
+
+    try:
+        corrected_img, angle = correct_angle(img, dc=dc)
+    except InconsistentAngle:
+        print(f"Inconsistent angle for cell {hr_row}{hr_col} in {img_fpath}")
+        corrected_img, angle = img, 0
 
     # trim border (which was increased before rotation)
     data = corrected_img[ex2:-ex2, ey2:-ey2].flatten()
@@ -656,6 +668,7 @@ def select_bar_from_file(fpath, hr_row, hr_col):
 # this is old hough-transform based code
 
 def adapt_rotation_and_margin(bbox, img, forced_angle=None, plot=True):
+    1/0
 
     x, y, w, h = bbox[:4]
 

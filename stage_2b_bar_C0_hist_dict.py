@@ -22,6 +22,7 @@ from stage_2a_bar_selection import (
     correct_angle,
     rotate_img,
     get_symlog_hist,
+    Container,
 )
 
 
@@ -63,13 +64,21 @@ def process_img(img_fpath):
     hist_cache = collections.defaultdict(list)
     hist_cache["bad_cells"] = collections.defaultdict(list)
 
+    # this will map the cell tup to the identified angle
+    hist_cache["angles"] = {}
+
+    # use the debug-container mechanism to extract the angle from the function
+    # without changing the interface
+    dc = Container()
+
     for cell_tup in cell_tups:
         # print("".join(cell_tup), end="; ")
         try:
-            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup)
+            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, dc=dc)
         except RuntimeError:
             hist_cache["bad_cells"][img_fpath].append(cell_tup)
         hist_cache[cell_tup].append(hist_smooth)
+        hist_cache["angles"][cell_tup] = dc.angle
 
     _, img_fname = os.path.split(img_fpath)
     img_fname, _ = os.path.splitext(img_fname)
@@ -108,7 +117,7 @@ def run_this_script(img_path):
 
 def aio_main():
 
-    img_path_list = get_img_list(args.img_dir)[:25]
+    img_path_list = get_img_list(args.img_dir)[:3]
     aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
 
 
