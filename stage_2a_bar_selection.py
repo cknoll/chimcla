@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy import optimize
+from addict import Addict
 
 
 
@@ -979,14 +980,45 @@ class CavityCarrierImageAnalyzier:
         angle = np.arctan(avg_slope) * 180 / np.pi
         return angle
 
-    def get_corrected_cell(self, hr_row, hr_col, e=2, f=2):
-        angle = self.get_bbox_based_angle(hr_row, hr_col)
+    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, dc=None):
+        # angle = self.get_bbox_based_angle(hr_row, hr_col)
         cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
-        # TODO:_select method for angle detection
+        # manually determined from artificial images (for 10px vertical cutoff)
+        correction = 0.67
+        angle = get_angle_from_moments(cell[10:-10, :])*correction
+
         new_cell = rotate_img(cell, -angle)
 
-        return new_cell
+        # this operation changed the data type
+        new_cell2 = np.array(new_cell, dtype=np.uint8)
+
+        # fill debug container
+        if dc:
+            assert isinstance(dc, ipydex.Container)
+            dc.fetch_locals()
+
+        return new_cell2
+
+
+def get_angle_from_moments(img):
+
+    # this is based on http://raphael.candelier.fr/?blog=Image%20Moments
+    # which cites: http://sibgrapi.sid.inpe.br/col/sid.inpe.br/banon/2002/10.23.11.34/doc/35.pdf
+    # (Image Moments-based Structuring and Tracking of Objects by L. Rocha, L. Velho and P.C.P. Calvalho (2002))
+    # and claims that they have typos ("6" instead of "8") in their formulas for l and w (not relevant here)
+
+    M = Addict(cv2.moments(img))
+
+    X = M.m10 / M.m00
+    Y = M.m01 / M.m00
+
+    MU20 = M.m20 / M.m00 - X**2
+    MU11 = M.m11 / M.m00 - X*Y
+    MU02 = M.m02 / M.m00 - Y**2
+
+    theta = 0.5 * np.arctan(2*MU11 / (MU20 - MU02)) * 180/np.pi
+    return theta
 
 
 def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=None):
