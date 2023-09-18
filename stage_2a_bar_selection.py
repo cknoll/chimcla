@@ -59,11 +59,13 @@ def get_bbox_list(img, plot=False):
     if plot:
         img2 = img*1
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
+    if len(img.shape) == 3 and img.shape[2] == 3:
+        # we have an RGB image
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img
     # Apply thresholding to binarize the image
     _, thresh = cv2.threshold(gray, thresh=70, maxval=255, type=cv2.THRESH_BINARY)
-
 
     inverted_thresh = 255 - thresh
     #plt.imshow(inverted_thresh)
