@@ -982,7 +982,7 @@ class CavityCarrierImageAnalyzier:
         angle = np.arctan(avg_slope) * 180 / np.pi
         return angle
 
-    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, dc=None):
+    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, dc=None):
         # angle = self.get_bbox_based_angle(hr_row, hr_col)
         cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
@@ -992,8 +992,13 @@ class CavityCarrierImageAnalyzier:
 
         new_cell = rotate_img(cell, -angle)
 
-        # this operation changed the data type
+        # this operation changed the data type -> convert back to uint
         new_cell2 = np.array(new_cell, dtype=np.uint8)
+
+        if cut_to_bb:
+            # after rotation the bounding box might have changed:
+            x, y, w, h = get_bbox_list(new_cell2)[0][:4]
+            new_cell2 = new_cell2[y:y+h, x:x+w]
 
         # fill debug container
         if dc:
