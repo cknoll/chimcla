@@ -28,7 +28,7 @@ from ipydex import IPS
 
 def load_img(fpath):
 
-    assert os.path.isfile(fpath)
+    assert os.path.isfile(fpath), f"FileNotFound: {fpath}"
     image1  = cv2.imread(fpath)
 
     # image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
@@ -258,7 +258,36 @@ class Attr_Array(np.ndarray):
             setattr(obj, k, v)
         return obj
 
-def rotate_img(img, angle, border_value=255):
+def rotate_img(img, angle, border_value=255, padding=3):
+
+    padded_img = add_padding(img, padding)
+    rotated_img0 = _rotate_img(padded_img, angle, border_value)
+
+    res = rotated_img0[padding:-padding, padding:-padding]
+    return res
+
+
+def add_padding(img, padding=3):
+    n1, n2 = img.shape
+    p = padding
+    padded_img = np.zeros((n1+2*padding, n2+2*padding))
+    padded_img[p:-p, p:-p] = img
+
+    for i in range(padding):
+        # left
+        padded_img[p:-p, i] = img[:, 0]
+        # right
+        padded_img[p:-p, n2 + padding + i] = img[:, -1]
+
+        # up (row 0 is up)
+        padded_img[i, p:-p] = img[0, :]
+        # down
+        padded_img[n1 + padding + i, p:-p] = img[-1, :]
+
+    return padded_img
+
+
+def _rotate_img(img, angle, border_value=255):
     height, width = img.shape[:2]
 
     # Calculate the rotation matrix
@@ -517,6 +546,9 @@ def get_angle(img, dc=None):
     angles = []
     for j in column_indices:
         res = process_column(img, j)
+
+        # res.estimated slope contains the slope of the lightness-change-rate
+        # this is *not* the geometric slope of the desired line in pixel space
         # j is an integer index. sign(0) = 0 -> prevent this by adding 0.5
         a = res.estimated_slope / 3.31 * np.sign(j+.5)
         angles.append(a)
@@ -667,6 +699,21 @@ def select_bar_from_file(fpath, hr_row, hr_col):
 
 # this is old hough-transform based code
 
+def get_angle_from_hough(cell):
+    # Apply Canny edge detection to the grayscale image
+    edges = cv2.Canny(cell, 50, 150, apertureSize=3)
+
+    tested_angles = np.deg2rad(np.arange(-5.0, 5.0, step=0.1 ))
+    h, theta, d = hough_line(edges, theta=tested_angles)
+
+    # Retrieve the lines detected by Hough transform
+    _, angles, _ = hough_line_peaks(h, theta, d)
+    angle = np.rad2deg(np.mean(angles))
+
+    return angle
+
+
+
 def adapt_rotation_and_margin(bbox, img, forced_angle=None, plot=True):
     1/0
 
@@ -795,9 +842,14 @@ def main():
 
 
 class CavityCarrierImageAnalyzier:
+    BBOX_EXPECTED_WITH = 26
+    BBOX_EXPECTED_HEIGHT = 104
+
     def __init__(self, img_fpath):
         self.img_fpath = img_fpath
         self.img = load_img(img_fpath)
+
+        self.corners_dict = None
 
         self.make_sorted_bbox_list()
         # self.make_row_col_dict()
@@ -874,6 +926,67 @@ class CavityCarrierImageAnalyzier:
             dc.fetch_locals()
 
         return res
+
+    def fill_corners_dict(self, plot=None, dc=None):
+
+        if self.corners_dict:
+            return self.corners_dict
+
+        self.corners_dict = {}
+        for row, col in cell_tups:
+
+            corner_res = self.find_cell_corners(row, col, plot=plot, dc=dc)
+            key = (row, str(col))
+            self.corners_dict[key] = corner_res
+
+        return self.corners_dict
+
+    def get_horizontal_line(self, hr_row, corner_name="upper_left", plot=False):
+        self.fill_corners_dict()
+        assert hr_row in "abc"
+
+        res = Container()
+        points = []
+
+        for row, col in cell_tups:
+            if row != hr_row:
+                continue
+
+            corner_container = self.corners_dict[(row, col)]
+            points.append(getattr(corner_container, corner_name))
+
+        res.points = np.array(points)
+        res.coeffs = np.polyfit(*res.points.T, 2)
+        res.poly = np.poly1d(res.coeffs)
+        res.slope = res.poly.deriv()
+
+        if plot:
+            xx = np.linspace(0, 1000, 500)
+            line, = plt.plot(*res.points.T, ".")
+            plt.plot(xx, res.poly(xx), color=line.get_color())
+
+        return res
+
+    def get_bbox_based_angle(self, hr_row, hr_col):
+        bbox = self.get_bbox_for_cell(hr_row, hr_col)
+        line_container1 = self.get_horizontal_line(hr_row, corner_name="upper_left")
+        line_container2 = self.get_horizontal_line(hr_row, corner_name="lower_left")
+
+        x_eval = bbox[0] + self.BBOX_EXPECTED_WITH/2
+
+        avg_slope = (line_container1.slope(x_eval) + line_container2.slope(x_eval))/2
+
+        angle = np.arctan(avg_slope) * 180 / np.pi
+        return angle
+
+    def get_corrected_cell(self, hr_row, hr_col, e=2, f=2):
+        angle = self.get_bbox_based_angle(hr_row, hr_col)
+        cell = self.get_raw_cell(hr_row, hr_col, e, f)
+
+        # TODO:_select method for angle detection
+        new_cell = rotate_img(cell, -angle)
+
+        return new_cell
 
 
 def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=None):
