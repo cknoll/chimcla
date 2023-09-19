@@ -23,8 +23,7 @@ from skimage.transform import hough_line, hough_line_peaks, rotate
 from skimage.feature import canny
 from skimage.io import imread
 
-import ipydex
-from ipydex import IPS
+from ipydex import IPS, Container
 
 
 def load_img(fpath):
@@ -107,7 +106,7 @@ def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
 
     # fill debug container
     if dc:
-        assert isinstance(dc, ipydex.Container)
+        assert isinstance(dc, Container)
         dc.fetch_locals()
 
     return bbox_list
@@ -171,6 +170,9 @@ cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))
 
 
 def find_missing_boxes(bbox_list):
+    """
+    Iterate through a list of (extended) bounding boxes
+    """
 
     idcs = index_combinations()
     for bbox in bbox_list:
@@ -613,11 +615,10 @@ def symlog_transform(x, linthresh):
         x/linthresh
     )
 
-
-class Container:
+class InconsistentAngle(ValueError):
     pass
 
-class InconsistentAngle(ValueError):
+class MissingBoundingBoxes(ValueError):
     pass
 
 
@@ -644,7 +645,7 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, dc=None):
 
     # fill debug container
     if dc:
-        assert isinstance(dc, ipydex.Container)
+        assert isinstance(dc, Container)
         dc.fetch_locals()
 
     return sl_hist1, sl_hist2
@@ -850,14 +851,24 @@ class CavityCarrierImageAnalyzier:
     BBOX_EXPECTED_WITH = 26
     BBOX_EXPECTED_HEIGHT = 104
 
-    def __init__(self, img_fpath):
+    def __init__(self, img_fpath, bboxes=True):
         self.img_fpath = img_fpath
         self.img = load_img(img_fpath)
 
         self.corners_dict = None
 
-        self.make_sorted_bbox_list()
-        # self.make_row_col_dict()
+        # this will be a dict for handling situations, where finding
+        # bboxes is difficult
+        self.bbox_cache = None
+
+        if bboxes:
+            self.make_sorted_bbox_list()
+
+    def show(self, ax=None):
+        if ax is None:
+            ax = plt.gca()
+
+        ax.imshow(self.img, vmin=0, vmax=255)
 
     def make_sorted_bbox_list(self, plot=False):
 
@@ -870,21 +881,33 @@ class CavityCarrierImageAnalyzier:
 
         last_excption = None
 
+        self.bbox_cache = []
+
         for thresh in thresholds:
             self.bbox_list = get_bbox_list(self.img, plot=plot, thresh=thresh)
             assign_row_col(self.bbox_list)
-            try:
-                handle_missing_boxes(self.bbox_list, self.img_fpath)
-            except NotImplementedError as ex:
-                msg = ex.args[0]
-                last_excption = type(ex)(f"For tresh={thresh}: {msg}")
-                continue
-            # if there was no exception we save the cache and leave the function
-            img_bbox_cache[self.img_fpath] = self.bbox_list
-            return
-        else:
-            # break was not called
-            raise last_excption
+            missing_boxes=find_missing_boxes(self.bbox_list)
+            c = Container(thresh=thresh, bbox_list=self.bbox_list, missing_boxes=missing_boxes)
+            self.bbox_cache.append(c)
+
+            if not missing_boxes:
+                img_bbox_cache[self.img_fpath] = self.bbox_list
+                return
+
+        # we have tried all meaningful threshold values but for none we found all boxes
+        self.handle_missing_boxes()
+
+    def handle_missing_boxes(self):
+
+        # find the container with the least missing):
+        self.bbox_cache.sort(key=lambda c: len(c.missing_boxes))
+
+        c1 = self.bbox_cache[0]
+
+        IPS()
+
+        msg = f"For {self.img_fpath}: could not find all bounding boxes"
+        raise MissingBoundingBoxes(msg)
 
     def get_bbox_for_cell(self, hr_row, hr_col):
         # hr_row, hr_col = "c", "8"
@@ -949,7 +972,7 @@ class CavityCarrierImageAnalyzier:
 
         # fill debug container
         if dc:
-            assert isinstance(dc, ipydex.Container)
+            assert isinstance(dc, Container)
             dc.fetch_locals()
 
         return res
@@ -1026,7 +1049,7 @@ class CavityCarrierImageAnalyzier:
 
         # fill debug container
         if dc:
-            assert isinstance(dc, ipydex.Container)
+            assert isinstance(dc, Container)
             dc.fetch_locals()
 
         new_cell3 = Attr_Array(new_cell2)
@@ -1070,7 +1093,7 @@ def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=
 
     # fill debug container
     if dc:
-        assert isinstance(dc, ipydex.Container)
+        assert isinstance(dc, Container)
         dc.fetch_locals()
 
     return j_first, j_last
