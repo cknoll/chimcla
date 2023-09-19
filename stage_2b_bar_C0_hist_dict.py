@@ -77,6 +77,9 @@ def process_img(img_fpath):
             hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, dc=dc)
         except RuntimeError:
             hist_cache["bad_cells"][img_fpath].append(cell_tup)
+            print(f"bad cells {img_fpath.split('/')[-1]}: {cell_tup}")
+            hist_smooth = None
+            dc.angle = None
         hist_cache[cell_tup].append(hist_smooth)
         hist_cache["angles"][cell_tup] = dc.angle
 
@@ -117,7 +120,7 @@ def run_this_script(img_path):
 
 def aio_main():
 
-    img_path_list = get_img_list(args.img_dir)[:3]
+    img_path_list = get_img_list(args.img_dir)[:100]
     aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
 
 
