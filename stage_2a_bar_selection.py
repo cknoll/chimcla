@@ -54,7 +54,8 @@ def background(f):
     return wrapped
 
 
-def get_bbox_list(img, plot=False):
+def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
+    # notes for tresh: 70 resulted as too low, 80 as too high
 
     if plot:
         img2 = img*1
@@ -65,13 +66,13 @@ def get_bbox_list(img, plot=False):
     else:
         gray = img
     # Apply thresholding to binarize the image
-    _, thresh = cv2.threshold(gray, thresh=70, maxval=255, type=cv2.THRESH_BINARY)
+    _, thresh_img = cv2.threshold(gray, thresh=thresh, maxval=255, type=cv2.THRESH_BINARY)
 
-    inverted_thresh = 255 - thresh
+    inverted_thresh_img = 255 - thresh_img
     #plt.imshow(inverted_thresh)
 
     # Find the contours in the image
-    cnts, _ = cv2.findContours(inverted_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts, _ = cv2.findContours(inverted_thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Iterate over the contours and draw bounding rectangles around each one
 
@@ -84,11 +85,13 @@ def get_bbox_list(img, plot=False):
 
     for cnt in cnts:
         x, y, w, h = cv2.boundingRect(cnt)
-        if (abs(w - BBOX_EXPECTED_WITH) > BBOX_TOL) or (abs(h - BBOX_EXPECTED_HEIGHT) > BBOX_TOL):
-            continue
-        else:
-            # print(w, h, "--", abs(w - BBOX_EXPECTED_WITH) > BBOX_TOL, abs(h - BBOX_EXPECTED_HEIGHT) > BBOX_TOL)
-            pass
+
+        if not return_all:
+            if (abs(w - BBOX_EXPECTED_WITH) > BBOX_TOL) or (abs(h - BBOX_EXPECTED_HEIGHT) > BBOX_TOL):
+                continue
+            else:
+                # print(w, h, "--", abs(w - BBOX_EXPECTED_WITH) > BBOX_TOL, abs(h - BBOX_EXPECTED_HEIGHT) > BBOX_TOL)
+                pass
 
         # the last two values will be assigned later (row and column index)
         bbox_list.append(np.r_[x, y, w, h, -1, -1])
@@ -101,6 +104,11 @@ def get_bbox_list(img, plot=False):
     if plot:
         plt.imshow(rgb(img2))
         plt.show()
+
+    # fill debug container
+    if dc:
+        assert isinstance(dc, ipydex.Container)
+        dc.fetch_locals()
 
     return bbox_list
 
@@ -183,10 +191,8 @@ def handle_missing_boxes(bbox_list, fpath):
     if len(missing_boxes) > 0:
         # IPS()
 
-        print(f"!!  problems with {fpath}")
-        exit()
-
-        # raise NotImplementedError
+        msg = f"missing bboxex for {fpath}: {missing_boxes}"
+        raise NotImplementedError(msg)
 
     # TODO:
     # next steps:
@@ -858,9 +864,25 @@ class CavityCarrierImageAnalyzier:
         # self.make_row_col_dict()
 
     def make_sorted_bbox_list(self, plot=False):
-        self.bbox_list = get_bbox_list(self.img, plot=plot)
-        assign_row_col(self.bbox_list)
-        handle_missing_boxes(self.bbox_list, self.img_fpath)
+
+        thresholds = [75, 70, 80, 65, 85]
+
+        last_excption = None
+
+        for thresh in thresholds:
+            self.bbox_list = get_bbox_list(self.img, plot=plot, thresh=thresh)
+            assign_row_col(self.bbox_list)
+            try:
+                handle_missing_boxes(self.bbox_list, self.img_fpath)
+            except NotImplementedError as ex:
+                msg = ex.args[0]
+                last_excption = type(ex)(f"For tresh={thresh}: {msg}")
+                continue
+            # if there was no exception we leave the function
+            return
+        else:
+            # break was not called
+            raise last_excption
 
     def get_bbox_for_cell(self, hr_row, hr_col):
         # hr_row, hr_col = "c", "8"
