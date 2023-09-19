@@ -1,6 +1,7 @@
 critical_hist
 cropped
-dicts
-dicts1
+dicts*
+critical_hist_selected/
+
 hist_cache1.dill
 single_bars
