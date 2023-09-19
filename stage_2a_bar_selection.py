@@ -857,6 +857,10 @@ class CavityCarrierImageAnalyzier:
     BBOX_COLS = 27
     BBOX_NUMBER = BBOX_ROWS*BBOX_COLS
 
+    # offsets for guessing ROI for
+    ROI_DX = 5
+    ROI_DY = 5
+
     THRESHOLDS = [75, 70, 80, 65, 85]
 
     def __init__(self, img_fpath, bboxes=True):
@@ -928,32 +932,50 @@ class CavityCarrierImageAnalyzier:
         while len(c1.store) < self.BBOX_NUMBER:
             # find a bbox which has missing direct neighbour
             row, col_border, col_missing = self.find_bbox_border(c1)
+
+            hr_row = "abc"[row]
+            hr_col = str(col_missing + 1)
+
             bbox_known = c1.store[(row, col_border)]
-            scaled_img_roi = self.get_guessed_bbox_roi(bbox_known, col_border, col_missing)
+
+            # get the image and its bbox
+            scaled_img_roi, roi_bbox = self.get_guessed_bbox_roi(bbox_known, col_border, col_missing)
 
             for thresh in self.THRESHOLDS:
                 local_bbox_list = get_bbox_list(scaled_img_roi, thresh=thresh)
                 if len(local_bbox_list) == 1:
                     break
             else:
-                raise MissingBoundingBoxes("even in local region not found")
+                msg = f"{self.img_fpath} could not find a bbox for cell {hr_row}{hr_col} even in local region"
+                raise MissingBoundingBoxes(msg)
 
+            X, Y = roi_bbox[:2]  # corner coordinates of the partial image
             x, y, w, h = local_bbox_list[0][:4]
-            cv2.rectangle(scaled_img_roi,(x,y),(x + w,y + h),(0, 255, 0), 2)
-            plt.imshow(scaled_img_roi)
-            plt.show()
-            IPS()
 
-            break
+            new_bbox = np.r_[x + X, + y + Y, w, h]
+            c1.store[(row, col_missing)] = new_bbox
 
-    def get_guessed_bbox_roi(self, bbox_known, col_known, col_missing, dx=5, dy=5):
+            if 0:
+                print(f"added cell {hr_row}{hr_col}")
+                cv2.rectangle(scaled_img_roi,(x,y),(x + w,y + h),(0, 255, 0), 2)
+                plt.imshow(scaled_img_roi)
+                plt.show()
+
+        items = list(c1.store.items())
+        items.sort()
+
+        self.bbox_list = []
+        for (row, col), bbox in items:
+            self.bbox_list.append(np.r_[bbox, row, col])
+
+    def get_guessed_bbox_roi(self, bbox_known, col_known, col_missing):
 
         x, y, w, h = bbox_known
 
         s = np.sign(col_missing - col_known)  # positive for [known] left of [missing]
 
         x1 = x + s*(w + self.BBOX_EXPECTED_DX)
-        roi = np.r_[x1-dx, y-dy, w + 2*dx, h + 2*dy]
+        roi = np.r_[x1-self.ROI_DX, y-self.ROI_DY, w + 2*self.ROI_DX, h + 2*self.ROI_DY]
 
         X, Y, W, H = roi
 
@@ -982,7 +1004,7 @@ class CavityCarrierImageAnalyzier:
             plt.show()
 
 
-        return scaled_img_roi
+        return scaled_img_roi, roi
 
 
     def find_bbox_border(self, bb_container):

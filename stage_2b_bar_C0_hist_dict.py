@@ -75,9 +75,9 @@ def process_img(img_fpath):
         # print("".join(cell_tup), end="; ")
         try:
             hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, dc=dc)
-        except RuntimeError:
+        except Exception as ex:
             hist_cache["bad_cells"][img_fpath].append(cell_tup)
-            print(f"bad cells {img_fpath.split('/')[-1]}: {cell_tup}")
+            print(f"{type(ex)}: bad cell {img_fpath.split('/')[-1]}: {cell_tup}")
             hist_smooth = None
             dc.angle = None
         hist_cache[cell_tup].append(hist_smooth)
