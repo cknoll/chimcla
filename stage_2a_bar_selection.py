@@ -621,22 +621,19 @@ class InconsistentAngle(ValueError):
     pass
 
 
-def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3, dc=None):
+def get_symlog_hist(img_fpath, hr_row, hr_col, dc=None):
     """
 
     :param dc:  debug container
     """
 
-    img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
+    ccia = CavityCarrierImageAnalyzier(img_fpath)
+    cell = ccia.get_corrected_cell(hr_row, hr_col)
 
-    try:
-        corrected_img, angle = correct_angle(img, dc=dc)
-    except InconsistentAngle:
-        print(f"Inconsistent angle for cell {hr_row}{hr_col} in {img_fpath}")
-        corrected_img, angle = img, 0
+    assert isinstance(cell, Attr_Array)
+    angle = cell.angle
 
-    # trim border (which was increased before rotation)
-    data = corrected_img[ex2:-ex2, ey2:-ey2].flatten()
+    data = cell.flatten()
 
 
     hist = np.histogram(data, bins=np.arange(256))[0]
@@ -645,11 +642,10 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, ex1=2, ey1=2, ex2=3, ey2=3, dc=No
     sl_hist1 = symlog_transform(hist, linthresh=0.1)
     sl_hist2 = symlog_transform(hist2, linthresh=0.1)
 
-    if dc is not None:
-        dc.angle = angle
-        dc.hist_img = corrected_img[ex2:-ex2, ey2:-ey2]
-
-
+    # fill debug container
+    if dc:
+        assert isinstance(dc, ipydex.Container)
+        dc.fetch_locals()
 
     return sl_hist1, sl_hist2
 
@@ -865,6 +861,11 @@ class CavityCarrierImageAnalyzier:
 
     def make_sorted_bbox_list(self, plot=False):
 
+        # use the cached version if possible
+        if bbox_list := img_bbox_cache.get(self.img_fpath):
+            self.bbox_list = bbox_list
+            return
+
         thresholds = [75, 70, 80, 65, 85]
 
         last_excption = None
@@ -878,7 +879,8 @@ class CavityCarrierImageAnalyzier:
                 msg = ex.args[0]
                 last_excption = type(ex)(f"For tresh={thresh}: {msg}")
                 continue
-            # if there was no exception we leave the function
+            # if there was no exception we save the cache and leave the function
+            img_bbox_cache[self.img_fpath] = self.bbox_list
             return
         else:
             # break was not called
@@ -1027,7 +1029,10 @@ class CavityCarrierImageAnalyzier:
             assert isinstance(dc, ipydex.Container)
             dc.fetch_locals()
 
-        return new_cell2
+        new_cell3 = Attr_Array(new_cell2)
+        new_cell3.angle = angle
+
+        return new_cell3
 
 
 def get_angle_from_moments(img):
