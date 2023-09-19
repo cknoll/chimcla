@@ -850,10 +850,20 @@ def main():
 class CavityCarrierImageAnalyzier:
     BBOX_EXPECTED_WITH = 26
     BBOX_EXPECTED_HEIGHT = 104
+    BBOX_EXPECTED_DX = 7  # horizontal space between boxes
+    BBOX_EXPECTED_DY = 51  # vertical space between boxes
+
+    BBOX_ROWS = 3
+    BBOX_COLS = 27
+    BBOX_NUMBER = BBOX_ROWS*BBOX_COLS
+
+    THRESHOLDS = [75, 70, 80, 65, 85]
 
     def __init__(self, img_fpath, bboxes=True):
         self.img_fpath = img_fpath
         self.img = load_img(img_fpath)
+        self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        self.img_lght = cv2.split(cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB))[0]
 
         self.corners_dict = None
 
@@ -877,13 +887,11 @@ class CavityCarrierImageAnalyzier:
             self.bbox_list = bbox_list
             return
 
-        thresholds = [75, 70, 80, 65, 85]
-
         last_excption = None
 
         self.bbox_cache = []
 
-        for thresh in thresholds:
+        for thresh in self.THRESHOLDS:
             self.bbox_list = get_bbox_list(self.img, plot=plot, thresh=thresh)
             assign_row_col(self.bbox_list)
             missing_boxes=find_missing_boxes(self.bbox_list)
@@ -903,6 +911,104 @@ class CavityCarrierImageAnalyzier:
         self.bbox_cache.sort(key=lambda c: len(c.missing_boxes))
 
         c1 = self.bbox_cache[0]
+
+        if len(c1.bbox_list) == 0:
+            msg = f"For {self.img_fpath}: could not find any bounding box"
+            raise MissingBoundingBoxes(msg)
+
+        # at least one bbox exists
+
+        # make bboxes easier accessible
+        c1.store = {}
+        for bbox_array in c1.bbox_list:
+            key = tuple(bbox_array[-2:])
+            c1.store[key] = bbox_array[:-2]
+
+
+        while len(c1.store) < self.BBOX_NUMBER:
+            # find a bbox which has missing direct neighbour
+            row, col_border, col_missing = self.find_bbox_border(c1)
+            bbox_known = c1.store[(row, col_border)]
+            scaled_img_roi = self.get_guessed_bbox_roi(bbox_known, col_border, col_missing)
+
+            for thresh in self.THRESHOLDS:
+                local_bbox_list = get_bbox_list(scaled_img_roi, thresh=thresh)
+                if len(local_bbox_list) == 1:
+                    break
+            else:
+                raise MissingBoundingBoxes("even in local region not found")
+
+            x, y, w, h = local_bbox_list[0][:4]
+            cv2.rectangle(scaled_img_roi,(x,y),(x + w,y + h),(0, 255, 0), 2)
+            plt.imshow(scaled_img_roi)
+            plt.show()
+            IPS()
+
+            break
+
+    def get_guessed_bbox_roi(self, bbox_known, col_known, col_missing, dx=5, dy=5):
+
+        x, y, w, h = bbox_known
+
+        s = np.sign(col_missing - col_known)  # positive for [known] left of [missing]
+
+        x1 = x + s*(w + self.BBOX_EXPECTED_DX)
+        roi = np.r_[x1-dx, y-dy, w + 2*dx, h + 2*dy]
+
+        X, Y, W, H = roi
+
+        img_roi = self.img_lght[Y:Y+H, X:X+W]
+
+        # assume that the lightness changes in vertical direction -> detrend
+        y_start, y_end = 13, 100
+        avg_trend = np.mean(img_roi, axis=1)[y_start:y_end]
+        yy = np.arange(y_start, y_end)
+
+        coeffs = np.polyfit(yy, avg_trend, 1)
+        poly = np.poly1d(coeffs)
+        yy0 = np.arange(0, H)
+
+        avg_val = np.mean(avg_trend)
+
+        # factor to compensate the linear trend such that the average value results
+        factor = 1/poly(yy0) * avg_val
+
+        factor_bc = factor[:, np.newaxis].repeat(W, axis=1)
+        scaled_img_roi = np.array(np.clip(img_roi*factor_bc, 0, 255), dtype=np.uint8)
+
+        if 0:
+            plt.plot(yy, avg_trend)
+            plt.plot(yy0, poly(yy0))
+            plt.show()
+
+
+        return scaled_img_roi
+
+
+    def find_bbox_border(self, bb_container):
+
+        for (row, col), bbox in bb_container.store.items():
+
+            if 0 < col < 26:
+                possible_neigbours = [col -1, col + 1]
+            elif col == 0:
+                possible_neigbours = [col + 1]
+            elif col == 26:
+                possible_neigbours = [col - 1]
+            else:
+                msg = f"Unexpected column value: {col}"
+                raise ValueError(msg)
+
+            for col_test in possible_neigbours:
+                if (row, col_test) not in bb_container.store:
+                    return row, col, col_test
+
+
+    def handle_missing_box(self, bb_container, row, col):
+        pass
+
+
+
 
         IPS()
 
@@ -927,7 +1033,7 @@ class CavityCarrierImageAnalyzier:
         part_img = self.img[y-e:y+h+e, x-f:x+w+f, :]
 
         # convert to Lightness A, B and then split to get lightness
-        L, _, _ = cv2.split(cv2.cvtColor(part_img, cv2.COLOR_BGR2LAB)   )
+        L, _, _ = cv2.split(cv2.cvtColor(part_img, cv2.COLOR_BGR2LAB))
 
         if plot:
             # plt.imshow(rgb(part_img))
