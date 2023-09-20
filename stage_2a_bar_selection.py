@@ -52,12 +52,76 @@ def background(f):
 
     return wrapped
 
+# ------------------
+
+
+def vertical_detrend(img, y_start, y_end, dc=None):
+    """
+    Identify a linear trend in vertical direction and compensate it.
+
+    Intended to be used for bbox detection only
+
+    :param X1:       specify region of interest
+    :param X2:       specify region of interest
+    :param Y1:       specify region of interest
+    :param Y2:       specify region of interest
+    :param y_start:  start of trend detection
+    :param y_end:    end of trend detection
+    """
+
+    H, W = img.shape
+
+    # assume that the lightness changes in vertical direction -> detrend
+    avg_trend = np.mean(img, axis=1)[y_start:y_end]
+    yy = np.arange(y_start, y_end)
+
+    coeffs = np.polyfit(yy, avg_trend, 1)
+    poly = np.poly1d(coeffs)
+    yy0 = np.arange(0, H)
+
+    estimated_curve = np.clip(poly(yy0), np.min(avg_trend), np.max(avg_trend))
+
+    avg_val = np.mean(avg_trend)
+
+    # factor to compensate the linear trend such that the average value results
+    factor = 1/estimated_curve * avg_val
+
+    factor_bc = factor[:, np.newaxis].repeat(W, axis=1)
+    multiplied_img = np.array(np.clip(img*factor_bc, 0, 255), dtype=np.uint8)
+
+    # fill debug container
+    if dc:
+        assert isinstance(dc, Container)
+        dc.fetch_locals()
+
+    return multiplied_img
+
+
+
+def get_bbox_list_robust(img, expected_number, plot=False, return_all=False, dc=None):
+
+    bbox_list = get_bbox_list(img, plot, return_all, dc)
+
+    if len(bbox_list) == expected_number:
+        return bbox_list
+    img2 = vertical_detrend(img, y_start=13, y_end=100, dc=dc)
+
+    for thresh in CavityCarrierImageAnalyzier.THRESHOLDS:
+        bbox_list = get_bbox_list(img2, plot, return_all, thresh=thresh, dc=dc)
+        if len(bbox_list) == expected_number:
+            return bbox_list
+
+    msg = "could not find bbox, even with detrend and differnt threshold"
+    raise MissingBoundingBoxes(msg)
+
+
+
 
 def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
     # notes for tresh: 70 resulted as too low, 80 as too high
 
     if plot:
-        img2 = img*1
+        img2 = rgb(img*1)
 
     if len(img.shape) == 3 and img.shape[2] == 3:
         # we have an RGB image
@@ -101,7 +165,7 @@ def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
     # bboxes = np.array(bboxes)
 
     if plot:
-        plt.imshow(rgb(img2))
+        plt.imshow(img2)
         plt.show()
 
     # fill debug container
@@ -876,6 +940,7 @@ class CavityCarrierImageAnalyzier:
         self.bbox_cache = None
 
         if bboxes:
+            self.detrend_upper_row()
             self.make_sorted_bbox_list()
 
     def show(self, ax=None):
@@ -883,6 +948,34 @@ class CavityCarrierImageAnalyzier:
             ax = plt.gca()
 
         ax.imshow(self.img, vmin=0, vmax=255)
+
+    def detrend_upper_row(self):
+        """
+        Identify a linear trend in the upper rown and compensate it.
+
+        Intended to be used for bbox detection only
+        """
+
+        X1 = 20
+        X2 = self.img_lght.shape[1] - 20
+        Y1 = 0
+        Y2 = 150
+
+        img_roi = self.img_lght[Y1:Y2, X1:X2]
+        dc = Container()
+        scaled_img_roi = vertical_detrend(img_roi, y_start=15, y_end=100, dc=dc)
+
+        self.img_lght2 = self.img_lght*1
+        self.img_lght2[Y1:Y2, X1:X2] = scaled_img_roi
+
+        if 0:
+            plt.plot(dc.yy, dc.avg_trend)
+            plt.plot(dc.yy0, dc.estimated_curve)
+
+            plt.figure()
+            plt.imshow(self.img_lght2)
+            plt.show()
+
 
     def make_sorted_bbox_list(self, plot=False):
 
@@ -896,7 +989,7 @@ class CavityCarrierImageAnalyzier:
         self.bbox_cache = []
 
         for thresh in self.THRESHOLDS:
-            self.bbox_list = get_bbox_list(self.img, plot=plot, thresh=thresh)
+            self.bbox_list = get_bbox_list(self.img_lght2, plot=plot, thresh=thresh)
             assign_row_col(self.bbox_list)
             missing_boxes=find_missing_boxes(self.bbox_list)
             c = Container(thresh=thresh, bbox_list=self.bbox_list, missing_boxes=missing_boxes)
@@ -979,6 +1072,9 @@ class CavityCarrierImageAnalyzier:
 
         X, Y, W, H = roi
 
+        # this occurred for some pictures
+        assert Y > 0
+
         img_roi = self.img_lght[Y:Y+H, X:X+W]
 
         # assume that the lightness changes in vertical direction -> detrend
@@ -991,6 +1087,10 @@ class CavityCarrierImageAnalyzier:
         yy0 = np.arange(0, H)
 
         avg_val = np.mean(avg_trend)
+
+
+        # TODO: see detrend_upper_row for a better implementation
+        # TODO: use with vertical_detrend (or remove this code here)
 
         # factor to compensate the linear trend such that the average value results
         factor = 1/poly(yy0) * avg_val
@@ -1157,7 +1257,7 @@ class CavityCarrierImageAnalyzier:
         angle = np.arctan(avg_slope) * 180 / np.pi
         return angle
 
-    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, dc=None):
+    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, dc=None):
         # angle = self.get_bbox_based_angle(hr_row, hr_col)
         cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
@@ -1172,7 +1272,9 @@ class CavityCarrierImageAnalyzier:
 
         if cut_to_bb:
             # after rotation the bounding box might have changed:
-            x, y, w, h = get_bbox_list(new_cell2)[0][:4]
+            bbox_list = get_bbox_list_robust(new_cell2, expected_number=1, plot=plot)
+
+            x, y, w, h = bbox_list[0][:4]
             new_cell2 = new_cell2[y:y+h, x:x+w]
 
         # fill debug container
