@@ -698,7 +698,24 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, dc=None):
     assert isinstance(cell, Attr_Array)
     angle = cell.angle
 
-    data = cell.flatten()
+    # fill debug container
+    if dc:
+        assert isinstance(dc, Container)
+        dc.fetch_locals()
+
+    return get_symlog_hist_from_cell(cell, dc=dc)
+
+
+def get_symlog_hist_from_cell(cell, delta=None, dc=None):
+    """
+    :param delta: offset in pixels which will be ignored at each border
+    """
+
+    if delta is None:
+        data = cell.flatten()
+    else:
+        assert delta > 0
+        data = cell[delta:-delta, delta:-delta].flatten()
 
 
     hist = np.histogram(data, bins=np.arange(256))[0]
@@ -1127,13 +1144,6 @@ class CavityCarrierImageAnalyzier:
 
 
     def handle_missing_box(self, bb_container, row, col):
-        pass
-
-
-
-
-        IPS()
-
         msg = f"For {self.img_fpath}: could not find all bounding boxes"
         raise MissingBoundingBoxes(msg)
 
