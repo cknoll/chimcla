@@ -10,13 +10,14 @@ import asyncio
 import itertools as it
 import random
 import warnings
+import glob
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy import optimize
 from addict import Addict
-
+import dill
 
 
 from skimage.transform import hough_line, hough_line_peaks, rotate
@@ -25,6 +26,8 @@ from skimage.io import imread
 
 from ipydex import IPS, Container
 
+
+vv = {"vmin": 0, "vmax": 255}
 
 def load_img(fpath):
 
@@ -686,7 +689,7 @@ class MissingBoundingBoxes(ValueError):
     pass
 
 
-def get_symlog_hist(img_fpath, hr_row, hr_col, dc=None):
+def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, dc=None):
     """
 
     :param dc:  debug container
@@ -703,7 +706,7 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, dc=None):
         assert isinstance(dc, Container)
         dc.fetch_locals()
 
-    return get_symlog_hist_from_cell(cell, dc=dc)
+    return get_symlog_hist_from_cell(cell, delta=delta, dc=dc)
 
 
 def get_symlog_hist_from_cell(cell, delta=None, dc=None):
@@ -964,7 +967,7 @@ class CavityCarrierImageAnalyzier:
         if ax is None:
             ax = plt.gca()
 
-        ax.imshow(self.img, vmin=0, vmax=255)
+        ax.imshow(self.img, **vv)
 
     def detrend_upper_row(self):
         """
@@ -1337,6 +1340,104 @@ def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=
         dc.fetch_locals()
 
     return j_first, j_last
+
+
+# ####################################################################################
+# histogram evaluation
+# ####################################################################################
+
+class HistEvaluation:
+
+    img_dir = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0"
+    hist_dict_path = "dicts"
+    total_res_fpath = f"{hist_dict_path}/_total_res.dill"
+
+    def __init__(self):
+
+        with open(self.total_res_fpath, "rb") as fp:
+            self.total_res = dill.load(fp)
+            self.hist_dict_list = glob.glob(f"{self.hist_dict_path}/hist_*.dill")
+            self.hist_dict_list.sort()
+
+
+    def get_quantiles(self, tup):
+        q = Container()
+
+        q.lower = self.total_res[tup]["q_lower"]
+        q.mid = self.total_res[tup]["q_mid"]
+        q.upper = self.total_res[tup]["q_upper"]
+        q.ii = np.arange(len(q.lower))
+
+        return q
+
+    @staticmethod
+    def decide_critical(cell_hist, q_lower, q_upper):
+        mask1 = cell_hist < q_lower
+        mask2 = cell_hist > q_upper
+
+        # add upp critical areas
+        # TODO: maybe this should be weighted
+        area1 = np.sum(q_lower[mask1] - cell_hist[mask1])
+        area2 = np.sum(cell_hist[mask2] - q_upper[mask2])
+
+        res = area1 + area2
+        # print(res)
+        return res
+
+
+    def find_critical_images(self):
+        for hist_dict_path in self.hist_dict_list:
+
+            img_fpath = hist_dict_path.replace("dicts/hist_", f"{self.img_dir}/").replace(".dill", ".jpg")
+            path, img_fname = os.path.split(img_fpath)
+
+            # hist_dict_path = img_fpath.replace(f"{img_dir}/", "dicts/hist_").replace(".jpg", ".dill")
+            with open(hist_dict_path, "rb") as fp:
+                hist_dict = dill.load(fp)
+
+            for tup in cell_tups:
+                q = self.get_quantiles(tup)
+                cell_hist = hist_dict[tup][0]
+                critical_area = self.decide_critical(cell_hist, q.lower, q.upper)
+                if 20 < critical_area:
+                    print(img_fpath, tup, critical_area)
+                    try:
+                        self.save_critical_cell(img_fpath, *tup, cell_hist, q, critical_area)
+                    except RuntimeError as err:
+                        print(err)
+                    # return
+
+    def save_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, critical_area):
+        """
+        :param q:  quantile container
+        """
+
+        # img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
+        # corrected_img, angle = correct_angle(img, dc=dc)
+        ccia = CavityCarrierImageAnalyzier(img_fpath)
+
+        # trim border (which was increased before rotation)
+        raw_cell = ccia.get_raw_cell(hr_row, hr_col)
+        corrected_cell = ccia.get_corrected_cell(hr_row, hr_col)
+
+        path, fname = os.path.split(img_fpath)
+        basename, ext = os.path.splitext(fname)
+        new_fpath = f"critical_hist/{basename}_{hr_row}{hr_col}{ext}"
+
+        fig, (ax0, ax1, ax2,) = plt.subplots(1, 3, figsize=(10, 5));
+        plt.sca(ax2)  # set current axis
+
+        plt.plot(q.ii, q.mid)
+        plt.plot(q.ii, q.lower)
+        plt.plot(q.ii, q.upper)
+        plt.plot(q.ii, cell_hist, alpha=0.9, lw=3, ls="--")
+
+        ax1.imshow(corrected_cell, **vv)
+        ax0.imshow(raw_cell, **vv)
+        plt.title(f"{corrected_cell.angle:01.2f}° A={critical_area:04.2f}")
+        plt.savefig(new_fpath)
+        plt.close()
+
 
 
 if __name__ == "__main__":

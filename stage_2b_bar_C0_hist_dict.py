@@ -74,7 +74,7 @@ def process_img(img_fpath):
     for cell_tup in cell_tups:
         # print("".join(cell_tup), end="; ")
         try:
-            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, dc=dc)
+            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, delta=1, dc=dc)
         except Exception as ex:
             hist_cache["bad_cells"][img_fpath].append(cell_tup)
             print(f"{type(ex)}: bad cell {img_fpath.split('/')[-1]}: {cell_tup}")
