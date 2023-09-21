@@ -18,5 +18,5 @@ class TestCases1(unittest.TestCase):
 
     def test03_find_critical(self):
         he = bs.HistEvaluation()
-        he.find_critical_images()
+        he.find_critical_cells()
         pass

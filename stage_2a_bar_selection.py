@@ -1371,22 +1371,56 @@ class HistEvaluation:
         return q
 
     @staticmethod
-    def decide_critical(cell_hist, q_lower, q_upper):
+    def get_criticality_score(cell_hist, q_lower, q_upper, dc=None):
+        """
+        for a given histogram and lower and upper bounds, calculate a score
+        which reflects how critcal a given histogram is
+        """
+        # estimate the index which marks the border between dark side and bright side
+        midpoint = int(np.average((np.argmax(q_lower), np.argmax(q_upper))))
+
+        idcs = np.arange(len(cell_hist))
+        dark_mask = idcs <= midpoint
+        bright_mask = idcs > midpoint
+
         mask1 = cell_hist < q_lower
         mask2 = cell_hist > q_upper
 
-        # add upp critical areas
-        # TODO: maybe this should be weighted
-        area1 = np.sum(q_lower[mask1] - cell_hist[mask1])
-        area2 = np.sum(cell_hist[mask2] - q_upper[mask2])
+        # diff1: our curve is below the lower border
+        diff1_dark = q_lower[mask1*dark_mask] - cell_hist[mask1*dark_mask]
+        diff1_bright = q_lower[mask1*bright_mask] - cell_hist[mask1*bright_mask]
 
-        res = area1 + area2
-        # print(res)
+        # diff2: our curve is above the upper border
+        diff2_dark = cell_hist[mask2*dark_mask] - q_upper[mask2*dark_mask]
+        diff2_bright = cell_hist[mask2*bright_mask] - q_upper[mask2*bright_mask]
+
+        # add up critical areas (deviations on the dark side is not so important )
+
+        dark_discount = 0.5
+        area1 = dark_discount*np.sum(diff1_dark) + np.sum(diff1_bright)
+        area2 = dark_discount*np.sum(diff2_dark) + np.sum(diff2_bright)
+
+        res = Container()
+        res.area_str = f"a1={area1:03.1f}, a2={area2:03.1f}"
+
+
+        # it turned out that diff1 (and thus area1) is not useful
+        res.score = area2
+
+        # fill debug container
+        if dc:
+            assert isinstance(dc, Container)
+            dc.fetch_locals()
+
+            # return
+
         return res
 
-
-    def find_critical_images(self):
+    def find_critical_cells(self):
         for hist_dict_path in self.hist_dict_list:
+            self.find_critical_cells_for_hist_dict(hist_dict_path)
+
+    def find_critical_cells_for_hist_dict(self, hist_dict_path):
 
             img_fpath = hist_dict_path.replace("dicts/hist_", f"{self.img_dir}/").replace(".dill", ".jpg")
             path, img_fname = os.path.split(img_fpath)
@@ -1396,18 +1430,27 @@ class HistEvaluation:
                 hist_dict = dill.load(fp)
 
             for tup in cell_tups:
-                q = self.get_quantiles(tup)
-                cell_hist = hist_dict[tup][0]
-                critical_area = self.decide_critical(cell_hist, q.lower, q.upper)
-                if 20 < critical_area:
-                    print(img_fpath, tup, critical_area)
-                    try:
-                        self.save_critical_cell(img_fpath, *tup, cell_hist, q, critical_area)
-                    except RuntimeError as err:
-                        print(err)
-                    # return
+                self.evaluate_cell(img_fpath, tup, hist_dict)
 
-    def save_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, critical_area):
+    def evaluate_cell(self, img_fpath, tup, hist_dict, dc=None, plot="save", force_plot=False):
+        q = self.get_quantiles(tup)
+        cell_hist = hist_dict[tup][0]
+        criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
+        if 20 < criticality_container.score or force_plot:
+            print(img_fpath, tup, criticality_container.score)
+            try:
+                self.plot_critical_cell(img_fpath, *tup, cell_hist, q, criticality_container, plot=plot)
+            except RuntimeError as err:
+                print(err)
+
+        # fill debug container
+        if dc:
+            assert isinstance(dc, Container)
+            dc.fetch_locals()
+
+            # return
+
+    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, criticality_container, plot="save"):
         """
         :param q:  quantile container
         """
@@ -1434,9 +1477,11 @@ class HistEvaluation:
 
         ax1.imshow(corrected_cell, **vv)
         ax0.imshow(raw_cell, **vv)
-        plt.title(f"{corrected_cell.angle:01.2f}° A={critical_area:04.2f}")
-        plt.savefig(new_fpath)
-        plt.close()
+        ax1.set_title(criticality_container.area_str)
+        plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
+        if plot == "save":
+            plt.savefig(new_fpath)
+            plt.close()
 
 
 
