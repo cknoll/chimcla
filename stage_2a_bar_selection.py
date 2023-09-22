@@ -963,6 +963,11 @@ class CavityCarrierImageAnalyzier:
             self.detrend_upper_row()
             self.make_sorted_bbox_list()
 
+        if aa.available:
+            self.angle_offset = aa.get_angle_offset_for_img(self)
+        else:
+            self.angle_offset = None
+
     def show(self, ax=None):
         if ax is None:
             ax = plt.gca()
@@ -1270,14 +1275,37 @@ class CavityCarrierImageAnalyzier:
         angle = np.arctan(avg_slope) * 180 / np.pi
         return angle
 
-    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, dc=None):
-        # angle = self.get_bbox_based_angle(hr_row, hr_col)
+    def get_angle_from_cell(self, hr_row, hr_col, e=3, f=3, dc=None):
         cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
         # manually determined from artificial images (for 10px vertical cutoff)
         correction = 0.67
         angle = get_angle_from_moments(cell[10:-10, :])*correction
 
+        return angle
+
+    def estimate_angle_for_cell(self, hr_row, hr_col, e=3, f=3, dc=None):
+        """
+        Use angle analyser if possible. Evaluate image otherwise
+        """
+
+        if aa.available:
+            scaling_correction = 0.8  # drastically improves the result
+            # possible reason: compensate for lightness trends
+
+            return self.angle_offset + aa.fitted_angles[(hr_row, hr_col)] * scaling_correction
+        else:
+            return self.get_angle_from_cell(hr_row, hr_col, e=e, f=f, dc=dc)
+
+
+    def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, force_angle=None, dc=None):
+
+        cell = self.get_raw_cell(hr_row, hr_col, e, f)
+
+        if force_angle is None:
+            angle = self.estimate_angle_for_cell(hr_row, hr_col, e=e, f=f, dc=dc)
+        else:
+            angle = force_angle
         new_cell = rotate_img(cell, -angle)
 
         # this operation changed the data type -> convert back to uint
@@ -1293,12 +1321,135 @@ class CavityCarrierImageAnalyzier:
         # fill debug container
         if dc:
             assert isinstance(dc, Container)
+
+            # this is for historical reasons
             dc.fetch_locals()
 
         new_cell3 = Attr_Array(new_cell2)
         new_cell3.angle = angle
 
         return new_cell3
+
+
+class AngleAnalyzer:
+    def __init__(self):
+
+        self.pp_data = Addict()
+        self.polys = Addict()
+        self.avg = Addict()
+        self.ii = np.arange(27)
+        for i, k in enumerate("abc"):
+            self.pp_data[k] = []
+
+        self.hist_dict_list = None
+        self.available = False
+        self.fitted_angles = Addict()
+
+        self.load_data()
+
+    def load_data(self):
+        # this assumes that stage_02b has already been done
+
+        # TODO: extract the relevant data and store in one separate file
+        hist_dict_path = "dicts_stable"
+        self.hist_dict_list = glob.glob(f"{hist_dict_path}/hist_*.dill")
+        self.hist_dict_list.sort()
+
+        if len(self.hist_dict_list) > 0:
+            self.available = True
+
+        self.process_all_dicts()
+        self.fit_curves()
+
+
+    def process_dict(self, hist_dict, alpha=0.5, plot=False):
+        phi = Addict()
+
+        for i, k in enumerate("abc"):
+            phi[k] = []
+            for j in range(27):
+                phi[k].append(hist_dict["angles"][(k, str(j+1))])
+            self.pp_data[k].append(np.array(phi[k]))
+            if plot:
+                plt.plot(phi[k], color=colors[i], alpha=alpha)
+
+    def process_all_dicts(self, alpha=0.5, plot=False):
+
+        for hist_dict_path in self.hist_dict_list:
+            with open(hist_dict_path, "rb") as fp:
+                hist_dict = dill.load(fp)
+                self.process_dict(hist_dict, alpha=alpha, plot=plot)
+
+    def fit_curves(self, plot=False):
+        for i, k in enumerate("abc"):
+            self.avg[k] = np.average(self.pp_data[k], axis=0)
+            coeffs = np.polyfit(self.ii, self.avg[k], 6)
+            poly = np.poly1d(coeffs)
+            self.polys[k] = poly
+            values = poly(self.ii)
+
+            N = 27
+            for i in range(N):
+                self.fitted_angles[(k, str(i + 1))] = values[i]
+
+            if plot:
+                plt.plot(self.avg[k], "--", color=colors[i])
+                plt.plot(self.ii, values, color=colors[i])
+
+    def get_angle_offset_for_img(self, ccia: CavityCarrierImageAnalyzier):
+
+        estimated_angles = []
+        expected_angles = []
+        for key in ["b1", "b9", "b18", "b27"]:
+            tup = key[0], key[1:]
+            angle = ccia.get_angle_from_cell(*tup)
+            estimated_angles.append(angle)
+            expected_angles.append(self.fitted_angles[tup])
+
+        diff = np.array(estimated_angles) - np.array(expected_angles)
+        return np.average(diff)
+
+
+    def get_angle_offset_for_img2(self, img_angles):
+
+        offset_list = []
+
+        for i, k in enumerate("abc"):
+            # iterate over angles for every hist
+            self.diff0_data[k] = []
+            row_angles = img_angles[k]
+            diff = row_angles - self.avg[k]
+            angle_offset = np.average(diff)
+            offset_list.append(angle_offset)
+        return np.average(offset_list)
+
+    # only for development and debugging
+    def check_offset(self):
+        self.diff0_data = Addict()
+        for i, k in enumerate("abc"):
+            # iterate over angles for every hist
+            self.diff0_data[k] = []
+            for angles in self.pp_data[k]:
+                diff = angles - self.avg[k]
+                diff0 = np.average(diff)
+                plt.plot(self.ii, diff - diff0, color=colors[i], alpha=0.1)
+                self.diff0_data[k].append(diff0)
+
+        plt.figure()
+
+        for i, k in enumerate("abc"):
+            plt.plot(self.diff0_data[k], "-o")
+
+        plt.title("show correlation 1")
+
+        plt.figure()
+        plt.plot(self.diff0_data.a, self.diff0_data.b, ".")
+        plt.plot(self.diff0_data.a, self.diff0_data.c, ".")
+        plt.title("show correlation 2")
+
+
+# create a global Analyzer object
+aa = AngleAnalyzer()
 
 
 def get_angle_from_moments(img):
@@ -1432,9 +1583,13 @@ class HistEvaluation:
             for tup in cell_tups:
                 self.evaluate_cell(img_fpath, tup, hist_dict)
 
-    def evaluate_cell(self, img_fpath, tup, hist_dict, dc=None, plot="save", force_plot=False):
+    def evaluate_cell(self, img_fpath, tup, hist_dict, dc=None, plot="save", force_plot=False, recalc_hist=False):
         q = self.get_quantiles(tup)
-        cell_hist = hist_dict[tup][0]
+
+        if recalc_hist:
+            cell_hist = get_symlog_hist(img_fpath, *tup, delta=1, dc=dc)[1]
+        else:
+            cell_hist = hist_dict[tup][0]
         criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
         if 20 < criticality_container.score or force_plot:
             print(img_fpath, tup, criticality_container.score)
@@ -1467,7 +1622,7 @@ class HistEvaluation:
         basename, ext = os.path.splitext(fname)
         new_fpath = f"critical_hist/{basename}_{hr_row}{hr_col}{ext}"
 
-        fig, (ax0, ax1, ax2,) = plt.subplots(1, 3, figsize=(10, 5));
+        fig, (ax0, ax1, ax2,) = plt.subplots(1, 3, figsize=(10, 5))
         plt.sca(ax2)  # set current axis
 
         plt.plot(q.ii, q.mid)
