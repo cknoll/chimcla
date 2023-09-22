@@ -1527,12 +1527,14 @@ class HistEvaluation:
     hist_dict_path = "dicts"
     total_res_fpath = f"{hist_dict_path}/_total_res.dill"
 
-    def __init__(self):
+    def __init__(self, suffix=""):
+
+        self.critical_hist_dir = f"critical_hist{suffix}"
 
         with open(self.total_res_fpath, "rb") as fp:
             self.total_res = dill.load(fp)
-            self.hist_dict_list = glob.glob(f"{self.hist_dict_path}/hist_*.dill")
-            self.hist_dict_list.sort()
+        self.hist_dict_list = glob.glob(f"{self.hist_dict_path}/hist_*.dill")
+        self.hist_dict_list.sort()
 
 
     def get_quantiles(self, tup):
@@ -1593,17 +1595,20 @@ class HistEvaluation:
 
     def find_critical_cells(self):
         for hist_dict_path in self.hist_dict_list:
-            self.find_critical_cells_for_hist_dict(hist_dict_path)
+            self.find_critical_cells_for_hist_dict_path(hist_dict_path)
 
-    def find_critical_cells_for_hist_dict(self, hist_dict_path):
+    def find_critical_cells_for_hist_dict_path(self, hist_dict_path):
 
-            img_fpath = hist_dict_path.replace("dicts/hist_", f"{self.img_dir}/").replace(".dill", ".jpg")
-            path, img_fname = os.path.split(img_fpath)
+        img_fpath = hist_dict_path.replace("dicts/hist_", f"{self.img_dir}/").replace(".dill", ".jpg")
+        path, img_fname = os.path.split(img_fpath)
 
-            # hist_dict_path = img_fpath.replace(f"{img_dir}/", "dicts/hist_").replace(".jpg", ".dill")
-            with open(hist_dict_path, "rb") as fp:
-                hist_dict = dill.load(fp)
+        # hist_dict_path = img_fpath.replace(f"{img_dir}/", "dicts/hist_").replace(".jpg", ".dill")
+        with open(hist_dict_path, "rb") as fp:
+            hist_dict = dill.load(fp)
 
+        self.find_critical_cells_for_hist_dict(hist_dict, img_fpath)
+
+    def find_critical_cells_for_hist_dict(self, hist_dict, img_fpath):
             for tup in cell_tups:
                 self.evaluate_cell(img_fpath, tup, hist_dict)
 
@@ -1644,7 +1649,7 @@ class HistEvaluation:
 
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
-        new_fpath = f"critical_hist/{basename}_{hr_row}{hr_col}{ext}"
+        new_fpath = f"{self.critical_hist_dir}/{basename}_{hr_row}{hr_col}{ext}"
 
         fig, (ax0, ax1, ax2,) = plt.subplots(1, 3, figsize=(10, 5))
         plt.sca(ax2)  # set current axis
@@ -1660,6 +1665,7 @@ class HistEvaluation:
         ax1.set_title(f"{criticality_container.area_str}\n{corrected_cell.shape}")
         plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
         if plot == "save":
+            os.makedirs(self.critical_hist_dir, exist_ok=True)
             plt.savefig(new_fpath)
             plt.close()
 
