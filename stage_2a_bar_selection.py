@@ -27,6 +27,15 @@ from skimage.io import imread
 from ipydex import IPS, Container
 
 
+
+BBOX_EXPECTED_WITH = 26
+BBOX_EXPECTED_HEIGHT = 104
+BBOX_TOL = 6
+
+# this is used to decide wether outlier columns might be removed
+BBOX_MIN_WITH = 23
+
+
 vv = {"vmin": 0, "vmax": 255}
 
 def load_img(fpath):
@@ -141,11 +150,6 @@ def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
     cnts, _ = cv2.findContours(inverted_thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Iterate over the contours and draw bounding rectangles around each one
-
-
-    BBOX_EXPECTED_WITH = 26
-    BBOX_EXPECTED_HEIGHT = 104
-    BBOX_TOL = 6
 
     bbox_list = []
 
@@ -714,7 +718,7 @@ def get_symlog_hist_from_cell(cell, delta=None, dc=None):
     :param delta: offset in pixels which will be ignored at each border
     """
 
-    if delta is None:
+    if delta is None or delta == 0:
         data = cell.flatten()
     else:
         assert delta > 0
@@ -1318,6 +1322,26 @@ class CavityCarrierImageAnalyzier:
             x, y, w, h = bbox_list[0][:4]
             new_cell2 = new_cell2[y:y+h, x:x+w]
 
+            for i in range(1):
+                if new_cell2.shape[1] <=  BBOX_MIN_WITH:
+                    break
+                # we cut off a border column if it deviates too buch from the rest (inner area)
+                delta = 1
+                avg = np.average(new_cell2[delta:-delta, delta:-delta])
+                std = np.std(new_cell2)
+                avg_left = np.average(new_cell2[:, 0])
+                avg_right = np.average(new_cell2[:, -1])
+
+                # print(f"{avg=} {std=} {avg_left=} {avg_right=}")
+                if np.abs(avg_left - avg) > 2*std:
+                    # cut off left column
+                    new_cell2 = new_cell2[:, 1:]
+                elif np.abs(avg_right - avg) > 2*std:
+                    # cut off right column
+                    new_cell2 = new_cell2[:, :-1]
+                else:
+                    break
+
         # fill debug container
         if dc:
             assert isinstance(dc, Container)
@@ -1630,9 +1654,10 @@ class HistEvaluation:
         plt.plot(q.ii, q.upper)
         plt.plot(q.ii, cell_hist, alpha=0.9, lw=3, ls="--")
 
-        ax1.imshow(corrected_cell, **vv)
         ax0.imshow(raw_cell, **vv)
-        ax1.set_title(criticality_container.area_str)
+        ax0.set_title(str(raw_cell.shape))
+        ax1.imshow(corrected_cell, **vv)
+        ax1.set_title(f"{criticality_container.area_str}\n{corrected_cell.shape}")
         plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
         if plot == "save":
             plt.savefig(new_fpath)

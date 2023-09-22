@@ -124,10 +124,6 @@ def aio_main():
     aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
 
 
-    from ipydex import IPS
-    IPS()
-
-
 def main():
 
     if args.img:
