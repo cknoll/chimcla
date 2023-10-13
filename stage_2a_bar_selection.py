@@ -1562,6 +1562,9 @@ class HistEvaluation:
     hist_dict_path = "dicts"
     total_res_fpath = f"{hist_dict_path}/_total_res.dill"
 
+    # limit for which criticality score (cs) a histogram is considered an anomaly
+    CS_LIMIT = 20
+
     def __init__(self, suffix=""):
 
         self.critical_hist_dir = f"critical_hist{suffix}"
@@ -1660,7 +1663,7 @@ class HistEvaluation:
         else:
             cell_hist = hist_dict[tup][0]
         criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
-        if 20 < criticality_container.score or force_plot:
+        if self.CS_LIMIT < criticality_container.score or force_plot:
             print(img_fpath, tup, criticality_container.score)
             try:
                 self.plot_critical_cell(img_fpath, *tup, cell_hist, q, criticality_container, plot=plot)
@@ -1674,30 +1677,60 @@ class HistEvaluation:
 
             # return
 
-    def false_positive_correction(self, critical_hist_dir, false_positive_dir):
+    def false_positive_correction(self, false_positive_dir):
         """
         This iterates over false positives and adapts the affected historgrams such that they are not
         recognized as annomaly anymore.
         """
-        pass
 
-    def fp_correct_for_cell(self, fpath):
+        false_positive_fpath_list = glob.glob(f"{false_positive_dir}/*.jpg")
+        false_positive_fpath_list.sort()
+
+        for cell_pict_fpath in false_positive_fpath_list:
+            self.fp_correct_for_cell(cell_pict_fpath)
+
+        N = len(false_positive_fpath_list)
+        import time
+        time_str = time.strftime("%Y-%m-%d %H:%M:%S")
+        msg = f"{time_str}: False Positive correction for {N} histograms"
+
+        meta_key = "__meta"
+        if meta_key not in self.total_res_adapted:
+            self.total_res_adapted[meta_key] = [msg]
+        else:
+            self.total_res_adapted[meta_key].append(msg)
+
+        time_str2 = time.strftime("%Y-%m-%d__%H-%M-%S")
+        backup_fpath = self.total_res_fpath.replace(".dill", f"_backup_{time_str2}.dill")
+        os.rename(self.total_res_fpath, backup_fpath)
+        print(f"Backup written: {backup_fpath}")
+
+        with open(self.total_res_fpath, "wb") as fp:
+            dill.dump(self.total_res_adapted, fp)
+
+        print(f"File written: {self.total_res_fpath}")
+
+
+
+
+
+
+    def fp_correct_for_cell(self, cell_pict_fpath):
         # cell_pict_fpath
 
-        cell_key = get_cell_key_from_fpath(fpath)
-        cell_hist = get_hist_for_cell_pict(fpath)
+        cell_key = get_cell_key_from_fpath(cell_pict_fpath)
+        cell_hist = get_hist_for_cell_pict(cell_pict_fpath)
 
         dc = None
 
         q = self.get_quantiles(cell_key)
         criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
 
-        LIMIT = 20
         WEIGHT = 100
         TRIES = 2*WEIGHT
 
         # assume a2 (related to upper bound!) is the critical part
-        assert criticality_container.a2 > LIMIT
+        assert criticality_container.a2 > self.CS_LIMIT
 
         joined = np.where(cell_hist > q.upper, cell_hist, q.upper)
         q.new_upper = q.upper*1  # copy array
@@ -1706,7 +1739,7 @@ class HistEvaluation:
             cc2 = self.get_criticality_score(cell_hist, q.lower, q.new_upper, dc=dc)
             # print(f"{cc2.score=}")
 
-            if cc2.score < LIMIT:
+            if cc2.score < self.CS_LIMIT:
                 break
         else:
             msg = f"False Positive Adaption: Could not adapt curve within {TRIES} tries."
