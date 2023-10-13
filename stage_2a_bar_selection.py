@@ -9,6 +9,7 @@ import asyncio
 import copy
 import collections
 import re
+import json
 
 import itertools as it
 import random
@@ -1581,6 +1582,23 @@ class HistEvaluation:
         # this is uses for false positive correction
         self.total_res_adapted = copy.deepcopy(self.total_res)
 
+    def save_eval_res(self, img_fpath, crit_cell_list):
+        os.makedirs(self.critical_hist_dir, exist_ok=True)
+        fname = os.path.split(img_fpath)[1]
+
+        # crit_cell_keys = ["".join(tup) for tup in crit_cell_list]
+        # crit_cell_str = ", ".join(crit_cell_keys)
+
+        BAD_IMGS = os.path.join(self.critical_hist_dir, "_bad_imgs.txt")
+        GOOD_IMGS = os.path.join(self.critical_hist_dir, "_good_imgs.txt")
+
+        if crit_cell_list:
+            with open(BAD_IMGS, "a") as fp:
+                json.dump({fname: crit_cell_list}, fp)
+                fp.write("\n")
+        else:
+            with open(GOOD_IMGS, "a") as fp:
+                fp.write(f"{fname}\n")
 
     def get_quantiles(self, tup):
         q = Container()
@@ -1656,11 +1674,21 @@ class HistEvaluation:
         self.find_critical_cells_for_hist_dict(hist_dict, img_fpath)
 
     def find_critical_cells_for_hist_dict(self, hist_dict, img_fpath):
-            for tup in cell_tups:
-                self.evaluate_cell(img_fpath, tup, hist_dict)
+            crit_cell_list = []
+            for cell_key in cell_tups:
+                res = self.evaluate_cell(img_fpath, cell_key, hist_dict)
+                if res:
+                    crit_cell_list.append(cell_key)
+            return crit_cell_list
+
 
     def evaluate_cell(self, img_fpath, tup, hist_dict, dc=None, plot="save", force_plot=False, recalc_hist=False):
+        """
+        returns 0 for an uncritical cell, 1 for a critical cell
+        Also saves an evaluation plot for every critical cell
+        """
         q = self.get_quantiles(tup)
+        res = 0
 
         if recalc_hist:
             cell_hist = get_symlog_hist(img_fpath, *tup, delta=1, dc=dc)[1]
@@ -1668,6 +1696,7 @@ class HistEvaluation:
             cell_hist = hist_dict[tup][0]
         criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
         if self.CS_LIMIT < criticality_container.score or force_plot:
+            res = 1
             print(img_fpath, tup, criticality_container.score)
             try:
                 self.plot_critical_cell(img_fpath, *tup, cell_hist, q, criticality_container, plot=plot)
@@ -1679,7 +1708,7 @@ class HistEvaluation:
             assert isinstance(dc, Container)
             dc.fetch_locals()
 
-            # return
+        return res
 
     def false_positive_correction(self, false_positive_dir):
         """

@@ -89,7 +89,8 @@ def process_img(img_fpath):
 
     # TODO: replace hardcoded suffix
     he = bs.HistEvaluation(suffix="_chunk002")
-    he.find_critical_cells_for_hist_dict(hist_cache, img_fpath)
+    crit_cell_list = he.find_critical_cells_for_hist_dict(hist_cache, img_fpath)
+    he.save_eval_res(img_fpath, crit_cell_list)
 
 def get_img_list(img_dir):
 
@@ -121,7 +122,7 @@ def run_this_script(img_path):
 
 def aio_main():
 
-    img_path_list = get_img_list(args.img_dir)[:100]
+    img_path_list = get_img_list(args.img_dir)[:50]
     aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
 
 
