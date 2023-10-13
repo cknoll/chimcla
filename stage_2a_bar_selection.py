@@ -17,6 +17,7 @@ import glob
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 from scipy import optimize
 from addict import Addict
@@ -1174,10 +1175,13 @@ class CavityCarrierImageAnalyzier:
 
         return bbox
 
-    def get_raw_cell(self, hr_row, hr_col, e=0, f=0, plot=False):
+    def get_raw_cell(self, hr_row, hr_col, e=0, f=0, rgb=False, plot=False):
         bbox = self.get_bbox_for_cell(hr_row, hr_col)
         x, y, w, h = bbox[:4]
         part_img = self.img[y-e:y+h+e, x-f:x+w+f, :]
+
+        if rgb:
+            return part_img
 
         # convert to Lightness A, B and then split to get lightness
         L, _, _ = cv2.split(cv2.cvtColor(part_img, cv2.COLOR_BGR2LAB))
@@ -1759,25 +1763,66 @@ class HistEvaluation:
         ccia = CavityCarrierImageAnalyzier(img_fpath)
 
         # trim border (which was increased before rotation)
-        raw_cell = ccia.get_raw_cell(hr_row, hr_col)
+
+        cell_key =  (hr_row, hr_col)
+        cell_mono = ccia.get_raw_cell(*cell_key)
         corrected_cell = ccia.get_corrected_cell(hr_row, hr_col)
 
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
         new_fpath = f"{self.critical_hist_dir}/{basename}_{hr_row}{hr_col}{ext}"
 
-        fig, (ax0, ax1, ax2,) = plt.subplots(1, 3, figsize=(10, 5))
-        plt.sca(ax2)  # set current axis
+        fig = plt.figure(figsize=(9, 10))
+        gs = GridSpec(2, 5, figure=fig)
+        ax0 = fig.add_subplot(gs[0, :])
+
+        x, y, w, h = ccia.get_bbox_for_cell(*cell_key)[:4]
+        new_img = ccia.img.copy()
+        dx = dy = 3
+        lw = 2  # linewidth
+        cv2.rectangle(new_img,(x - dx - 1, y - dy - 1),(x + w + dx,y + h + dy),(255, 0, 50), lw)
+        ax0.imshow(new_img)
+        ax0.axis("off")
+
+        cell_rgb = ccia.get_raw_cell(*cell_key, rgb=True)
+
+        ax1 = fig.add_subplot(gs[1, 0])
+        ax1.imshow(cell_rgb)
+        ax1.axis("off")
+
+        ax2 = fig.add_subplot(gs[1, 1])
+        ax2.imshow(cell_mono, **vv)
+        ax2.axis("off")
+        ax2.set_title(str(cell_mono.shape))
+
+        corrected_cell = ccia.get_corrected_cell(*cell_key)
+
+        ax3 = fig.add_subplot(gs[1, 2])
+        ax3.imshow(corrected_cell, **vv)
+        ax3.axis("off")
+        ax3.set_title(f"{corrected_cell.shape}")
+
+        ax4 = fig.add_subplot(gs[1, 3:])
+        plt.sca(ax4)  # set current axis
 
         plt.plot(q.ii, q.mid)
         plt.plot(q.ii, q.lower)
         plt.plot(q.ii, q.upper)
         plt.plot(q.ii, cell_hist, alpha=0.9, lw=3, ls="--")
+        x_offset = 120
+        y_offset = 8
+        plt.text(x_offset, y_offset, f"{criticality_container.area_str}")
 
-        ax0.imshow(raw_cell, **vv)
-        ax0.set_title(str(raw_cell.shape))
-        ax1.imshow(corrected_cell, **vv)
-        ax1.set_title(f"{criticality_container.area_str}\n{corrected_cell.shape}")
+        plt.subplots_adjust(
+            left=0.01,
+            bottom=0.03,
+            right=0.99,
+            top=0.999,
+            wspace=0,
+            hspace=0.05
+        )
+
+
         plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
         if plot == "save":
             os.makedirs(self.critical_hist_dir, exist_ok=True)
