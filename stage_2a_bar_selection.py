@@ -6,6 +6,9 @@ import cv2
 import argparse
 import itertools as it
 import asyncio
+import copy
+import collections
+import re
 
 import itertools as it
 import random
@@ -1517,9 +1520,41 @@ def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=
     return j_first, j_last
 
 
+pfname = collections.namedtuple(typename="pfname", field_names="dir date time klass cell ext".split())
+def analyze_img_fpath(fpath):
+
+    path, fname = os.path.split(fpath)
+    assert "#" not in fname
+    fname2 = fname.replace("_", "#") # because # is contained in \w
+    regex = re.compile("^([\d-]*?)#([\d-]*?)#(\w+)#??(\w*?)\.(.*?)$")
+    re_res = regex.match(fname2)
+    return pfname(path, *re_res.groups())
+
+
+def get_cell_key_from_fpath(fpath):
+    pfn = analyze_img_fpath(fpath)
+
+    cell_key = (pfn.cell[0], pfn.cell[1:])
+    return cell_key
+
+
 # ####################################################################################
 # histogram evaluation
 # ####################################################################################
+
+
+
+def get_hist_for_cell_pict(fpath):
+    pfn = analyze_img_fpath(fpath)
+
+    the_dict_path = f"{HistEvaluation.hist_dict_path}/hist_{pfn.date}_{pfn.time}_{pfn.klass}.dill"
+
+    with open(the_dict_path, "rb") as fp:
+        hist_dict = dill.load(fp)
+
+    cell_key = (pfn.cell[0], pfn.cell[1:])
+    return hist_dict[cell_key][0]
+
 
 class HistEvaluation:
 
@@ -1535,6 +1570,9 @@ class HistEvaluation:
             self.total_res = dill.load(fp)
         self.hist_dict_list = glob.glob(f"{self.hist_dict_path}/hist_*.dill")
         self.hist_dict_list.sort()
+
+        # this is uses for false positive correction
+        self.total_res_adapted = copy.deepcopy(self.total_res)
 
 
     def get_quantiles(self, tup):
@@ -1579,6 +1617,8 @@ class HistEvaluation:
 
         res = Container()
         res.area_str = f"a1={area1:03.1f}, a2={area2:03.1f}"
+        res.a1 = area1
+        res.a2 = area2
 
 
         # it turned out that diff1 (and thus area1) is not useful
@@ -1633,6 +1673,48 @@ class HistEvaluation:
             dc.fetch_locals()
 
             # return
+
+    def false_positive_correction(self, critical_hist_dir, false_positive_dir):
+        """
+        This iterates over false positives and adapts the affected historgrams such that they are not
+        recognized as annomaly anymore.
+        """
+        pass
+
+    def fp_correct_for_cell(self, fpath):
+        # cell_pict_fpath
+
+        cell_key = get_cell_key_from_fpath(fpath)
+        cell_hist = get_hist_for_cell_pict(fpath)
+
+        dc = None
+
+        q = self.get_quantiles(cell_key)
+        criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
+
+        LIMIT = 20
+        WEIGHT = 100
+        TRIES = 2*WEIGHT
+
+        # assume a2 (related to upper bound!) is the critical part
+        assert criticality_container.a2 > LIMIT
+
+        joined = np.where(cell_hist > q.upper, cell_hist, q.upper)
+        q.new_upper = q.upper*1  # copy array
+        for i in range(TRIES):
+            q.new_upper = (q.new_upper*WEIGHT + joined)/(WEIGHT + 1)
+            cc2 = self.get_criticality_score(cell_hist, q.lower, q.new_upper, dc=dc)
+            # print(f"{cc2.score=}")
+
+            if cc2.score < LIMIT:
+                break
+        else:
+            msg = f"False Positive Adaption: Could not adapt curve within {TRIES} tries."
+            raise ValueError(msg)
+
+        self.total_res_adapted[cell_key]["q_upper"] = q.new_upper
+
+
 
     def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, criticality_container, plot="save"):
         """
