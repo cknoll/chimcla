@@ -5,6 +5,7 @@ import glob
 import itertools as it
 import collections
 import argparse
+from colorama import Fore, Style
 
 import dill
 
@@ -32,6 +33,9 @@ import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
+
+
+ERROR_CMDS = []
 
 
 parser = argparse.ArgumentParser(
@@ -63,6 +67,13 @@ parser.add_argument(
     "--no-parallel",
     help="sequential mode (no parallelization)",
     action="store_true",
+)
+
+parser.add_argument(
+    "--limit",
+    help="limit the number of files",
+    default=None,
+    type=int,
 )
 
 args = parser.parse_args()
@@ -133,19 +144,29 @@ def get_img_list(img_dir):
 def run_this_script(img_path):
     cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {args.suffix}"
     print(cmd)
-    os.system(cmd)
+    res = os.system(cmd)
+
+    if res != 0:
+        ERROR_CMDS.append(cmd)
+
 
 
 def aio_main():
 
-    arg_list = get_img_list(args.img_dir)
+    arg_list = get_img_list(args.img_dir)[:args.limit]
     func = run_this_script
     if args.no_parallel:
         for arg in arg_list:
             func(arg)
     else:
-
         aiot.run(aiot.main(func=func, arg_list=arg_list))
+
+    if ERROR_CMDS:
+        print(
+            f"\n{Fore.RED}There where errors with the following commands:\n\n",
+            Style.RESET_ALL,
+            "\n".join(ERROR_CMDS),
+        )
 
 
 def main():

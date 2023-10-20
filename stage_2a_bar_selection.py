@@ -1693,6 +1693,11 @@ class HistEvaluation:
         returns 0 for an uncritical cell, 1 for a critical cell
         Also saves an evaluation plot for every critical cell
         """
+
+        # test error handling
+        # if "2023-06-26_23-23-21_C0" in img_fpath:
+        #     raise NotImplementedError
+
         q = self.get_quantiles(tup)
         res = 0
 
