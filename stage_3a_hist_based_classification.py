@@ -59,12 +59,18 @@ parser.add_argument(
     default="_chunk_test",
 )
 
+parser.add_argument(
+    "--no-parallel",
+    help="sequential mode (no parallelization)",
+    action="store_true",
+)
+
 args = parser.parse_args()
 
 
 
-END = None
-cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:END]
+CELL_KEY_END = None
+cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:CELL_KEY_END]
 
 
 dict_dir = "dicts"
@@ -84,8 +90,6 @@ def process_img(img_fpath):
     dc = Container()
 
     for cell_key in cell_keys:
-        if cell_key in exclude_cell_keys:
-            continue
         try:
             hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_key, delta=1, dc=dc)
         except Exception as ex:
@@ -98,9 +102,10 @@ def process_img(img_fpath):
 
     # now we have a histogram for every cell of the image
 
-    # TODO: replace hardcoded suffix
-    he = bs.HistEvaluation(suffix="_chunk002")
-    crit_cell_list = he.find_critical_cells_for_hist_dict(hist_cache, img_fpath)
+    he = bs.HistEvaluation(suffix=args.suffix)
+    crit_cell_list = he.find_critical_cells_for_hist_dict(
+        hist_cache, img_fpath, exclude_cell_keys=exclude_cell_keys
+    )
     he.save_eval_res(img_fpath, crit_cell_list)
 
 def get_img_list(img_dir):
@@ -126,15 +131,21 @@ def get_img_list(img_dir):
 
 @aiot.background
 def run_this_script(img_path):
-    cmd = f"{sys.executable} {__file__} --img {img_path}"
-    # print(cmd)
+    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {args.suffix}"
+    print(cmd)
     os.system(cmd)
 
 
 def aio_main():
 
-    img_path_list = get_img_list(args.img_dir)[:50]
-    aiot.run(aiot.main(func=run_this_script, arg_list=img_path_list))
+    arg_list = get_img_list(args.img_dir)
+    func = run_this_script
+    if args.no_parallel:
+        for arg in arg_list:
+            func(arg)
+    else:
+
+        aiot.run(aiot.main(func=func, arg_list=arg_list))
 
 
 def main():

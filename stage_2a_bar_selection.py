@@ -29,7 +29,9 @@ from skimage.transform import hough_line, hough_line_peaks, rotate
 from skimage.feature import canny
 from skimage.io import imread
 
-from ipydex import IPS, Container
+from ipydex import IPS, Container, activate_ips_on_exception
+
+# activate_ips_on_exception()
 
 
 
@@ -1673,9 +1675,13 @@ class HistEvaluation:
 
         self.find_critical_cells_for_hist_dict(hist_dict, img_fpath)
 
-    def find_critical_cells_for_hist_dict(self, hist_dict, img_fpath):
+    def find_critical_cells_for_hist_dict(self, hist_dict, img_fpath, exclude_cell_keys=None):
+            if exclude_cell_keys is None:
+                exclude_cell_keys = []
             crit_cell_list = []
             for cell_key in cell_tups:
+                if cell_key in exclude_cell_keys:
+                    continue
                 res = self.evaluate_cell(img_fpath, cell_key, hist_dict)
                 if res:
                     crit_cell_list.append(cell_key)
@@ -1872,7 +1878,10 @@ class HistEvaluation:
 
         dst_dir = os.path.join(basepath, new_dir)
         os.makedirs(dst_dir, exist_ok=True)
-        os.symlink(existing_fpath, os.path.join(dst_dir, fname))
+        try:
+            os.symlink(os.path.join("..", fname), os.path.join(dst_dir, fname))
+        except FileExistsError:
+            pass
 
 
 if __name__ == "__main__":
