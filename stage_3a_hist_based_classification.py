@@ -30,11 +30,14 @@ import stage_2a_bar_selection as bs
 
 import asyncio_tools as aiot
 
+
+exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
+
+
 parser = argparse.ArgumentParser(
     prog='stage_2b_bar_C0_hist_dict',
     description='This program creates histogram dicts of one or more files',
 )
-
 
 
 parser.add_argument(
@@ -49,12 +52,19 @@ parser.add_argument(
     default=None,
 )
 
+parser.add_argument(
+    "--suffix",
+    "-s",
+    help="specify suffix for output folder",
+    default="_chunk_test",
+)
+
 args = parser.parse_args()
 
 
 
 END = None
-cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:END]
+cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:END]
 
 
 dict_dir = "dicts"
@@ -73,17 +83,18 @@ def process_img(img_fpath):
     # without changing the interface
     dc = Container()
 
-    for cell_tup in cell_tups:
-        # print("".join(cell_tup), end="; ")
+    for cell_key in cell_keys:
+        if cell_key in exclude_cell_keys:
+            continue
         try:
-            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_tup, delta=1, dc=dc)
+            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_key, delta=1, dc=dc)
         except Exception as ex:
-            hist_cache["bad_cells"][img_fpath].append(cell_tup)
-            print(f"{type(ex)}: bad cell {img_fpath.split('/')[-1]}: {cell_tup}")
+            hist_cache["bad_cells"][img_fpath].append(cell_key)
+            print(f"{type(ex)}: bad cell {img_fpath.split('/')[-1]}: {cell_key}")
             hist_smooth = None
             dc.angle = None
-        hist_cache[cell_tup].append(hist_smooth)
-        hist_cache["angles"][cell_tup] = dc.angle
+        hist_cache[cell_key].append(hist_smooth)
+        hist_cache["angles"][cell_key] = dc.angle
 
     # now we have a histogram for every cell of the image
 

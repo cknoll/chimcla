@@ -1857,7 +1857,22 @@ class HistEvaluation:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
             plt.savefig(new_fpath)
             plt.close()
+            self.create_symlink(new_fpath, criticality_container.score)
 
+    def create_symlink(self, existing_fpath, crit_score):
+
+        basepath, fname = os.path.split(existing_fpath)
+
+        limits = (25, 35, 60, 100, 200, float("inf"))
+
+        for limit in limits:
+            if crit_score < limit:
+                new_dir = f"up_to_{limit:03.0f}"
+                break
+
+        dst_dir = os.path.join(basepath, new_dir)
+        os.makedirs(dst_dir, exist_ok=True)
+        os.symlink(existing_fpath, os.path.join(dst_dir, fname))
 
 
 if __name__ == "__main__":
