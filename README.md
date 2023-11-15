@@ -1,0 +1,233 @@
+# Aktuelles Vorgehen:
+
+
+## Stage 1:
+
+- 20 MB png → 0.2 MB jpg
+    - `py3 stage_0f_resize_and_jpg.py /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31`
+    - alt: `mogrify -monitor -format jpg -resize 1000 -path ../bilder_jpg2 *.png`
+- Bilder ohne Formen erkennen
+    - `py3 stage_1a_empty_slot_detection.py /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2`
+- Bilder croppen
+    - `py3 stage_1b_cropping.py /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2`
+- Chunks erstellen
+    - `py3 stage_1b2_chunk_splitter.py /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2/cropped`
+- Bilder aufhellen
+    - `py3 stage_1c_shading_correction.py /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2/cropped/chunk001 &`
+    - ca 20s für 1000 Bilder
+- grobe Klassifikation manuell -> csv
+    - image_classification/PyQt-image-annotation-tool/main.py
+- csv -> Verzeichnisse
+    - `py3 stage1f_evaluate_csv__copy_to_dir.py cropped/chunk0XYZ_shading_corrected/output/assigned_classes.csv`
+
+
+## Stage 2 (wip):
+
+- für jedes Bild: für jedes Stäbchen ein Histogramm:
+    - `py3 stage_2b_bar_C0_hist_dict.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0`
+    - Aus Zeitgründen erstmal nur 25 Bilder
+- Für jede Stäbchenposition: Histogramme aggregieren:
+    - http://localhost:8888/notebooks/XAI-DIA/image_classification/stage2/b_03_histogram-evaluation.ipynb -> "_total_res.dill"
+- Ausreißer finden
+    - http://localhost:8888/notebooks/XAI-DIA/image_classification/stage2/b_04_find_annomalies.ipynb
+    - bzw.: `py3 stage_2c_hist_based_anomaly_detection.py`
+- Dort manuell die falsch positiven in separates Verzeichnis sortieren
+- Histogramme (minimalinvasiv) so korrigieren, dass falsch positive akzeptiert werden
+    - http://localhost:8888/notebooks/XAI-DIA/image_classification/stage2/b_05_adapt_histograms.ipynb
+    - → "_total_res.dill" wird angepasst
+    
+    
+## Stage 3
+
+- Klassifikation komplettes VZ:
+    - `py3 stage_3a_hist_based_classification.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk003_shading_corrected/ --suffix _chunk003_complete`
+- Flächen-basierte Klassifikation (wip):
+    - `py3 stage_3b_hist_area_based_classification.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_shading_corrected/2023-06-26_06-47-13_C50.jpg`
+
+
+---
+
+# geplantes weiteres Vorgehen
+
+- falsch positive handhaben -> Histogramme anpassen
+- `dicts/_total_res.dill`
+
+
+- Riegel separieren -> statistische Verfahren zum Labeling verwenden
+
+
+-> Ziel 02.10.: 1000 Bilder vorsortieren
+
+
+- feinere Klassifikation
+- 1. Testtraining
+
+
+
+
+# Datensparstrategie:
+
+Stand:
+
+at 15:53:27 ❯ dirsizes 
+sizes of directories in megabytes
+0       2023-05-26
+1       bilder_jpg0
+1       Doku fuer Peine
+1       log-07-43.txt
+1       README.md
+1       SECAI_Tetzlaff_Montúfar.docx
+1       Statistik.jpeg
+1       tmp123
+2       bilder_jpg_speziell
+9       png_files.txt
+12      Plots.pptx
+22      tmp1
+43      tmp2
+52      bilder_png-to-jpg-experiments
+56      0_besprechungen
+75      0_lndw
+91      bilder_jpg2a_demo
+103     tmp_shared
+147     2023-07-17
+173     2023-03-16
+232     logs
+343     PC_backup
+345     bilder_jpg3
+631     2023-07-18
+2821    bilder_jpg
+3794    Bilder aus Peine
+6579    bilder_jpg2a
+6804    bilder_jpg2
+55130   bilder_roh_aus_peine_ab_2023-08-29
+81928   bilder_roh_aus_peine_ab_2023-09-27
+107669  bilder_roh_aus_peine_ab_2023-05-25
+118571  bilder_roh_backup
+135752  bilder_roh_aus_peine_ab_2023-10-18
+204081  bilder_roh_aus_peine_ab_2023-09-04
+215061  2023-05-26_Bilder_aus_Peine
+247165  bilder_roh_aus_peine_ab_2023-06-05
+248164  tmp
+298757  bilder_roh_aus_peine_ab_2023-08-30
+343305  bilder_roh_aus_peine_ab_2023-06-26
+420883  bilder_roh_aus_peine_ab_2023-09-18
+439428  bilder_roh_aus_peine_ab_2023-08-30_ab16Uhr
+461743  bilder_roh_aus_peine_ab_2023-07-31
+3399955 insgesamt
+
+
+
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Probleme:
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-30-10_C50.jpg a 2
+
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-27_C50.jpg b 12
+
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 11
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 15
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-50-10_C50.jpg b 17
+
+
+---
+
+
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-22-47_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-23-41_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-28-54_C50.jpg b 11
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-28-54_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-28-54_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-29-54_C50.jpg b 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-32-14_C50.jpg c 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-32-34_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-34-48_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg a 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 9
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 15
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 18
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-35-17_C50.jpg c 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-37-18_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-48_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 15
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 18
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-39-53_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-40-43_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg a 11
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg a 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg a 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 9
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 10
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 11
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 15
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 18
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-43_C50.jpg c 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-50_C50.jpg b 10
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-50_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-50_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-50_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-41-50_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 18
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-01_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-44-25_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-13_C50.jpg c 8
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg a 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 11
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 12
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 13
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 14
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 15
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 16
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 17
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 18
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-47-55_C50.jpg b 19
+py3 stage_2a_bar_selection.py /home/ck/iee-ge/XAI-DIA/image_classification/stage2/single_bars/raw/2023-06-26_06-49-55_C50.jpg c 14
+
+
+
+
+
+
+
+ 1   2   3   4  5   6   7   8   9  10  11  12  13  14  15  16 17  18  19  20  21  22 23  24  25  26  27

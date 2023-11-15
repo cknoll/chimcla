@@ -700,7 +700,7 @@ class MissingBoundingBoxes(ValueError):
     pass
 
 
-def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, dc=None):
+def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, return_cell=False, dc=None):
     """
 
     :param dc:  debug container
@@ -712,12 +712,18 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, dc=None):
     assert isinstance(cell, Attr_Array)
     angle = cell.angle
 
+    hist = get_symlog_hist_from_cell(cell, delta=delta, dc=dc)
+
     # fill debug container
     if dc:
         assert isinstance(dc, Container)
         dc.fetch_locals()
 
-    return get_symlog_hist_from_cell(cell, delta=delta, dc=dc)
+    if return_cell:
+        return hist, cell
+    else:
+        # this is only for compatibility with old code
+        return hist
 
 
 def get_symlog_hist_from_cell(cell, delta=None, dc=None):
@@ -1572,17 +1578,25 @@ class HistEvaluation:
     # limit for which criticality score (cs) a histogram is considered an anomaly
     CS_LIMIT = 20
 
-    def __init__(self, suffix=""):
+    def __init__(self, suffix="", ev_crit_pix=False):
+        """
+        :param ev_crit_pix:     bool, default False; evaluate critical pixels
+                                if true additional information about the critical pixels is collected and stored
+        """
 
         self.critical_hist_dir = f"critical_hist{suffix}"
+        self.ev_crit_pix = ev_crit_pix
 
         with open(self.total_res_fpath, "rb") as fp:
             self.total_res = dill.load(fp)
         self.hist_dict_list = glob.glob(f"{self.hist_dict_path}/hist_*.dill")
         self.hist_dict_list.sort()
 
-        # this is uses for false positive correction
+        # this is used for false positive correction
         self.total_res_adapted = copy.deepcopy(self.total_res)
+
+        # helpful for debugging
+        self.current_cell_key = None
 
     def save_eval_res(self, img_fpath, crit_cell_list):
         os.makedirs(self.critical_hist_dir, exist_ok=True)
@@ -1612,8 +1626,7 @@ class HistEvaluation:
 
         return q
 
-    @staticmethod
-    def get_criticality_score(cell_hist, q_lower, q_upper, dc=None):
+    def get_criticality_score(self, cell_hist, cell, q_lower, q_upper, ev_crit_pix=None, dc=None):
         """
         for a given histogram and lower and upper bounds, calculate a score
         which reflects how critcal a given histogram is
@@ -1647,18 +1660,49 @@ class HistEvaluation:
         res.a1 = area1
         res.a2 = area2
 
-
         # it turned out that diff1 (and thus area1) is not useful
         res.score = area2
+
+        if ev_crit_pix or (ev_crit_pix is None and self.ev_crit_pix):
+            tmp_res = self.get_critical_pixel_info(cell_hist, cell, q_upper, dc=dc)
+
+            ## add all pixel-results
+            res.__dict__.update(tmp_res.item_list())
 
         # fill debug container
         if dc:
             assert isinstance(dc, Container)
             dc.fetch_locals()
 
-            # return
+        return res
+
+    def get_critical_pixel_info(self, cell_hist, cell, q_upper, dc=None):
+        """
+
+        """
+        assert isinstance(cell, np.ndarray)
+        res = Container()
+
+        # find lowest lightness value (index of q_upper) for which q_upper is zero and stays zero until the end
+        res.crit_lightness = np.diff((q_upper==0)).nonzero()[0][-1] + 1
+
+        res.crit_pix_vals = cell[cell > res.crit_lightness].flatten()
+
+        # number of critical pixels -> area
+        res.crit_pix_nbr = res.crit_pix_vals.shape[0]
+
+        if res.crit_pix_nbr:
+            res.crit_pix_mean = np.mean(res.crit_pix_vals)
+            res.crit_pix_median = np.median(res.crit_pix_vals)
+            res.crit_pix_q95 = np.quantile(res.crit_pix_vals, 0.95)
+
+        if dc:
+            assert isinstance(dc, Container)
+            dc.fetch_locals()
 
         return res
+
+
 
     def find_critical_cells(self):
         for hist_dict_path in self.hist_dict_list:
@@ -1688,7 +1732,7 @@ class HistEvaluation:
             return crit_cell_list
 
 
-    def evaluate_cell(self, img_fpath, tup, hist_dict, dc=None, plot="save", force_plot=False, recalc_hist=False):
+    def evaluate_cell(self, img_fpath, cell_key, hist_dict, dc=None, plot="save", force_plot=False, recalc_hist=False):
         """
         returns 0 for an uncritical cell, 1 for a critical cell
         Also saves an evaluation plot for every critical cell
@@ -1698,19 +1742,27 @@ class HistEvaluation:
         # if "2023-06-26_23-23-21_C0" in img_fpath:
         #     raise NotImplementedError
 
-        q = self.get_quantiles(tup)
+        q = self.get_quantiles(cell_key)
         res = 0
+        self.current_cell_key = cell_key
 
         if recalc_hist:
-            cell_hist = get_symlog_hist(img_fpath, *tup, delta=1, dc=dc)[1]
+            cell_hist, cell = get_symlog_hist(img_fpath, *cell_key, delta=1, return_cell=True, dc=dc)[1]
         else:
-            cell_hist = hist_dict[tup][0]
-        criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
+            cell_hist = hist_dict[cell_key][0]
+
+            if self.ev_crit_pix:
+                ccia = CavityCarrierImageAnalyzier(img_fpath)
+                cell = ccia.get_corrected_cell(*cell_key)
+            else:
+                cell = None
+
+        criticality_container = self.get_criticality_score(cell_hist, cell, q.lower, q.upper, dc=dc)
         if self.CS_LIMIT < criticality_container.score or force_plot:
             res = 1
-            print(img_fpath, tup, criticality_container.score)
+            print(img_fpath, cell_key, criticality_container.score)
             try:
-                self.plot_critical_cell(img_fpath, *tup, cell_hist, q, criticality_container, plot=plot)
+                self.plot_critical_cell(img_fpath, *cell_key, cell_hist, q, criticality_container, plot=plot)
             except RuntimeError as err:
                 print(err)
 
@@ -1760,15 +1812,19 @@ class HistEvaluation:
 
 
     def fp_correct_for_cell(self, cell_pict_fpath):
+        """
+        False Positive Correction
+        """
         # cell_pict_fpath
 
         cell_key = get_cell_key_from_fpath(cell_pict_fpath)
         cell_hist = get_hist_for_cell_pict(cell_pict_fpath)
 
         dc = None
+        fake_cell = None  # not needed here
 
         q = self.get_quantiles(cell_key)
-        criticality_container = self.get_criticality_score(cell_hist, q.lower, q.upper, dc=dc)
+        criticality_container = self.get_criticality_score(cell_hist, fake_cell, q.lower, q.upper, dc=dc)
 
         WEIGHT = 100
         TRIES = 2*WEIGHT
@@ -1780,7 +1836,7 @@ class HistEvaluation:
         q.new_upper = q.upper*1  # copy array
         for i in range(TRIES):
             q.new_upper = (q.new_upper*WEIGHT + joined)/(WEIGHT + 1)
-            cc2 = self.get_criticality_score(cell_hist, q.lower, q.new_upper, dc=dc)
+            cc2 = self.get_criticality_score(cell_hist, fake_cell, q.lower, q.new_upper, dc=dc)
             # print(f"{cc2.score=}")
 
             if cc2.score < self.CS_LIMIT:
