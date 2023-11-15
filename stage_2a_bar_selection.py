@@ -1656,7 +1656,8 @@ class HistEvaluation:
         area2 = dark_discount*np.sum(diff2_dark) + np.sum(diff2_bright)
 
         res = Container()
-        res.area_str = f"a1={area1:03.1f}, a2={area2:03.1f}"
+        # res.area_str = f"a1={area1:03.1f}, a2={area2:03.1f}"
+        res.area_str = f"a2={area2:03.1f}"
         res.a1 = area1
         res.a2 = area2
 
@@ -1686,6 +1687,8 @@ class HistEvaluation:
         # find lowest lightness value (index of q_upper) for which q_upper is zero and stays zero until the end
         res.crit_lightness = np.diff((q_upper==0)).nonzero()[0][-1] + 1
 
+        res.crit_pix_mask = cell*0
+        res.crit_pix_mask[cell > res.crit_lightness] = 1
         res.crit_pix_vals = cell[cell > res.crit_lightness].flatten()
 
         # number of critical pixels -> area
@@ -1905,8 +1908,9 @@ class HistEvaluation:
         plt.plot(q.ii, q.lower)
         plt.plot(q.ii, q.upper)
         plt.plot(q.ii, cell_hist, alpha=0.9, lw=3, ls="--")
-        x_offset = 120
-        y_offset = 8
+        x_offset = 40
+        y_offset = 8.7
+        plt.axis([-5, 260, 0, 9.5])
         plt.text(x_offset, y_offset, f"{criticality_container.area_str}")
 
         plt.subplots_adjust(
@@ -1918,6 +1922,28 @@ class HistEvaluation:
             hspace=0.05
         )
 
+        if self.ev_crit_pix:
+            # visualize information about critical pixels (see self.get_critical_pixel_info())
+            plt.sca(ax4)
+
+            # vertical line, where critical pixels begin
+            plt.plot([criticality_container.crit_lightness]*2, [0, 8], "k--")
+
+            # more text information
+            if criticality_container.crit_pix_nbr:
+                x_offset = 125
+                dy = 0.5
+                plt.text(x_offset, y_offset, f"# crit pixels = {criticality_container.crit_pix_nbr}")
+                y_offset -= dy
+                plt.text(x_offset, y_offset, f"         mean = {criticality_container.crit_pix_mean}")
+                y_offset -= dy
+                plt.text(x_offset, y_offset, f"       median = {criticality_container.crit_pix_median}")
+                y_offset -= dy
+                plt.text(x_offset, y_offset, f"          q95 = {criticality_container.crit_pix_q95}")
+
+                # contour of critical pixels
+                plt.sca(ax3)
+                plt.contour(criticality_container.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
 
         plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
         if plot == "save":
