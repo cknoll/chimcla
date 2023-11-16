@@ -39,8 +39,8 @@ ERROR_CMDS = []
 
 
 parser = argparse.ArgumentParser(
-    prog='stage_2b_bar_C0_hist_dict',
-    description='This program creates histogram dicts of one or more files',
+    prog=sys.argv[0],
+    description='This program creates histogram style plots for every unusual cell (without considering the area)',
 )
 
 
