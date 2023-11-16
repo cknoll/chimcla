@@ -10,6 +10,7 @@ import copy
 import collections
 import re
 import json
+import time
 
 import itertools as it
 import random
@@ -24,6 +25,7 @@ from scipy import optimize
 from addict import Addict
 import dill
 
+from sqlitedict import SqliteDict
 
 from skimage.transform import hough_line, hough_line_peaks, rotate
 from skimage.feature import canny
@@ -44,6 +46,34 @@ BBOX_MIN_WITH = 23
 
 
 vv = {"vmin": 0, "vmax": 255}
+
+
+class ExtendedSqliteDict(SqliteDict):
+    def put(self, main_key, sub_key, value, commit=False):
+        data = self.get(main_key)
+        if data is None:
+            data = {}
+        else:
+            assert isinstance(data, dict)
+        data.update({sub_key: value})
+        self[main_key] = data
+
+        if commit:
+            self.commit()
+
+    def put_container(self, main_key, cont, key_list, commit=False):
+        """
+        convenience function to write selected content of a container to the database
+        """
+
+        assert isinstance(cont, Container)
+        for sub_key in key_list:
+            value = cont.__dict__.get(sub_key)
+            self.put(main_key, sub_key, value, commit)
+
+
+db = ExtendedSqliteDict("file-info.sqlite")
+
 
 def load_img(fpath):
 
@@ -1598,7 +1628,7 @@ class HistEvaluation:
         # helpful for debugging
         self.current_cell_key = None
 
-    def save_eval_res(self, img_fpath, crit_cell_list):
+    def save_eval_res(self, img_fpath, crit_cell_list, err_list):
         os.makedirs(self.critical_hist_dir, exist_ok=True)
         fname = os.path.split(img_fpath)[1]
 
@@ -1607,13 +1637,24 @@ class HistEvaluation:
 
         BAD_IMGS = os.path.join(self.critical_hist_dir, "_bad_imgs.txt")
         GOOD_IMGS = os.path.join(self.critical_hist_dir, "_good_imgs.txt")
+        ERR_IMGS = os.path.join(self.critical_hist_dir, "_err_imgs.txt")
 
-        if crit_cell_list:
-            with open(BAD_IMGS, "a") as fp:
-                json.dump({fname: crit_cell_list}, fp)
+        if err_list:
+            with open(ERR_IMGS, "a") as fp:
+                json.dump(time.ctime(), fp)
                 fp.write("\n")
+                json.dump(err_list, fp)
+                fp.write("\n")
+
+        elif crit_cell_list:
+            with open(BAD_IMGS, "a") as fp:
+                json.dump(time.ctime(), fp)
+                fp.write("\n")
+                json.dump({fname: crit_cell_list}, fp)
         else:
             with open(GOOD_IMGS, "a") as fp:
+                json.dump(time.ctime(), fp)
+                fp.write("\n")
                 fp.write(f"{fname}\n")
 
     def get_quantiles(self, tup):
@@ -1852,8 +1893,9 @@ class HistEvaluation:
 
 
 
-    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, criticality_container, plot="save"):
+    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, plot="save"):
         """
+        :param cc: criticality_container
         :param q:  quantile container
         """
 
@@ -1869,7 +1911,8 @@ class HistEvaluation:
 
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
-        new_fpath = f"{self.critical_hist_dir}/{basename}_{hr_row}{hr_col}{ext}"
+        new_fname = f"{basename}_{hr_row}{hr_col}{ext}"
+        new_fpath = f"{self.critical_hist_dir}/{new_fname}"
 
         fig = plt.figure(figsize=(9, 10))
         gs = GridSpec(2, 5, figure=fig)
@@ -1911,7 +1954,10 @@ class HistEvaluation:
         x_offset = 40
         y_offset = 8.7
         plt.axis([-5, 260, 0, 9.5])
-        plt.text(x_offset, y_offset, f"{criticality_container.area_str}")
+
+        ff = {"fontfamily": "monospace"}
+
+        plt.text(x_offset, y_offset, f"{cc.area_str}", **ff)
 
         plt.subplots_adjust(
             left=0.01,
@@ -1922,35 +1968,38 @@ class HistEvaluation:
             hspace=0.05
         )
 
+        plt.title(f"{corrected_cell.angle:01.2f}° A={cc.score:04.2f}")
+
         if self.ev_crit_pix:
             # visualize information about critical pixels (see self.get_critical_pixel_info())
             plt.sca(ax4)
 
             # vertical line, where critical pixels begin
-            plt.plot([criticality_container.crit_lightness]*2, [0, 8], "k--")
+            plt.plot([cc.crit_lightness]*2, [0, 8], "k--")
 
             # more text information
-            if criticality_container.crit_pix_nbr:
-                x_offset = 125
+            if cc.crit_pix_nbr:
+                x_offset = 122
                 dy = 0.5
-                plt.text(x_offset, y_offset, f"# crit pixels = {criticality_container.crit_pix_nbr}")
+                plt.text(x_offset, y_offset, f"#crit-pixels = {cc.crit_pix_nbr}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"         mean = {criticality_container.crit_pix_mean}")
+                plt.text(x_offset, y_offset, f"         mean = {cc.crit_pix_mean:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"       median = {criticality_container.crit_pix_median}")
+                plt.text(x_offset, y_offset, f"       median = {cc.crit_pix_median:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"          q95 = {criticality_container.crit_pix_q95}")
+                plt.text(x_offset, y_offset, f"          q95 = {cc.crit_pix_q95:.1f}", **ff)
 
                 # contour of critical pixels
                 plt.sca(ax3)
-                plt.contour(criticality_container.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
+                plt.contour(cc.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
 
-        plt.title(f"{corrected_cell.angle:01.2f}° A={criticality_container.score:04.2f}")
         if plot == "save":
             os.makedirs(self.critical_hist_dir, exist_ok=True)
+            db.put_container(new_fname, cc, ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95"])
+            db.commit()
             plt.savefig(new_fpath)
             plt.close()
-            self.create_symlink(new_fpath, criticality_container.score)
+            self.create_symlink(new_fpath, cc.score)
 
     def create_symlink(self, existing_fpath, crit_score):
 

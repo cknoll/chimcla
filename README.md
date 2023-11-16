@@ -43,6 +43,7 @@
     - `py3 stage_3a_hist_based_classification.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk003_shading_corrected/ --suffix _chunk003_complete`
 - Flächen-basierte Klassifikation (wip):
     - `py3 stage_3b_hist_area_based_classification.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_shading_corrected/2023-06-26_06-47-13_C50.jpg`
+    - `py3 stage_3b_hist_area_based_classification.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_shading_corrected/ --suffix _chunk000_complete --limit 20`
 
 
 ---

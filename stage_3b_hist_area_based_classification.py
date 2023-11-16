@@ -116,10 +116,17 @@ def process_img(img_fpath):
     # now we have a histogram for every cell of the image
 
     he = bs.HistEvaluation(suffix=args.suffix, ev_crit_pix=True)
-    crit_cell_list = he.find_critical_cells_for_hist_dict(
-        hist_cache, img_fpath, exclude_cell_keys=exclude_cell_keys
-    )
-    he.save_eval_res(img_fpath, crit_cell_list)
+    err_list = []
+    try:
+        crit_cell_list = he.find_critical_cells_for_hist_dict(
+            hist_cache, img_fpath, exclude_cell_keys=exclude_cell_keys
+        )
+    except Exception as ex:
+        print(img_fpath, ex)
+        img_fname = os.path.split(img_fpath)[-1]
+        err_list.extend([img_fname, str(ex)])
+        crit_cell_list = None
+    he.save_eval_res(img_fpath, crit_cell_list, err_list)
 
 def get_img_list(img_dir):
 
