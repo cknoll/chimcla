@@ -1980,16 +1980,32 @@ class HistEvaluation:
             plt.plot([cc.crit_lightness]*2, [0, 8], "k--")
 
             # more text information
-            if cc.crit_pix_nbr:
+            if cc.crit_pix_nbr >= 5:
+
+                x, y = cc.crit_pix_mean, 4
+                plt.plot([x]*2, [0, y], ":", color="0.6")
+                plt.text(x, y, "avg", **ff)
+
+                x, y = cc.crit_pix_median, 5
+                plt.plot([x]*2, [0, y], ":", color="0.6")
+                plt.text(x, y, "med", **ff)
+
+                x, y = cc.crit_pix_q95, 6
+                plt.plot([x]*2, [0, y], ":", color="0.6")
+                plt.text(x, y, "qnt", **ff)
+
+
+
+
                 x_offset = 122
                 dy = 0.5
                 plt.text(x_offset, y_offset, f"#crit-pixels = {cc.crit_pix_nbr}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"         mean = {cc.crit_pix_mean:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"        mean = {cc.crit_pix_mean:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"       median = {cc.crit_pix_median:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"      median = {cc.crit_pix_median:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"          q95 = {cc.crit_pix_q95:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"         q95 = {cc.crit_pix_q95:.1f}", **ff)
 
                 # contour of critical pixels
                 plt.sca(ax3)
