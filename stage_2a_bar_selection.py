@@ -1704,6 +1704,8 @@ class HistEvaluation:
 
         # it turned out that diff1 (and thus area1) is not useful
         res.score = area2
+        res.score_str = f"{int(res.score):04d}"
+
 
         if ev_crit_pix or (ev_crit_pix is None and self.ev_crit_pix):
             tmp_res = self.get_critical_pixel_info(cell_hist, cell, q_upper, dc=dc)
@@ -1995,11 +1997,13 @@ class HistEvaluation:
 
         if plot == "save":
             os.makedirs(self.critical_hist_dir, exist_ok=True)
-            db.put_container(new_fname, cc, ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95"])
+            # anchor::db_keys
+            keys = ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95", "score_str"]
+            db.put_container(new_fname, cc, keys)
             db.commit()
             plt.savefig(new_fpath)
             plt.close()
-            self.create_symlink(new_fpath, cc.score)
+            # self.create_symlink(new_fpath, cc.score)
 
     def create_symlink(self, existing_fpath, crit_score):
 

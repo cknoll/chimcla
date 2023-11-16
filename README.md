@@ -50,6 +50,9 @@
 
 # geplantes weiteres Vorgehen
 
+
+- profiling und mehrfachausführung ausschließen.
+
 - falsch positive handhaben -> Histogramme anpassen
 - `dicts/_total_res.dill`
 
