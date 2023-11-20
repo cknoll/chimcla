@@ -2,6 +2,7 @@
 import asyncio
 from asyncio import run
 from tqdm.asyncio import tqdm as tqdm_a
+import functools
 
 
 def background(f):
@@ -9,18 +10,20 @@ def background(f):
     decorator for paralelization
     """
     # source: https://stackoverflow.com/a/59385935
-    def wrapped(*args, **kwargs):
-        return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
+    def wrapped(arg, **kwargs):
+
+        func_with_kwargs = functools.partial(f, **kwargs)
+        return asyncio.get_event_loop().run_in_executor(None, func_with_kwargs, arg)
 
     return wrapped
 
 
-async def main(func, arg_list):
+async def main(func, arg_list, **kwargs):
 
     tasks = []
     for arg in arg_list:
         tasks.append(
-            func(arg)
+            func(arg, **kwargs)
         )
 
     await tqdm_a.gather(*tasks)

@@ -66,7 +66,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--generate-training-data",
+    "-td",
+    help="generate training data (store raw cell images, also process uncritical images)",
+    action="store_true",
+)
+
+parser.add_argument(
     "--no-parallel",
+    "-np",
     help="sequential mode (no parallelization)",
     action="store_true",
 )
@@ -91,6 +99,8 @@ os.makedirs(dict_dir, exist_ok=True)
 
 
 def process_img(img_fpath):
+
+    training_data_flag = args.generate_training_data
 
     hist_cache = collections.defaultdict(list)
     hist_cache["bad_cells"] = collections.defaultdict(list)
@@ -150,10 +160,20 @@ def get_img_list(img_dir):
 
 
 @aiot.background
-def run_this_script(img_path):
-    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {args.suffix}"
+def run_this_script(img_path, **kwargs):
+
+    options = kwargs.get("options", {})
+    option_str_elements = []
+    for option, value in options.items():
+        if value is True:
+            option_str_elements.append(option)
+
+    option_str = " ".join(option_str_elements)
+
+    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {args.suffix} {option_str}".strip()
     print(cmd)
     res = os.system(cmd)
+    res = 0
 
     if res != 0:
         ERROR_CMDS.append(cmd)
@@ -164,11 +184,15 @@ def aio_main():
 
     arg_list = get_img_list(args.img_dir)[:args.limit]
     func = run_this_script
+
+    options = {}
+    if args.generate_training_data:
+        options["--generate-training-data"] =  True
     if args.no_parallel:
         for arg in arg_list:
-            func(arg)
+            func(arg, options=options)
     else:
-        aiot.run(aiot.main(func=func, arg_list=arg_list))
+        aiot.run(aiot.main(func=func, arg_list=arg_list, options=options))
 
     if ERROR_CMDS:
         print(
