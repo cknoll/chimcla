@@ -48,6 +48,10 @@ BBOX_MIN_WITH = 23
 vv = {"vmin": 0, "vmax": 255}
 
 
+CELL_KEY_END = None
+cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:CELL_KEY_END]
+
+
 class ExtendedSqliteDict(SqliteDict):
     def put(self, main_key, sub_key, value, commit=False):
         data = self.get(main_key)
@@ -272,9 +276,6 @@ def assign_row_col(bbox_list):
 
 def index_combinations():
     return list(it.product(range(3), range(27)))
-
-
-cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))
 
 
 def find_missing_boxes(bbox_list):
@@ -1279,7 +1280,7 @@ class CavityCarrierImageAnalyzier:
             return self.corners_dict
 
         self.corners_dict = {}
-        for row, col in cell_tups:
+        for row, col in cell_keys:
 
             corner_res = self.find_cell_corners(row, col, plot=plot, dc=dc)
             key = (row, str(col))
@@ -1294,7 +1295,7 @@ class CavityCarrierImageAnalyzier:
         res = Container()
         points = []
 
-        for row, col in cell_tups:
+        for row, col in cell_keys:
             if row != hr_row:
                 continue
 
@@ -1601,21 +1602,36 @@ def get_hist_for_cell_pict(fpath):
 
 class HistEvaluation:
 
-    img_dir = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0"
+    """
+    HistogramEvaluation for one complete (81-cell) image
+    """
+
+    # img_dir = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0"
     hist_dict_path = "dicts"
     total_res_fpath = f"{hist_dict_path}/_total_res.dill"
 
     # limit for which criticality score (cs) a histogram is considered an anomaly
     CS_LIMIT = 20
 
-    def __init__(self, suffix="", ev_crit_pix=False):
+    def __init__(self, img_fpath: str, suffix="", ev_crit_pix=False, training_data_flag=False):
         """
-        :param ev_crit_pix:     bool, default False; evaluate critical pixels
-                                if true additional information about the critical pixels is collected and stored
+        :param ev_crit_pix:         bool; default False; evaluate critical pixels
+                                    if true additional information about the critical pixels is collected and stored
+        :param training_data_flag:  bool; save plots also for non-critical cells
+                                    + store plots for raw cell images
         """
 
-        self.critical_hist_dir = f"critical_hist{suffix}"
+        self.img_fpath = img_fpath
         self.ev_crit_pix = ev_crit_pix
+        self.training_data_flag=training_data_flag
+        self.corrected_cell_cache = {}
+        self.critical_hist_dir = self._get_result_dir_from_suffix(suffix)
+        self.hist_cache = self.initialize_hist_cache()
+
+        self.img_dir, self.img_fname = os.path.split(img_fpath)
+        self.img_basename, self.img_ext = os.path.splitext(self.img_fname)
+
+        self.corrected_cell_dir = os.path.join(self.critical_hist_dir, "_corrected_cells")
 
         with open(self.total_res_fpath, "rb") as fp:
             self.total_res = dill.load(fp)
@@ -1628,34 +1644,73 @@ class HistEvaluation:
         # helpful for debugging
         self.current_cell_key = None
 
+    def initialize_hist_cache(self):
+        # use the debug-container mechanism to extract the angle from the function
+        # without changing the interface
+        dc = Container()
+
+        self.hist_cache = collections.defaultdict(list)
+        self.hist_cache["bad_cells"] = collections.defaultdict(list)
+
+        # this will map the cell tup to the identified angle
+        self.hist_cache["angles"] = {}
+
+        for cell_key in cell_keys:
+            try:
+                (hist_raw, hist_smooth), cell = get_symlog_hist(
+                    self.img_fpath, *cell_key, delta=1, dc=dc, return_cell=True
+                )
+            except Exception as ex:
+                self.hist_cache["bad_cells"][self.img_fpath].append(cell_key)
+                print(f"{type(ex)}: bad cell {self.img_fpath.split('/')[-1]}: {cell_key}")
+                hist_smooth = None
+                dc.angle = None
+                cell = None
+            self.hist_cache[cell_key].append(hist_smooth)
+            self.hist_cache["angles"][cell_key] = dc.angle
+            self.corrected_cell_cache[cell_key] = cell
+
+        return self.hist_cache
+
+    @staticmethod
+    def get_result_files(result_dir):
+        BAD_IMGS = os.path.join(result_dir, "_bad_imgs.txt")
+        GOOD_IMGS = os.path.join(result_dir, "_good_imgs.txt")
+        ERR_IMGS = os.path.join(result_dir, "_err_imgs.txt")
+
+        return BAD_IMGS, GOOD_IMGS, ERR_IMGS
+
+    @staticmethod
+    def _get_result_dir_from_suffix(suffix: str) -> str:
+        return f"critical_hist{suffix}"
+
+    @staticmethod
+    def reset_result_files(suffix: str):
+        result_dir =HistEvaluation._get_result_dir_from_suffix(suffix)
+        fpaths = HistEvaluation.get_result_files(result_dir)
+        for fpath in fpaths:
+            if os.path.isfile(fpath):
+                os.unlink(fpath)
+
     def save_eval_res(self, img_fpath, crit_cell_list, err_list):
         os.makedirs(self.critical_hist_dir, exist_ok=True)
         fname = os.path.split(img_fpath)[1]
 
-        # crit_cell_keys = ["".join(tup) for tup in crit_cell_list]
-        # crit_cell_str = ", ".join(crit_cell_keys)
-
-        BAD_IMGS = os.path.join(self.critical_hist_dir, "_bad_imgs.txt")
-        GOOD_IMGS = os.path.join(self.critical_hist_dir, "_good_imgs.txt")
-        ERR_IMGS = os.path.join(self.critical_hist_dir, "_err_imgs.txt")
+        BAD_IMGS, GOOD_IMGS, ERR_IMGS = HistEvaluation.get_result_files(self.critical_hist_dir)
 
         if err_list:
             with open(ERR_IMGS, "a") as fp:
-                json.dump(time.ctime(), fp)
-                fp.write("\n")
                 json.dump(err_list, fp)
                 fp.write("\n")
 
         elif crit_cell_list:
             with open(BAD_IMGS, "a") as fp:
-                json.dump(time.ctime(), fp)
-                fp.write("\n")
                 json.dump({fname: crit_cell_list}, fp)
+                fp.write("\n")
         else:
             with open(GOOD_IMGS, "a") as fp:
-                json.dump(time.ctime(), fp)
-                fp.write("\n")
                 fp.write(f"{fname}\n")
+                fp.write("\n")
 
     def get_quantiles(self, tup):
         q = Container()
@@ -1751,10 +1806,12 @@ class HistEvaluation:
 
 
     def find_critical_cells(self):
+        raise NotImplementedError("Outdated due to changed interface, use git blame if necessary")
         for hist_dict_path in self.hist_dict_list:
             self.find_critical_cells_for_hist_dict_path(hist_dict_path)
 
     def find_critical_cells_for_hist_dict_path(self, hist_dict_path):
+        raise NotImplementedError("Outdated due to changed interface, use git blame if necessary")
 
         img_fpath = hist_dict_path.replace("dicts/hist_", f"{self.img_dir}/").replace(".dill", ".jpg")
         path, img_fname = os.path.split(img_fpath)
@@ -1765,20 +1822,27 @@ class HistEvaluation:
 
         self.find_critical_cells_for_hist_dict(hist_dict, img_fpath)
 
-    def find_critical_cells_for_hist_dict(self, hist_dict, img_fpath, exclude_cell_keys=None):
-            if exclude_cell_keys is None:
-                exclude_cell_keys = []
-            crit_cell_list = []
-            for cell_key in cell_tups:
-                if cell_key in exclude_cell_keys:
-                    continue
-                res = self.evaluate_cell(img_fpath, cell_key, hist_dict)
-                if res:
-                    crit_cell_list.append(cell_key)
-            return crit_cell_list
+    def find_critical_cells_for_hist_dict(
+            self, hist_dict, img_fpath, exclude_cell_keys=None, training_data_flag=False
+        ):
+        raise NotImplementedError("Outdated due to changed interface, use git blame if necessary")
+
+    def find_critical_cells_for_img(self, exclude_cell_keys=None):
+        """
+        """
+        if exclude_cell_keys is None:
+            exclude_cell_keys = []
+        crit_cell_list = []
+        for cell_key in cell_keys:
+            if cell_key in exclude_cell_keys:
+                continue
+            res = self.evaluate_cell(cell_key)
+            if res.is_critical:
+                crit_cell_list.append(cell_key + (res.criticality_score,))
+        return crit_cell_list
 
 
-    def evaluate_cell(self, img_fpath, cell_key, hist_dict, dc=None, plot="save", force_plot=False, recalc_hist=False):
+    def evaluate_cell(self, cell_key, dc=None, plot_type="save", force_plot=False, recalc_hist=False,):
         """
         returns 0 for an uncritical cell, 1 for a critical cell
         Also saves an evaluation plot for every critical cell
@@ -1789,26 +1853,26 @@ class HistEvaluation:
         #     raise NotImplementedError
 
         q = self.get_quantiles(cell_key)
-        res = 0
+        res = Container(is_critical=False)
         self.current_cell_key = cell_key
 
         if recalc_hist:
-            cell_hist, cell = get_symlog_hist(img_fpath, *cell_key, delta=1, return_cell=True, dc=dc)[1]
+            cell_hist, cell = get_symlog_hist(self.img_fpath, *cell_key, delta=1, return_cell=True, dc=dc)[1]
         else:
-            cell_hist = hist_dict[cell_key][0]
+            cell_hist = self.hist_cache[cell_key][0]
+            cell = self.get_corrected_cell(cell_key)
 
-            if self.ev_crit_pix:
-                ccia = CavityCarrierImageAnalyzier(img_fpath)
-                cell = ccia.get_corrected_cell(*cell_key)
-            else:
-                cell = None
+        if self.training_data_flag:
+            self.save_corrected_cell(cell_key)
 
         criticality_container = self.get_criticality_score(cell_hist, cell, q.lower, q.upper, dc=dc)
-        if self.CS_LIMIT < criticality_container.score or force_plot:
-            res = 1
-            print(img_fpath, cell_key, criticality_container.score)
+        res.criticality_score = criticality_container.score
+        if self.CS_LIMIT < criticality_container.score:
+            res.is_critical = True
+        if res.is_critical or force_plot:
+            print(self.img_fpath, cell_key, criticality_container.score)
             try:
-                self.plot_critical_cell(img_fpath, *cell_key, cell_hist, q, criticality_container, plot=plot)
+                self.plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, plot_type=plot_type)
             except RuntimeError as err:
                 print(err)
 
@@ -1818,6 +1882,22 @@ class HistEvaluation:
             dc.fetch_locals()
 
         return res
+
+    def get_corrected_cell(self, cell_key):
+        # assume the cache has been filled by self.initialize_hist_cache()
+        cell = self.corrected_cell_cache[cell_key]
+        assert cell is not None
+        return cell
+
+    def save_corrected_cell(self, cell_key):
+        corrected_cell = self.get_corrected_cell(cell_key)
+        os.makedirs(self.corrected_cell_dir, exist_ok=True)
+
+        fname = f"{self.img_basename}_{''.join(cell_key)}_raw{self.img_ext}"
+        fpath = os.path.join(self.corrected_cell_dir, fname)
+
+        res = cv2.imwrite(fpath, corrected_cell, [cv2.IMWRITE_JPEG_QUALITY, 98])
+        assert res, f"Something went wrong during the creation of {fpath}"
 
     def false_positive_correction(self, false_positive_dir):
         """
@@ -1895,7 +1975,7 @@ class HistEvaluation:
 
 
 
-    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, plot="save"):
+    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, plot_type="save"):
         """
         :param cc: criticality_container
         :param q:  quantile container
@@ -2011,7 +2091,7 @@ class HistEvaluation:
                 plt.sca(ax3)
                 plt.contour(cc.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
 
-        if plot == "save":
+        if plot_type == "save":
             os.makedirs(self.critical_hist_dir, exist_ok=True)
             # anchor::db_keys
             keys = ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95", "score_str"]

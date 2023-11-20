@@ -89,11 +89,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-
-CELL_KEY_END = None
-cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:CELL_KEY_END]
-
-
 dict_dir = "dicts"
 os.makedirs(dict_dir, exist_ok=True)
 
@@ -102,40 +97,20 @@ def process_img(img_fpath):
 
     training_data_flag = args.generate_training_data
 
-    hist_cache = collections.defaultdict(list)
-    hist_cache["bad_cells"] = collections.defaultdict(list)
+    he = bs.HistEvaluation(
+        img_fpath, suffix=args.suffix, ev_crit_pix=True, training_data_flag=training_data_flag,
+    )
+    he.initialize_hist_cache()
 
-    # this will map the cell tup to the identified angle
-    hist_cache["angles"] = {}
-
-    # use the debug-container mechanism to extract the angle from the function
-    # without changing the interface
-    dc = Container()
-
-    for cell_key in cell_keys:
-        try:
-            hist_raw, hist_smooth = get_symlog_hist(img_fpath, *cell_key, delta=1, dc=dc)
-        except Exception as ex:
-            hist_cache["bad_cells"][img_fpath].append(cell_key)
-            print(f"{type(ex)}: bad cell {img_fpath.split('/')[-1]}: {cell_key}")
-            hist_smooth = None
-            dc.angle = None
-        hist_cache[cell_key].append(hist_smooth)
-        hist_cache["angles"][cell_key] = dc.angle
-
-    # now we have a histogram for every cell of the image
-
-    he = bs.HistEvaluation(suffix=args.suffix, ev_crit_pix=True)
     err_list = []
     try:
-        crit_cell_list = he.find_critical_cells_for_hist_dict(
-            hist_cache, img_fpath, exclude_cell_keys=exclude_cell_keys
-        )
+        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys,)
     except Exception as ex:
         print(img_fpath, ex)
         img_fname = os.path.split(img_fpath)[-1]
         err_list.extend([img_fname, str(ex)])
         crit_cell_list = None
+        raise
     he.save_eval_res(img_fpath, crit_cell_list, err_list)
 
 def get_img_list(img_dir):
@@ -203,6 +178,8 @@ def aio_main():
 
 
 def main():
+
+    bs.HistEvaluation.reset_result_files(suffix=args.suffix)
 
     if args.img:
         process_img(args.img)
