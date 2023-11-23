@@ -73,6 +73,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--no-imgs",
+    "-ni",
+    help="do not create output images (only write to db-file)",
+    action="store_true",
+)
+
+parser.add_argument(
     "--no-parallel",
     "-np",
     help="sequential mode (no parallelization)",
@@ -102,9 +109,15 @@ def process_img(img_fpath):
     )
     he.initialize_hist_cache()
 
+    # default values:
+    save_options = {"save_plot": True, "push_db": True}
+
+    if args.no_imgs:
+        save_options.pop("save_plot")
+
     err_list = []
     try:
-        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys,)
+        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
     except Exception as ex:
         print(img_fpath, ex)
         img_fname = os.path.split(img_fpath)[-1]
@@ -154,15 +167,18 @@ def run_this_script(img_path, **kwargs):
         ERROR_CMDS.append(cmd)
 
 
-
 def aio_main():
 
     arg_list = get_img_list(args.img_dir)[:args.limit]
     func = run_this_script
 
+    # prepare options for passing to individual calls
     options = {}
     if args.generate_training_data:
         options["--generate-training-data"] =  True
+    if args.no_imgs:
+        options["--no-imgs"] =  True
+
     if args.no_parallel:
         for arg in arg_list:
             func(arg, options=options)

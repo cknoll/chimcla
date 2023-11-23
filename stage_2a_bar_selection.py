@@ -1827,26 +1827,33 @@ class HistEvaluation:
         ):
         raise NotImplementedError("Outdated due to changed interface, use git blame if necessary")
 
-    def find_critical_cells_for_img(self, exclude_cell_keys=None):
+    def find_critical_cells_for_img(self, exclude_cell_keys=None, save_options=None):
         """
         """
+
+        if save_options is None:
+            # default values
+            save_options = {"save_plot": True, "push_db": True}
+
         if exclude_cell_keys is None:
             exclude_cell_keys = []
         crit_cell_list = []
         for cell_key in cell_keys:
             if cell_key in exclude_cell_keys:
                 continue
-            res = self.evaluate_cell(cell_key)
+            res = self.evaluate_cell(cell_key, save_options=save_options)
             if res.is_critical:
                 crit_cell_list.append(cell_key + (res.criticality_score,))
         return crit_cell_list
 
 
-    def evaluate_cell(self, cell_key, dc=None, plot_type="save", force_plot=False, recalc_hist=False,):
+    def evaluate_cell(self, cell_key, dc=None, save_options=None, force_plot=False, recalc_hist=False,):
         """
         returns 0 for an uncritical cell, 1 for a critical cell
         Also saves an evaluation plot for every critical cell
         """
+
+        assert save_options is not None
 
         # test error handling
         # if "2023-06-26_23-23-21_C0" in img_fpath:
@@ -1872,7 +1879,7 @@ class HistEvaluation:
         if res.is_critical or force_plot:
             print(self.img_fpath, cell_key, criticality_container.score)
             try:
-                self.plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, plot_type=plot_type)
+                self.save_and_plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, save_options=save_options)
             except RuntimeError as err:
                 print(err)
 
@@ -1975,31 +1982,37 @@ class HistEvaluation:
 
 
 
-    def plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, plot_type="save"):
+    def save_and_plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, save_options):
         """
         :param cc: criticality_container
         :param q:  quantile container
         """
-
-        # img = get_raw_cell(img_fpath, hr_row, hr_col, ex1, ey1, plot=False)
-        # corrected_img, angle = correct_angle(img, dc=dc)
-        ccia = CavityCarrierImageAnalyzier(img_fpath)
-
-        # trim border (which was increased before rotation)
-
-        cell_key =  (hr_row, hr_col)
-        cell_mono = ccia.get_raw_cell(*cell_key)
-        corrected_cell = ccia.get_corrected_cell(hr_row, hr_col)
 
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
         new_fname = f"{basename}_{hr_row}{hr_col}{ext}"
         new_fpath = f"{self.critical_hist_dir}/{new_fname}"
 
+        if save_options["push_db"]:
+            # anchor::db_keys
+            keys = ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95", "score_str"]
+            db.put_container(new_fname, cc, keys)
+            db.commit()
+
+        if not any( (save_options.get("create_plot"), save_options.get("save_plot")) ):
+            # no reason to create image
+            return
+
+        ccia = CavityCarrierImageAnalyzier(img_fpath)
+        cell_key =  (hr_row, hr_col)
+        cell_mono = ccia.get_raw_cell(*cell_key)
+        corrected_cell = self.get_corrected_cell(cell_key)
+
         fig = plt.figure(figsize=(9, 10))
         gs = GridSpec(2, 5, figure=fig)
         ax0 = fig.add_subplot(gs[0, :])
 
+        # trim border (which was increased before rotation)
         x, y, w, h = ccia.get_bbox_for_cell(*cell_key)[:4]
         new_img = ccia.img.copy()
         dx = dy = 3
@@ -2075,8 +2088,6 @@ class HistEvaluation:
                 plt.text(x, y, "qnt", **ff)
 
 
-
-
                 x_offset = 122
                 dy = 0.5
                 plt.text(x_offset, y_offset, f"#crit-pixels = {cc.crit_pix_nbr}", **ff)
@@ -2091,12 +2102,8 @@ class HistEvaluation:
                 plt.sca(ax3)
                 plt.contour(cc.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
 
-        if plot_type == "save":
+        if save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
-            # anchor::db_keys
-            keys = ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95", "score_str"]
-            db.put_container(new_fname, cc, keys)
-            db.commit()
             plt.savefig(new_fpath)
             plt.close()
             # self.create_symlink(new_fpath, cc.score)
