@@ -1582,6 +1582,27 @@ def get_cell_key_from_fpath(fpath):
     return cell_key
 
 
+def get_img_list(img_dir):
+
+    img_path_list = glob.glob(f"{img_dir}/*.jpg")
+    img_path_list.sort()
+
+    # omit C100 images
+
+    img_path_list2 = []
+    C100_list = []
+    for img_fpath in img_path_list:
+        # find out if C100 with same base name is in list
+        first_parts = img_fpath.split("_")[:-1]
+        checkpath = f"{'_'.join(first_parts)}_C100.jpg"
+        if checkpath in img_path_list:
+            C100_list.append(img_fpath)
+        else:
+            img_path_list2.append(img_fpath)
+
+    return img_path_list2
+
+
 # ####################################################################################
 # histogram evaluation
 # ####################################################################################
