@@ -1603,6 +1603,25 @@ def get_img_list(img_dir):
     return img_path_list2
 
 
+def get_original_image_fpath(img_fpath, cropped=True, resized=True) -> str:
+
+    if not cropped or not resized:
+        raise NotImplementedError()
+
+    import pathlib
+
+    p = pathlib.Path(img_fpath)
+    fname = p.parts[-1]
+    direct_parent = p.parts[-2]
+    new_direct_parent  = direct_parent.replace("_shading_corrected", "")
+    new_dir = p.parents[1]/new_direct_parent
+    assert new_dir.is_dir()
+    u = new_dir/fname
+    assert u.is_file()
+
+    return u.as_posix()
+
+
 # ####################################################################################
 # histogram evaluation
 # ####################################################################################
@@ -1619,6 +1638,7 @@ def get_hist_for_cell_pict(fpath):
 
     cell_key = (pfn.cell[0], pfn.cell[1:])
     return hist_dict[cell_key][0]
+
 
 
 class HistEvaluation:

@@ -67,6 +67,24 @@
 - 1. Testtraining
 
 
+---
+
+### Romys neue Experimentaldaten:
+
+#### für Versuchspersonen:
+
+jeweils drei Bilder:
+- unverfälschte Form
+- Form wo die kritischen Pixel der kritischen Riegel eingefärbt wurden (unabhängig von der Helligkeit) + Text: Anzahl der auffälliger Riegel: ...
+- Form wo die kritischen Pixel der kritischen Riegel eingefärbt wurden (abhängig von der Helligkeit) + Text: Anzahl der auffälliger Riegel: ...
+
+
+#### Für Romy:
+
+Wie bisher, aber die original-Bilddaten für die Anzeige verwenden (nicht für die Verarbeitung)
+
+
+
 
 
 # Datensparstrategie:

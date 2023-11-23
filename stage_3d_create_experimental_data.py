@@ -14,7 +14,9 @@ from colorama import Fore, Style
 
 import dill
 
-from ipydex import IPS
+from ipydex import IPS, activate_ips_on_exception
+
+activate_ips_on_exception()
 
 import stage_2a_bar_selection as bs
 import asyncio_tools as aiot
@@ -69,8 +71,8 @@ args = parser.parse_args()
 
 
 def process_img(img_fpath):
+    original_img_fpath = bs.get_original_image_fpath(img_fpath)
     IPS()
-    pass
 
 
 from collections import defaultdict
