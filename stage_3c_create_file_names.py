@@ -49,6 +49,13 @@ parser.add_argument(
     metavar="cell_img_dir"
 )
 
+parser.add_argument(
+    "--create-json-data",
+    "-cj",
+    help="create a json file which contains information about the critical cells",
+    metavar="cell_img_dir"
+)
+
 
 args = parser.parse_args()
 
@@ -188,6 +195,34 @@ def create_stats():
         plt.savefig(fpath)
 
 
+def create_json_data(basedir: str):
+
+    res = {}
+
+    assert os.path.isdir(basedir)
+    fpaths = list(sorted(glob.glob(f"{basedir}/*.jpg")))
+
+    for fpath in fpaths:
+        fname = os.path.split(fpath)[-1]
+        data = bs.db.get(fname)
+
+        if data is None:
+            print(f"could not find key {fname} in db")
+            continue
+
+        res[fname] = {"citicality_score": int(data["score_str"])}
+
+    import json
+
+    jfpath = os.path.join(basedir, "hist_eval.json")
+    with open(jfpath, "w") as fp:
+        json.dump(res, fp, indent=2)
+
+    print(f"File written: {jfpath}")
+
+
+
+
 def main():
 
     if args.create_feature_dirs:
@@ -195,6 +230,8 @@ def main():
 
     elif args.create_stats:
         create_stats()
+    elif args.create_json_data:
+        create_json_data(basedir=args.create_json_data)
     else:
         parser.print_help()
 
