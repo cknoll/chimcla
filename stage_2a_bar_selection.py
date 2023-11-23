@@ -731,13 +731,15 @@ class MissingBoundingBoxes(ValueError):
     pass
 
 
-def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, return_cell=False, dc=None):
+def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, return_cell=False, dc=None, ccia=None):
     """
 
     :param dc:  debug container
     """
 
-    ccia = CavityCarrierImageAnalyzier(img_fpath)
+    if ccia is None:
+        ccia = CavityCarrierImageAnalyzier(img_fpath)
+
     cell = ccia.get_corrected_cell(hr_row, hr_col)
 
     assert isinstance(cell, Attr_Array)
@@ -998,6 +1000,8 @@ class CavityCarrierImageAnalyzier:
     def __init__(self, img_fpath, bboxes=True):
         self.img_fpath = img_fpath
         self.img = load_img(img_fpath)
+        self.img_fpath_uncorrected = get_original_image_fpath(img_fpath)
+        self.img_uncorrected = load_img(self.img_fpath_uncorrected)
         self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         self.img_lght = cv2.split(cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB))[0]
 
@@ -1176,7 +1180,6 @@ class CavityCarrierImageAnalyzier:
             plt.plot(yy0, poly(yy0))
             plt.show()
 
-
         return scaled_img_roi, roi
 
 
@@ -1215,10 +1218,15 @@ class CavityCarrierImageAnalyzier:
 
         return bbox
 
-    def get_raw_cell(self, hr_row, hr_col, e=0, f=0, rgb=False, plot=False):
+    def get_raw_cell(self, hr_row, hr_col, e=0, f=0, rgb=False, plot=False, uncorrected=False):
         bbox = self.get_bbox_for_cell(hr_row, hr_col)
         x, y, w, h = bbox[:4]
-        part_img = self.img[y-e:y+h+e, x-f:x+w+f, :]
+
+        if uncorrected:
+            img = self.img_uncorrected
+        else:
+            img = self.img
+        part_img = img[y-e:y+h+e, x-f:x+w+f, :]
 
         if rgb:
             return part_img
@@ -1663,6 +1671,7 @@ class HistEvaluation:
         """
 
         self.img_fpath = img_fpath
+        self.ccia = CavityCarrierImageAnalyzier(self.img_fpath)
         self.ev_crit_pix = ev_crit_pix
         self.training_data_flag=training_data_flag
         self.corrected_cell_cache = {}
@@ -1685,6 +1694,9 @@ class HistEvaluation:
         # helpful for debugging
         self.current_cell_key = None
 
+    def get_bbox_for_cell(self, hr_row, hr_col):
+        return self.ccia.get_bbox_for_cell(hr_row, hr_col)
+
     def initialize_hist_cache(self):
         # use the debug-container mechanism to extract the angle from the function
         # without changing the interface
@@ -1699,11 +1711,11 @@ class HistEvaluation:
         for cell_key in cell_keys:
             try:
                 (hist_raw, hist_smooth), cell = get_symlog_hist(
-                    self.img_fpath, *cell_key, delta=1, dc=dc, return_cell=True
+                    self.img_fpath, *cell_key, delta=1, dc=dc, return_cell=True, ccia=self.ccia
                 )
             except Exception as ex:
                 self.hist_cache["bad_cells"][self.img_fpath].append(cell_key)
-                print(f"{type(ex)}: bad cell {self.img_fpath.split('/')[-1]}: {cell_key}")
+                print(f"{repr(ex)}: bad cell {self.img_fpath.split('/')[-1]}: {cell_key}")
                 hist_smooth = None
                 dc.angle = None
                 cell = None
@@ -1905,10 +1917,10 @@ class HistEvaluation:
         self.current_cell_key = cell_key
 
         if recalc_hist:
-            cell_hist, cell = get_symlog_hist(self.img_fpath, *cell_key, delta=1, return_cell=True, dc=dc)[1]
+            cell_hist = get_symlog_hist(self.img_fpath, *cell_key, delta=1, dc=dc, ccia=self.ccia)[1]
         else:
             cell_hist = self.hist_cache[cell_key][0]
-            cell = self.get_corrected_cell(cell_key)
+        cell = self.get_corrected_cell(cell_key)
 
         if self.training_data_flag:
             self.save_corrected_cell(cell_key)
@@ -2044,9 +2056,8 @@ class HistEvaluation:
             # no reason to create image
             return
 
-        ccia = CavityCarrierImageAnalyzier(img_fpath)
         cell_key =  (hr_row, hr_col)
-        cell_mono = ccia.get_raw_cell(*cell_key)
+        cell_mono = self.ccia.get_raw_cell(*cell_key, uncorrected=True)
         corrected_cell = self.get_corrected_cell(cell_key)
 
         fig = plt.figure(figsize=(9, 10))
@@ -2054,15 +2065,15 @@ class HistEvaluation:
         ax0 = fig.add_subplot(gs[0, :])
 
         # trim border (which was increased before rotation)
-        x, y, w, h = ccia.get_bbox_for_cell(*cell_key)[:4]
-        new_img = ccia.img.copy()
+        x, y, w, h = self.ccia.get_bbox_for_cell(*cell_key)[:4]
+        new_img = self.ccia.img_uncorrected.copy()
         dx = dy = 3
         lw = 2  # linewidth
         cv2.rectangle(new_img,(x - dx - 1, y - dy - 1),(x + w + dx,y + h + dy),(255, 0, 50), lw)
         ax0.imshow(new_img)
         ax0.axis("off")
 
-        cell_rgb = ccia.get_raw_cell(*cell_key, rgb=True)
+        cell_rgb = self.ccia.get_raw_cell(*cell_key, rgb=True, uncorrected=True)
 
         ax1 = fig.add_subplot(gs[1, 0])
         ax1.imshow(cell_rgb)
@@ -2073,7 +2084,7 @@ class HistEvaluation:
         ax2.axis("off")
         ax2.set_title(str(cell_mono.shape))
 
-        corrected_cell = ccia.get_corrected_cell(*cell_key)
+        corrected_cell = self.ccia.get_corrected_cell(*cell_key)
 
         ax3 = fig.add_subplot(gs[1, 2])
         ax3.imshow(corrected_cell, **vv)
@@ -2141,7 +2152,7 @@ class HistEvaluation:
 
                 # contour of critical pixels
                 plt.sca(ax3)
-                plt.contour(cc.crit_pix_mask, levels=[0.5], colors='red', linewidths=1)
+                plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
 
         if save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
