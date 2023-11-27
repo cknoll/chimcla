@@ -2067,9 +2067,13 @@ class HistEvaluation:
         cell_mono = self.ccia.get_raw_cell(*cell_key, uncorrected=True)
         corrected_cell = self.get_corrected_cell(cell_key)
 
+        # create all axis objects
         fig = plt.figure(figsize=(9, 10))
-        gs = GridSpec(2, 5, figure=fig)
-        ax0 = fig.add_subplot(gs[0, :])
+        gs0 = fig.add_gridspec(2, 8, wspace=1.5, hspace=0.05)
+        ax0 = fig.add_subplot(gs0[0, :])
+        gssub = gs0[1, :4].subgridspec(1, 4, wspace=0.1)
+        ax1, ax2, ax3, ax4 = [fig.add_subplot(gssub[0, i]) for i in range(4)]
+        ax5 = fig.add_subplot(gs0[1, 4:])
 
         # trim border (which was increased before rotation)
         x, y, w, h = self.ccia.get_bbox_for_cell(*cell_key)[:4]
@@ -2081,25 +2085,34 @@ class HistEvaluation:
         ax0.axis("off")
 
         cell_rgb = self.ccia.get_raw_cell(*cell_key, rgb=True, uncorrected=True)
+        corrected_cell = self.ccia.get_corrected_cell(*cell_key)
 
-        ax1 = fig.add_subplot(gs[1, 0])
+        # in general the corrected cell might have less rows and colums than the original cell
+        # ignore missing rows for now
+        # -> fill up the missing colums with nan to achieve equally looking bars
+
+        col_diff = cell_mono.shape[1] - corrected_cell.shape[1]
+        nan_arr = np.zeros(cell_mono.shape[0]) + np.nan
+
+        correction_angle = corrected_cell.angle
+        corrected_cell2 = np.column_stack([corrected_cell, *([nan_arr]*col_diff)])
+
         ax1.imshow(cell_rgb)
         ax1.axis("off")
 
-        ax2 = fig.add_subplot(gs[1, 1])
         ax2.imshow(cell_mono, **vv)
         ax2.axis("off")
         ax2.set_title(str(cell_mono.shape))
 
-        corrected_cell = self.ccia.get_corrected_cell(*cell_key)
-
-        ax3 = fig.add_subplot(gs[1, 2])
-        ax3.imshow(corrected_cell, **vv)
+        ax3.imshow(corrected_cell2, **vv)
         ax3.axis("off")
         ax3.set_title(f"{corrected_cell.shape}")
 
-        ax4 = fig.add_subplot(gs[1, 3:])
-        plt.sca(ax4)  # set current axis
+        ax4.imshow(corrected_cell2, **vv)
+        ax4.axis("off")
+        ax4.set_title(f"{corrected_cell.shape}")
+
+        plt.sca(ax5)  # set current axis
 
         plt.plot(q.ii, q.mid)
         plt.plot(q.ii, q.lower)
@@ -2118,15 +2131,14 @@ class HistEvaluation:
             bottom=0.03,
             right=0.99,
             top=0.999,
-            wspace=0,
-            hspace=0.05
+            # wspace=0,
         )
 
-        plt.title(f"{corrected_cell.angle:01.2f}° A={cc.score:04.2f}")
+        plt.title(f"{correction_angle:01.2f}° A={cc.score:04.2f}")
 
         if self.ev_crit_pix:
             # visualize information about critical pixels (see self.get_critical_pixel_info())
-            plt.sca(ax4)
+            plt.sca(ax5)
 
             # vertical line, where critical pixels begin
             plt.plot([cc.crit_lightness]*2, [0, 8], "k--")
@@ -2157,8 +2169,8 @@ class HistEvaluation:
                 y_offset -= dy
                 plt.text(x_offset, y_offset, f"         q95 = {cc.crit_pix_q95:.1f}", **ff)
 
-                # contour of critical pixels
-                plt.sca(ax3)
+                # highlight of critical pixels
+                plt.sca(ax4)
 
                 cmap = plt.colormaps["viridis"]
                 rgb_corrected_cell = cmap(corrected_cell)[:, :, :3]
@@ -2187,7 +2199,6 @@ class HistEvaluation:
 
                     rgb_corrected_cell[mask, :] *= (1 - blend)
                     rgb_corrected_cell[mask, :] += blend*rgb_mask[mask, :]
-
 
                 # plt.imshow(rgb_mask*255, alpha=cc.crit_pix_mask)
                 plt.imshow(rgb_corrected_cell)# , alpha=cc.crit_pix_mask)
