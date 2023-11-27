@@ -1775,28 +1775,33 @@ class HistEvaluation:
 
         return q
 
-    def get_criticality_score(self, cell_hist, cell, q_lower, q_upper, ev_crit_pix=None, dc=None):
+    def get_criticality_score(self, cell_hist, cell, q, ev_crit_pix=None, dc=None):
         """
         for a given histogram and lower and upper bounds, calculate a score
         which reflects how critcal a given histogram is
+
+
+        :param q:  quantile container (with attributes q.lower, ...)
         """
+
+
         # estimate the index which marks the border between dark side and bright side
-        midpoint = int(np.average((np.argmax(q_lower), np.argmax(q_upper))))
+        midpoint = int(np.average((np.argmax(q.lower), np.argmax(q.upper))))
 
         idcs = np.arange(len(cell_hist))
         dark_mask = idcs <= midpoint
         bright_mask = idcs > midpoint
 
-        mask1 = cell_hist < q_lower
-        mask2 = cell_hist > q_upper
+        mask1 = cell_hist < q.lower
+        mask2 = cell_hist > q.upper
 
         # diff1: our curve is below the lower border
-        diff1_dark = q_lower[mask1*dark_mask] - cell_hist[mask1*dark_mask]
-        diff1_bright = q_lower[mask1*bright_mask] - cell_hist[mask1*bright_mask]
+        diff1_dark = q.lower[mask1*dark_mask] - cell_hist[mask1*dark_mask]
+        diff1_bright = q.lower[mask1*bright_mask] - cell_hist[mask1*bright_mask]
 
         # diff2: our curve is above the upper border
-        diff2_dark = cell_hist[mask2*dark_mask] - q_upper[mask2*dark_mask]
-        diff2_bright = cell_hist[mask2*bright_mask] - q_upper[mask2*bright_mask]
+        diff2_dark = cell_hist[mask2*dark_mask] - q.upper[mask2*dark_mask]
+        diff2_bright = cell_hist[mask2*bright_mask] - q.upper[mask2*bright_mask]
 
         # add up critical areas (deviations on the dark side is not so important )
 
@@ -1816,7 +1821,7 @@ class HistEvaluation:
 
 
         if ev_crit_pix or (ev_crit_pix is None and self.ev_crit_pix):
-            tmp_res = self.get_critical_pixel_info(cell_hist, cell, q_upper, dc=dc)
+            tmp_res = self.get_critical_pixel_info(cell_hist, cell, q_curve=q.mid, dc=dc)
 
             ## add all pixel-results
             res.__dict__.update(tmp_res.item_list())
@@ -1828,15 +1833,16 @@ class HistEvaluation:
 
         return res
 
-    def get_critical_pixel_info(self, cell_hist, cell, q_upper, dc=None):
+    def get_critical_pixel_info(self, cell_hist, cell, q_curve, dc=None):
         """
+        :param q_curve:  one of the histogram-quantile curves (e.g. q_upper, q_med, q_lower)
 
         """
         assert isinstance(cell, np.ndarray)
         res = Container()
 
         # find lowest lightness value (index of q_upper) for which q_upper is zero and stays zero until the end
-        res.crit_lightness = np.diff((q_upper==0)).nonzero()[0][-1] + 1
+        res.crit_lightness = np.diff((q_curve==0)).nonzero()[0][-1] + 1
 
         res.crit_pix_mask = cell*0
         res.crit_pix_mask[cell > res.crit_lightness] = 1
@@ -1925,7 +1931,7 @@ class HistEvaluation:
         if self.training_data_flag:
             self.save_corrected_cell(cell_key)
 
-        criticality_container = self.get_criticality_score(cell_hist, cell, q.lower, q.upper, dc=dc)
+        criticality_container = self.get_criticality_score(cell_hist, cell, q=q, dc=dc)
         res.criticality_score = criticality_container.score
         if self.CS_LIMIT < criticality_container.score:
             res.is_critical = True
@@ -2152,7 +2158,37 @@ class HistEvaluation:
 
                 # contour of critical pixels
                 plt.sca(ax3)
-                plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+
+                cmap = plt.colormaps["viridis"]
+                rgb_corrected_cell = cmap(corrected_cell)[:, :, :3]
+
+                # plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+
+                # use the mask with uniform color for highlight
+                rgb_mask = np.stack((cc.crit_pix_mask,)+(cc.crit_pix_mask*0,)*2, axis=2)
+
+                mask = np.array(cc.crit_pix_mask, dtype=bool)
+
+                hard_blend = True
+                # hard_blend = False
+
+                if hard_blend:
+
+                    blend = 1.0
+                else:
+                    diff = corrected_cell - cc.crit_lightness
+                    diff[diff>=0] += 50
+                    norm = plt.Normalize(vmax=255-cc.crit_lightness)
+                    blend = norm(diff)
+                    blend = np.repeat(blend[:, :, np.newaxis], 3, axis=2)[mask]
+
+                rgb_corrected_cell[mask, :] *= (1 - blend)
+                rgb_corrected_cell[mask, :] += blend*rgb_mask[mask, :]
+
+
+                # plt.imshow(rgb_mask*255, alpha=cc.crit_pix_mask)
+                plt.imshow(rgb_corrected_cell)# , alpha=cc.crit_pix_mask)
+                # plt.imshow(corrected_cell, **vv)# , alpha=cc.crit_pix_mask)
 
         if save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
