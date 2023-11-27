@@ -79,14 +79,16 @@ class ExtendedSqliteDict(SqliteDict):
 db = ExtendedSqliteDict("file-info.sqlite")
 
 
-def load_img(fpath):
+def load_img(fpath, rgb=False):
 
     assert os.path.isfile(fpath), f"FileNotFound: {fpath}"
     image1  = cv2.imread(fpath)
 
-    # image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
-
-    # use BGR, do not convert
+    if rgb:
+        image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+    else:
+        # use BGR, do not convert
+        pass
 
     return image1
 
@@ -1001,7 +1003,7 @@ class CavityCarrierImageAnalyzier:
         self.img_fpath = img_fpath
         self.img = load_img(img_fpath)
         self.img_fpath_uncorrected = get_original_image_fpath(img_fpath)
-        self.img_uncorrected = load_img(self.img_fpath_uncorrected)
+        self.img_uncorrected = load_img(self.img_fpath_uncorrected, rgb=True)
         self.img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         self.img_lght = cv2.split(cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB))[0]
 
@@ -1626,7 +1628,6 @@ def get_original_image_fpath(img_fpath, cropped=True, resized=True) -> str:
     assert new_dir.is_dir()
     u = new_dir/fname
     assert u.is_file()
-
     return u.as_posix()
 
 
@@ -2175,6 +2176,8 @@ class HistEvaluation:
                 if hard_blend:
 
                     blend = 1.0
+                    rgb_corrected_cell[mask, :] = rgb_mask[mask, :] * 0.5
+                    # IPS()
                 else:
                     diff = corrected_cell - cc.crit_lightness
                     diff[diff>=0] += 50
@@ -2182,8 +2185,8 @@ class HistEvaluation:
                     blend = norm(diff)
                     blend = np.repeat(blend[:, :, np.newaxis], 3, axis=2)[mask]
 
-                rgb_corrected_cell[mask, :] *= (1 - blend)
-                rgb_corrected_cell[mask, :] += blend*rgb_mask[mask, :]
+                    rgb_corrected_cell[mask, :] *= (1 - blend)
+                    rgb_corrected_cell[mask, :] += blend*rgb_mask[mask, :]
 
 
                 # plt.imshow(rgb_mask*255, alpha=cc.crit_pix_mask)

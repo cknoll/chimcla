@@ -71,6 +71,8 @@
 
 ### Romys neue Experimentaldaten:
 
+- py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-47-39_C50.jpg --suffix _psy1
+
 #### für Versuchspersonen:
 
 jeweils drei Bilder:
@@ -82,6 +84,20 @@ jeweils drei Bilder:
 #### Für Romy:
 
 Wie bisher, aber die original-Bilddaten für die Anzeige verwenden (nicht für die Verarbeitung)
+
+
+
+Ergebnisse Besprechung (2023-11-27 10:55):
+
+
+- Heatmap muss nicht über existierendes Bild drüber gelegt werden, sondern kann alleine stehen. Farbverlauf (Schwarz->Rot), Jet, ... (Vorschläge machen)
+- uniformes Einfärben mit Wert ca. 180
+- Tabelle (csv): Formen-Bild, Anzahl betroffener Riegel, Summe kritischer Pixel, max 95% quantil, Anzahl der Pixel, die >= q95 sind
+- Methodische Eckpunkte dokumentieren
+
+- Randbereiche bei kritischen Pixeln möglichst nicht einfärben
+- Woher kommt der Blaustich?
+
 
 
 
