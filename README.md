@@ -91,12 +91,20 @@ Ergebnisse Besprechung (2023-11-27 10:55):
 
 
 - Heatmap muss nicht über existierendes Bild drüber gelegt werden, sondern kann alleine stehen. Farbverlauf (Schwarz->Rot), Jet, ... (Vorschläge machen)
-- uniformes Einfärben mit Wert ca. 180
+- [x] uniformes Einfärben einzelner Stäbchen mit "mittlerem Wert"
+    - parametrisieren für einfacheres Erstellen von Vorschlägen
 - Tabelle (csv): Formen-Bild, Anzahl betroffener Riegel, Summe kritischer Pixel, max 95% quantil, Anzahl der Pixel, die >= q95 sind
 - Methodische Eckpunkte dokumentieren
 
-- Randbereiche bei kritischen Pixeln möglichst nicht einfärben
-- Woher kommt der Blaustich?
+- [] Randbereiche bei kritischen Pixeln möglichst nicht einfärben
+- [x] Woher kommt der Blaustich? -> BGR statt RGB
+
+
+--
+
+nächste Schritte:
+
+rückrechnen von ax4 auf originales Bild
 
 
 

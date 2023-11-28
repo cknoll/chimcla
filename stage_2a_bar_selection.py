@@ -1847,6 +1847,7 @@ class HistEvaluation:
 
         res.crit_pix_mask = cell*0
         res.crit_pix_mask[cell > res.crit_lightness] = 1
+        res.crit_pix_mask.dtype = bool
         res.crit_pix_vals = cell[cell > res.crit_lightness].flatten()
 
         # number of critical pixels -> area
@@ -2095,7 +2096,9 @@ class HistEvaluation:
         nan_arr = np.zeros(cell_mono.shape[0]) + np.nan
 
         correction_angle = corrected_cell.angle
-        corrected_cell2 = np.column_stack([corrected_cell, *([nan_arr]*col_diff)])
+
+        def add_nan(cell):
+            return np.column_stack([cell, *([nan_arr]*col_diff)])
 
         ax1.imshow(cell_rgb)
         ax1.axis("off")
@@ -2104,11 +2107,11 @@ class HistEvaluation:
         ax2.axis("off")
         ax2.set_title(str(cell_mono.shape))
 
-        ax3.imshow(corrected_cell2, **vv)
+        ax3.imshow(add_nan(corrected_cell), **vv)
         ax3.axis("off")
         ax3.set_title(f"{corrected_cell.shape}")
 
-        ax4.imshow(corrected_cell2, **vv)
+        ax4.imshow(add_nan(corrected_cell), **vv)
         ax4.axis("off")
         ax4.set_title(f"{corrected_cell.shape}")
 
@@ -2169,40 +2172,43 @@ class HistEvaluation:
                 y_offset -= dy
                 plt.text(x_offset, y_offset, f"         q95 = {cc.crit_pix_q95:.1f}", **ff)
 
+                # contour of critical pixels (useful for debugging)
+                if 0:
+                    plt.sca(ax3)
+                    plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+
                 # highlight of critical pixels
                 plt.sca(ax4)
 
-                cmap = plt.colormaps["viridis"]
-                rgb_corrected_cell = cmap(corrected_cell)[:, :, :3]
+                corrected_cell_hl = corrected_cell*0
 
-                # plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+                # cmap = plt.colormaps["viridis"]
+                # rgb_corrected_cell = cmap(corrected_cell2)[:, :, :3]
 
-                # use the mask with uniform color for highlight
-                rgb_mask = np.stack((cc.crit_pix_mask,)+(cc.crit_pix_mask*0,)*2, axis=2)
 
-                mask = np.array(cc.crit_pix_mask, dtype=bool)
+                # # use the mask with uniform color for highlight
+                # rgb_mask = np.stack((cc.crit_pix_mask,)+(cc.crit_pix_mask*0,)*2, axis=2)
+
+                # mask = np.array(cc.crit_pix_mask, dtype=bool)
 
                 hard_blend = True
                 # hard_blend = False
 
                 if hard_blend:
-
-                    blend = 1.0
-                    rgb_corrected_cell[mask, :] = rgb_mask[mask, :] * 0.5
-                    # IPS()
+                    corrected_cell_hl[cc.crit_pix_mask] = 255
                 else:
-                    diff = corrected_cell - cc.crit_lightness
-                    diff[diff>=0] += 50
-                    norm = plt.Normalize(vmax=255-cc.crit_lightness)
-                    blend = norm(diff)
-                    blend = np.repeat(blend[:, :, np.newaxis], 3, axis=2)[mask]
+                    # copy the original lightness values
 
-                    rgb_corrected_cell[mask, :] *= (1 - blend)
-                    rgb_corrected_cell[mask, :] += blend*rgb_mask[mask, :]
+                    critical_pixels = corrected_cell[cc.crit_pix_mask] - cc.crit_lightness
+                    norm_0_1 = plt.Normalize(vmax=255-cc.crit_lightness)
 
-                # plt.imshow(rgb_mask*255, alpha=cc.crit_pix_mask)
-                plt.imshow(rgb_corrected_cell)# , alpha=cc.crit_pix_mask)
-                # plt.imshow(corrected_cell, **vv)# , alpha=cc.crit_pix_mask)
+                    offset = 20
+                    critical_pixels = norm_0_1(critical_pixels)*(255 - offset) + offset
+
+                    corrected_cell_hl[cc.crit_pix_mask] = critical_pixels
+
+                # https://matplotlib.org/stable/gallery/color/colormap_reference.html
+                plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
         if save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
