@@ -97,6 +97,16 @@ def rgb(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
+def mpl_draw_rect(x, y, w, h, ax=None, linewidth=1, edgecolor='r', facecolor='none'):
+
+    import matplotlib.patches as patches
+    ax = plt.gca()
+    rect = patches.Rectangle((x, y),w, h, linewidth=linewidth, edgecolor=edgecolor, facecolor=facecolor)
+
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+
+
 def background(f):
     """
     decorator for paralelization
@@ -1240,7 +1250,9 @@ class CavityCarrierImageAnalyzier:
             # plt.imshow(rgb(part_img))
             plt.imshow(L)
 
-        return L
+        L2 = Attr_Array(L)
+        L2.bbox = bbox[:4]
+        return L2
 
     def find_cell_corners(self, hr_row, hr_col, plot=False, dc=None):
         """
@@ -1361,13 +1373,13 @@ class CavityCarrierImageAnalyzier:
 
     def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, force_angle=None, dc=None):
 
-        cell = self.get_raw_cell(hr_row, hr_col, e, f)
+        raw_cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
         if force_angle is None:
             angle = self.estimate_angle_for_cell(hr_row, hr_col, e=e, f=f, dc=dc)
         else:
             angle = force_angle
-        new_cell = rotate_img(cell, -angle)
+        new_cell = rotate_img(raw_cell, -angle)
 
         # this operation changed the data type -> convert back to uint
         new_cell2 = np.array(new_cell, dtype=np.uint8)
@@ -1393,9 +1405,11 @@ class CavityCarrierImageAnalyzier:
                 if np.abs(avg_left - avg) > 2*std:
                     # cut off left column
                     new_cell2 = new_cell2[:, 1:]
+                    x += 1
                 elif np.abs(avg_right - avg) > 2*std:
                     # cut off right column
                     new_cell2 = new_cell2[:, :-1]
+                    w -= 1
                 else:
                     break
 
@@ -1408,6 +1422,8 @@ class CavityCarrierImageAnalyzier:
 
         new_cell3 = Attr_Array(new_cell2)
         new_cell3.angle = angle
+        new_cell3.raw_cell_bbox = raw_cell.bbox
+        new_cell3.corrected_bbox = x, y, w, h
 
         return new_cell3
 
@@ -2180,33 +2196,7 @@ class HistEvaluation:
                 # highlight of critical pixels
                 plt.sca(ax4)
 
-                corrected_cell_hl = corrected_cell*0
-
-                # cmap = plt.colormaps["viridis"]
-                # rgb_corrected_cell = cmap(corrected_cell2)[:, :, :3]
-
-
-                # # use the mask with uniform color for highlight
-                # rgb_mask = np.stack((cc.crit_pix_mask,)+(cc.crit_pix_mask*0,)*2, axis=2)
-
-                # mask = np.array(cc.crit_pix_mask, dtype=bool)
-
-                hard_blend = True
-                # hard_blend = False
-
-                if hard_blend:
-                    corrected_cell_hl[cc.crit_pix_mask] = 255
-                else:
-                    # copy the original lightness values
-
-                    critical_pixels = corrected_cell[cc.crit_pix_mask] - cc.crit_lightness
-                    norm_0_1 = plt.Normalize(vmax=255-cc.crit_lightness)
-
-                    offset = 20
-                    critical_pixels = norm_0_1(critical_pixels)*(255 - offset) + offset
-
-                    corrected_cell_hl[cc.crit_pix_mask] = critical_pixels
-
+                corrected_cell_hl = self.highlight_cell(corrected_cell, cc, hard_blend=True)
                 # https://matplotlib.org/stable/gallery/color/colormap_reference.html
                 plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
@@ -2215,6 +2205,25 @@ class HistEvaluation:
             plt.savefig(new_fpath)
             plt.close()
             # self.create_symlink(new_fpath, cc.score)
+
+    @staticmethod
+    def highlight_cell(corrected_cell, cc, hard_blend=True):
+        corrected_cell_hl = corrected_cell*0
+        if hard_blend:
+            corrected_cell_hl[cc.crit_pix_mask] = 255
+        else:
+            # copy the original lightness values
+
+            critical_pixels = corrected_cell[cc.crit_pix_mask] - cc.crit_lightness
+            norm_0_1 = plt.Normalize(vmax=255-cc.crit_lightness)
+
+            offset = 20
+            critical_pixels = norm_0_1(critical_pixels)*(255 - offset) + offset
+
+            corrected_cell_hl[cc.crit_pix_mask] = critical_pixels
+        return corrected_cell
+
+
 
     def create_symlink(self, existing_fpath, crit_score):
 
