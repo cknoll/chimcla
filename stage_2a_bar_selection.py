@@ -20,6 +20,7 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib import colormaps
 
 from scipy import optimize
 from addict import Addict
@@ -1038,6 +1039,34 @@ class CavityCarrierImageAnalyzier:
 
         ax.imshow(self.img, **vv)
 
+    @staticmethod
+    def replace_cell(img, bbox, cell_img):
+
+        x, y, w, h = bbox
+        if isinstance(cell_img, np.ndarray):
+
+            diff_h  = cell_img.shape[0] - h
+            diff_w  = cell_img.shape[1] - w
+
+            # diff < 0 means: cell_img is smaller → delta < 0
+            # h is decreased, y is increased
+
+            for i in range(abs(diff_h)):
+                delta = np.sign(diff_h)
+                h += delta
+                if i % 2 == 1:
+                    y -= delta
+
+            for i in range(abs(diff_w)):
+                delta = np.sign(diff_w)
+                w += delta
+                if i % 2 == 1:
+                    x -= delta
+
+            assert cell_img.shape[:2] == (h, w)
+
+        img[y:y+h, x:x+w] = cell_img
+
     def detrend_upper_row(self):
         """
         Identify a linear trend in the upper rown and compensate it.
@@ -1679,7 +1708,7 @@ class HistEvaluation:
     # limit for which criticality score (cs) a histogram is considered an anomaly
     CS_LIMIT = 20
 
-    def __init__(self, img_fpath: str, suffix="", ev_crit_pix=False, training_data_flag=False):
+    def __init__(self, img_fpath: str, suffix: str = "", ev_crit_pix=False, training_data_flag=False):
         """
         :param ev_crit_pix:         bool; default False; evaluate critical pixels
                                     if true additional information about the critical pixels is collected and stored
@@ -1689,10 +1718,13 @@ class HistEvaluation:
 
         self.img_fpath = img_fpath
         self.ccia = CavityCarrierImageAnalyzier(self.img_fpath)
+        self.experimental_img = None
+        self.cmap_hl = colormaps["copper"]
         self.ev_crit_pix = ev_crit_pix
         self.training_data_flag=training_data_flag
         self.corrected_cell_cache = {}
         self.critical_hist_dir = self._get_result_dir_from_suffix(suffix)
+        self.experimental_img_dir = f"experimental_imgs{suffix}"
         self.hist_cache = self.initialize_hist_cache()
 
         self.img_dir, self.img_fname = os.path.split(img_fpath)
@@ -1953,7 +1985,9 @@ class HistEvaluation:
         res.criticality_score = criticality_container.score
         if self.CS_LIMIT < criticality_container.score:
             res.is_critical = True
-        if res.is_critical or force_plot:
+        if save_options.get("create_experimental_img"):
+            self.save_cell_for_experimental_img(cell_key, cell_hist, q, criticality_container, save_options)
+        elif res.is_critical or force_plot:
             print(self.img_fpath, cell_key, criticality_container.score)
             try:
                 self.save_and_plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, save_options=save_options)
@@ -1966,6 +2000,41 @@ class HistEvaluation:
             dc.fetch_locals()
 
         return res
+
+    def save_cell_for_experimental_img(self, cell_key, cell_hist, q, cc, save_options):
+        """
+
+        :param cc:  crititcality_container
+        """
+        hard_blend = save_options.get("blend_hard", True)
+        if self.experimental_img is None:
+            # create a working copy of the uncorrected image
+            self.experimental_img = self.ccia.img_uncorrected*1
+
+        ccell = self.ccia.get_corrected_cell(*cell_key)
+
+        if cc.crit_pix_nbr >= 5:
+            ccell_hl = self.highlight_cell(ccell, cc, hard_blend, blend_value=save_options.get("blend_value", 120))
+            ccell_rgb = self.cmap_hl(ccell_hl)[:, :, :3]*255 ##:i
+            print(cell_key)
+        else:
+            ccell_rgb = 0
+
+        self.ccia.replace_cell(self.experimental_img, ccell.raw_cell_bbox, cell_img=ccell_rgb)
+
+    def save_experimental_img(self, fsuffix=""):
+        fname = f"{self.img_basename}_exp_{fsuffix}{self.img_ext}"
+        fpath = os.path.join(self.experimental_img_dir, fname)
+
+        os.makedirs(self.experimental_img_dir, exist_ok=True)
+        res = cv2.imwrite(fpath, cv2.cvtColor(self.experimental_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 98])
+        assert res, f"Something went wrong during the creation of {fpath}"
+        print(f"written: {fpath}")
+
+        # copy original image
+        cmd = f"cp {self.ccia.img_fpath_uncorrected} {self.experimental_img_dir}"
+        print(cmd)
+        os.system(cmd)
 
     def get_corrected_cell(self, cell_key):
         # assume the cache has been filled by self.initialize_hist_cache()
@@ -2207,21 +2276,21 @@ class HistEvaluation:
             # self.create_symlink(new_fpath, cc.score)
 
     @staticmethod
-    def highlight_cell(corrected_cell, cc, hard_blend=True):
+    def highlight_cell(corrected_cell, cc, hard_blend=True, blend_value=120):
         corrected_cell_hl = corrected_cell*0
         if hard_blend:
-            corrected_cell_hl[cc.crit_pix_mask] = 255
+            corrected_cell_hl[cc.crit_pix_mask] = blend_value
         else:
             # copy the original lightness values
 
             critical_pixels = corrected_cell[cc.crit_pix_mask] - cc.crit_lightness
             norm_0_1 = plt.Normalize(vmax=255-cc.crit_lightness)
 
-            offset = 20
+            offset = blend_value
             critical_pixels = norm_0_1(critical_pixels)*(255 - offset) + offset
 
             corrected_cell_hl[cc.crit_pix_mask] = critical_pixels
-        return corrected_cell
+        return corrected_cell_hl
 
 
 

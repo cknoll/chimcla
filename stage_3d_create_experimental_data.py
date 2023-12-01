@@ -18,8 +18,8 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
-import stage_2a_bar_selection as bs
-import asyncio_tools as aiot
+from stage2 import stage_2a_bar_selection as bs
+from stage2 import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
@@ -67,12 +67,50 @@ parser.add_argument(
     type=int,
 )
 
+parser.add_argument(
+    "--blend-value",
+    "-bv",
+    default=120,
+    type=int,
+)
+
+parser.add_argument(
+    "--blend-hard",
+    "-bm",
+    help= "0 (soft, default) or 1 (hard)",
+    default=0,
+    type=int,
+)
+
 args = parser.parse_args()
 
 
 def process_img(img_fpath):
-    original_img_fpath = bs.get_original_image_fpath(img_fpath)
-    IPS()
+    # original_img_fpath = bs.get_original_image_fpath(img_fpath)
+
+    he = bs.HistEvaluation(img_fpath, suffix=args.suffix, ev_crit_pix=True)
+    he.initialize_hist_cache()
+
+    # default values:
+    save_options = {"create_experimental_img": True, "blend_hard": args.blend_hard == 1, "blend_value": args.blend_value}
+
+    err_list = []
+    try:
+        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
+    except Exception as ex:
+        print(img_fpath, ex)
+        img_fname = os.path.split(img_fpath)[-1]
+        err_list.extend([img_fname, str(ex)])
+        crit_cell_list = None
+        raise
+
+    if args.blend_hard:
+        fsuffix = f"hard"
+    else:
+        fsuffix = f"soft"
+    fsuffix = f"{fsuffix}_{args.blend_value}"
+    he.save_experimental_img(fsuffix=fsuffix)
+
 
 
 from collections import defaultdict
