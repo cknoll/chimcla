@@ -110,7 +110,7 @@ def mpl_draw_rect(x, y, w, h, ax=None, linewidth=1, edgecolor='r', facecolor='no
 
 def background(f):
     """
-    decorator for paralelization
+    decorator for parallelization
     """
     # source: https://stackoverflow.com/a/59385935
     def wrapped(*args, **kwargs):
@@ -172,19 +172,19 @@ def get_bbox_list_robust(img, expected_number, plot=False, return_all=False, dc=
         return bbox_list
     img2 = vertical_detrend(img, y_start=13, y_end=100, dc=dc)
 
-    for thresh in CavityCarrierImageAnalyzier.THRESHOLDS:
+    for thresh in CavityCarrierImageAnalyzer.THRESHOLDS:
         bbox_list = get_bbox_list(img2, plot, return_all, thresh=thresh, dc=dc)
         if len(bbox_list) == expected_number:
             return bbox_list
 
-    msg = "could not find bbox, even with detrend and differnt threshold"
+    msg = "could not find bbox, even with detrend and different threshold"
     raise MissingBoundingBoxes(msg)
 
 
 
 
 def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
-    # notes for tresh: 70 resulted as too low, 80 as too high
+    # notes for thresh: 70 resulted as too low, 80 as too high
 
     if plot:
         img2 = rgb(img*1)
@@ -315,7 +315,7 @@ def handle_missing_boxes(bbox_list, fpath):
     if len(missing_boxes) > 0:
         # IPS()
 
-        msg = f"missing bboxex for {fpath}: {missing_boxes}"
+        msg = f"missing bboxes for {fpath}: {missing_boxes}"
         raise NotImplementedError(msg)
 
     # TODO:
@@ -556,10 +556,10 @@ class Fitter:
         borders = list(params[:L // 2])
         borders.pop(1)
 
-        # the last (right) boder is infinity (because we use `<`)
+        # the last (right) border is infinity (because we use `<`)
         borders.append(np.inf)
 
-        # now compile a list of index-arrays which corresspond to the borders
+        # now compile a list of index-arrays which corresponds to the borders
         all_idcs = np.arange(self.ii.shape[0])
         L_all_idcs = self.ii.shape[0]
 
@@ -628,7 +628,7 @@ def process_column(img, j, plot=False):
     return p
 
 
-BAR_TRESHOLD = 110
+BAR_THRESHOLD = 110
 
 def get_test_column_idcs(img, plot=False):
     """
@@ -636,7 +636,7 @@ def get_test_column_idcs(img, plot=False):
     """
 
     n_rows, n_cols = img.shape
-    dark_pixel_share = np.sum(img < BAR_TRESHOLD, axis=0)/n_rows
+    dark_pixel_share = np.sum(img < BAR_THRESHOLD, axis=0)/n_rows
 
     jj = np.arange(n_cols)
 
@@ -751,7 +751,7 @@ def get_symlog_hist(img_fpath, hr_row, hr_col, delta=None, return_cell=False, dc
     """
 
     if ccia is None:
-        ccia = CavityCarrierImageAnalyzier(img_fpath)
+        ccia = CavityCarrierImageAnalyzer(img_fpath)
 
     cell = ccia.get_corrected_cell(hr_row, hr_col)
 
@@ -994,7 +994,7 @@ def main():
     # plt.show()
 
 
-class CavityCarrierImageAnalyzier:
+class CavityCarrierImageAnalyzer:
     BBOX_EXPECTED_WITH = 26
     BBOX_EXPECTED_HEIGHT = 104
     BBOX_EXPECTED_DX = 7  # horizontal space between boxes
@@ -1069,7 +1069,7 @@ class CavityCarrierImageAnalyzier:
 
     def detrend_upper_row(self):
         """
-        Identify a linear trend in the upper rown and compensate it.
+        Identify a linear trend in the upper row and compensate it.
 
         Intended to be used for bbox detection only
         """
@@ -1102,7 +1102,7 @@ class CavityCarrierImageAnalyzier:
             self.bbox_list = bbox_list
             return
 
-        last_excption = None
+        last_exception = None
 
         self.bbox_cache = []
 
@@ -1141,7 +1141,7 @@ class CavityCarrierImageAnalyzier:
 
 
         while len(c1.store) < self.BBOX_NUMBER:
-            # find a bbox which has missing direct neighbour
+            # find a bbox which has missing direct neighbor
             row, col_border, col_missing = self.find_bbox_border(c1)
 
             hr_row = "abc"[row]
@@ -1229,16 +1229,16 @@ class CavityCarrierImageAnalyzier:
         for (row, col), bbox in bb_container.store.items():
 
             if 0 < col < 26:
-                possible_neigbours = [col -1, col + 1]
+                possible_neighbors = [col -1, col + 1]
             elif col == 0:
-                possible_neigbours = [col + 1]
+                possible_neighbors = [col + 1]
             elif col == 26:
-                possible_neigbours = [col - 1]
+                possible_neighbors = [col - 1]
             else:
                 msg = f"Unexpected column value: {col}"
                 raise ValueError(msg)
 
-            for col_test in possible_neigbours:
+            for col_test in possible_neighbors:
                 if (row, col_test) not in bb_container.store:
                     return row, col, col_test
 
@@ -1388,7 +1388,7 @@ class CavityCarrierImageAnalyzier:
 
     def estimate_angle_for_cell(self, hr_row, hr_col, e=3, f=3, dc=None):
         """
-        Use angle analyser if possible. Evaluate image otherwise
+        Use angle analyzer if possible. Evaluate image otherwise
         """
 
         if aa.available:
@@ -1423,7 +1423,7 @@ class CavityCarrierImageAnalyzier:
             for i in range(1):
                 if new_cell2.shape[1] <=  BBOX_MIN_WITH:
                     break
-                # we cut off a border column if it deviates too buch from the rest (inner area)
+                # we cut off a border column if it deviates too much from the rest (inner area)
                 delta = 1
                 avg = np.average(new_cell2[delta:-delta, delta:-delta])
                 std = np.std(new_cell2)
@@ -1456,6 +1456,8 @@ class CavityCarrierImageAnalyzier:
 
         return new_cell3
 
+# this prevents old notebooks from breaking due to typo-fixing
+CavityCarrierImageAnalyzier = CavityCarrierImageAnalyzer
 
 class AngleAnalyzer:
     def __init__(self):
@@ -1522,7 +1524,7 @@ class AngleAnalyzer:
                 plt.plot(self.avg[k], "--", color=colors[i])
                 plt.plot(self.ii, values, color=colors[i])
 
-    def get_angle_offset_for_img(self, ccia: CavityCarrierImageAnalyzier):
+    def get_angle_offset_for_img(self, ccia: CavityCarrierImageAnalyzer):
 
         estimated_angles = []
         expected_angles = []
@@ -1598,16 +1600,16 @@ def get_angle_from_moments(img):
     return theta
 
 
-def get_border_columns(cell_img, dark_value_tresh=100, dark_share_tresh=0.7, dc=None):
+def get_border_columns(cell_img, dark_value_thresh=100, dark_share_thresh=0.7, dc=None):
     """
     For a given cell image return the indices of columns, that are the border of the chocolate bar
     """
     n_rows, n_cols = cell_img.shape
-    dark_pixel_share = np.sum(cell_img < dark_value_tresh, axis=0)/n_rows
+    dark_pixel_share = np.sum(cell_img < dark_value_thresh, axis=0)/n_rows
 
     jj = np.arange(n_cols)
 
-    dark_pixel_indices = jj[dark_pixel_share > dark_share_tresh]
+    dark_pixel_indices = jj[dark_pixel_share > dark_share_thresh]
 
     j_first, j_last = dark_pixel_indices[[0, -1]]
 
@@ -1717,7 +1719,7 @@ class HistEvaluation:
         """
 
         self.img_fpath = img_fpath
-        self.ccia = CavityCarrierImageAnalyzier(self.img_fpath)
+        self.ccia = CavityCarrierImageAnalyzer(self.img_fpath)
         self.experimental_img = None
         self.cmap_hl = colormaps["copper"]
         self.ev_crit_pix = ev_crit_pix
@@ -1827,7 +1829,7 @@ class HistEvaluation:
     def get_criticality_score(self, cell_hist, cell, q, ev_crit_pix=None, dc=None):
         """
         for a given histogram and lower and upper bounds, calculate a score
-        which reflects how critcal a given histogram is
+        which reflects how critical a given histogram is
 
 
         :param q:  quantile container (with attributes q.lower, ...)
@@ -2004,7 +2006,7 @@ class HistEvaluation:
     def save_cell_for_experimental_img(self, cell_key, cell_hist, q, cc, save_options):
         """
 
-        :param cc:  crititcality_container
+        :param cc:  criticality_container
         """
         hard_blend = save_options.get("blend_hard", True)
         if self.experimental_img is None:
@@ -2054,8 +2056,8 @@ class HistEvaluation:
 
     def false_positive_correction(self, false_positive_dir):
         """
-        This iterates over false positives and adapts the affected historgrams such that they are not
-        recognized as annomaly anymore.
+        This iterates over false positives and adapts the affected histograms such that they are not
+        recognized as anomaly anymore.
         """
 
         false_positive_fpath_list = glob.glob(f"{false_positive_dir}/*.jpg")
@@ -2173,9 +2175,9 @@ class HistEvaluation:
         cell_rgb = self.ccia.get_raw_cell(*cell_key, rgb=True, uncorrected=True)
         corrected_cell = self.ccia.get_corrected_cell(*cell_key)
 
-        # in general the corrected cell might have less rows and colums than the original cell
+        # in general the corrected cell might have less rows and columns than the original cell
         # ignore missing rows for now
-        # -> fill up the missing colums with nan to achieve equally looking bars
+        # -> fill up the missing columns with nan to achieve equally looking bars
 
         col_diff = cell_mono.shape[1] - corrected_cell.shape[1]
         nan_arr = np.zeros(cell_mono.shape[0]) + np.nan
