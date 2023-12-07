@@ -1721,7 +1721,7 @@ class HistEvaluation:
         self.img_fpath = img_fpath
         self.ccia = CavityCarrierImageAnalyzer(self.img_fpath)
         self.experimental_img = None
-        self.cmap_hl = colormaps["copper"]
+        self.cmap_hl = colormaps["inferno"]
         self.ev_crit_pix = ev_crit_pix
         self.training_data_flag=training_data_flag
         self.corrected_cell_cache = {}

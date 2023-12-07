@@ -17,6 +17,7 @@ class TestCases1(unittest.TestCase):
         bs.get_symlog_hist(tmp_path, *"a 20".split(), dc=None)
 
     def test03_find_critical(self):
-        he = bs.HistEvaluation()
-        he.find_critical_cells()
-        pass
+        tmp_path = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-19-25_C50.jpg"
+        he = bs.HistEvaluation(img_fpath=tmp_path)
+        he.initialize_hist_cache()
+        he.find_critical_cells_for_img(save_options = {"save_plot": False, "push_db": False})

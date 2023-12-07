@@ -75,7 +75,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--blend-hard",
+    "--blend-mode",
     "-bm",
     help= "0 (soft, default) or 1 (hard)",
     default=0,
@@ -92,7 +92,7 @@ def process_img(img_fpath):
     he.initialize_hist_cache()
 
     # default values:
-    save_options = {"create_experimental_img": True, "blend_hard": args.blend_hard == 1, "blend_value": args.blend_value}
+    save_options = {"create_experimental_img": True, "blend_hard": args.blend_mode == 1, "blend_value": args.blend_value}
 
     err_list = []
     try:
@@ -104,7 +104,7 @@ def process_img(img_fpath):
         crit_cell_list = None
         raise
 
-    if args.blend_hard:
+    if args.blend_mode:
         fsuffix = f"hard"
     else:
         fsuffix = f"soft"
@@ -146,7 +146,11 @@ def run_this_script(img_path, **kwargs):
 
     option_str = " ".join(option_str_elements)
 
-    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {args.suffix} {option_str}".strip()
+    option_str += f"-bm {args.blend_mode} -bv {args.blend_value}"
+
+    new_suffix = f"{args.suffix}_bm{args.blend_mode}_bv{args.blend_value}"
+
+    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {new_suffix} {option_str}".strip()
     print(cmd)
     res = os.system(cmd)
     res = 0

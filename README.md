@@ -35,8 +35,8 @@
 - Histogramme (minimalinvasiv) so korrigieren, dass falsch positive akzeptiert werden
     - http://localhost:8888/notebooks/XAI-DIA/image_classification/stage2/b_05_adapt_histograms.ipynb
     - → "_total_res.dill" wird angepasst
-    
-    
+
+
 ## Stage 3
 
 - Klassifikation komplettes VZ:
@@ -102,6 +102,14 @@ Ergebnisse Besprechung (2023-11-27 10:55):
 
 --
 
+
+- [ ] je 100 Bilder mit verschiedenen Farbeinstellungen
+    - im suffix notieren: farbeinstellungen
+    - im Dateinamen notieren gesamt-Kritikalität
+
+
+--
+
 nächste Schritte:
 
 rückrechnen von ax4 auf originales Bild
@@ -115,7 +123,7 @@ rückrechnen von ax4 auf originales Bild
 
 Stand:
 
-at 15:53:27 ❯ dirsizes 
+at 15:53:27 ❯ dirsizes
 sizes of directories in megabytes
 0       2023-05-26
 1       bilder_jpg0
