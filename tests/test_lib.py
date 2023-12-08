@@ -1,10 +1,20 @@
 import unittest
 from .. import stage_2a_bar_selection as bs
+from .. import stage_2a_bar_selection
 
 # run eg with `pytest -s -k test01``
 
 
 class TestCases1(unittest.TestCase):
+
+    def test00_ips(self):
+        from ipydex import IPS
+        db = bs.db
+
+        # keys: CCI-fnames like "2023-06-26_23-20-31_C0.jpg"
+        # values:  list of critical cell-imgs like ['2023-06-26_23-20-31_C0_a16.jpg', '2023-06-26_23-20-31_C0_a26.jpg', ...]
+        cmp = db["cell_mappings"]
+        IPS()
 
     def test01_bboxes(self):
         # tmp_path = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-19-25_C50.jpg"

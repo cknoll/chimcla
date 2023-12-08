@@ -19,6 +19,7 @@ from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 
 from stage2 import stage_2a_bar_selection as bs
+
 from stage2 import asyncio_tools as aiot
 
 
@@ -86,9 +87,23 @@ args = parser.parse_args()
 
 
 def process_img(img_fpath):
+
+    # ignore cells where only a few pixels are critical
+
     # original_img_fpath = bs.get_original_image_fpath(img_fpath)
 
+    bs.CRIT_PIX_THRESHOLD = 50
+
+
+    fname = os.path.split(img_fpath)[-1]
+
+    # if f"{he.img_basename}{he.img_ext}" not in FILES:
+    # if fname not in FILES:
+    #     # save time: only process known images
+    #     print("nope")
+    #     return
     he = bs.HistEvaluation(img_fpath, suffix=args.suffix, ev_crit_pix=True)
+
     he.initialize_hist_cache()
 
     # default values:
@@ -109,8 +124,15 @@ def process_img(img_fpath):
     else:
         fsuffix = f"soft"
     fsuffix = f"{fsuffix}_{args.blend_value}"
-    he.save_experimental_img(fsuffix=fsuffix)
+    summary = he.get_criticality_summary()
+    if summary.crit_score_avg > 50:
 
+        # bs.db["criticality_summary"][he.img_basename] = dict(summary.item_list())
+        # bs.db.commit()
+        bs.db.put("criticality_summary", he.img_basename, value=dict(summary.item_list()), commit=True)
+
+        score_str = str(int(summary.crit_score_avg))
+        he.save_experimental_img(fprefix=f"S{score_str}_", fsuffix=fsuffix)
 
 
 from collections import defaultdict
@@ -135,7 +157,7 @@ def update_cell_mappings():
     bs.db.commit()
 
 
-@aiot.background
+# @aiot.background
 def run_this_script(img_path, **kwargs):
 
     options = kwargs.get("options", {})
@@ -156,6 +178,7 @@ def run_this_script(img_path, **kwargs):
     res = 0
 
     if res != 0:
+        print("ERROR\n", cmd)
         ERROR_CMDS.append(cmd)
 
 
@@ -163,17 +186,19 @@ def aio_main():
 
     update_cell_mappings()
 
-    arg_list = bs.get_img_list(args.img_dir)[:args.limit]
-    func = run_this_script
+    arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
 
     # prepare options for passing to individual calls
     options = {}
 
     if args.no_parallel:
-        for arg in arg_list:
+        func = run_this_script
+        for i, arg in enumerate(arg_list):
+            # print(i)
             func(arg, options=options)
     else:
-        aiot.run(aiot.main(func=func, arg_list=arg_list, options=options))
+        wrapped_func=aiot.background(run_this_script)
+        aiot.run(aiot.main(func=wrapped_func, arg_list=arg_list, options=options))
 
     if ERROR_CMDS:
         print(

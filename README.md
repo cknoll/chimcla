@@ -72,6 +72,9 @@
 ### Romys neue Experimentaldaten:
 
 - `py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-47-39_C50.jpg --suffix _psy1`
+- zum interaktiven Experimentieren: `pytest -sk 00_ips tests/`
+
+
 
 #### für Versuchspersonen:
 

@@ -45,6 +45,8 @@ BBOX_TOL = 6
 # this is used to decide wether outlier columns might be removed
 BBOX_MIN_WITH = 23
 
+# minimal number of critical pixels (might be overwritten from where this module is imported)
+CRIT_PIX_THRESHOLD = 5
 
 vv = {"vmin": 0, "vmax": 255}
 
@@ -1639,7 +1641,52 @@ def get_cell_key_from_fpath(fpath):
     return cell_key
 
 
-def get_img_list(img_dir):
+INCLUDE_FILES = [
+    '2023-06-26_08-58-00_C50.jpg',
+    '2023-06-26_08-59-09_C50.jpg',
+    '2023-06-26_19-39-32_C50.jpg',
+    '2023-06-26_08-51-33_C50.jpg',
+    '2023-06-26_19-15-00_C50.jpg',
+    '2023-06-26_08-51-25_C50.jpg',
+    '2023-06-26_20-06-20_C50.jpg',
+    '2023-06-26_09-05-25_C50.jpg',
+    '2023-06-26_19-22-06_C50.jpg',
+    '2023-06-26_19-40-00_C50.jpg',
+    '2023-06-26_19-50-20_C50.jpg',
+    '2023-06-26_19-15-08_C50.jpg',
+    '2023-06-26_08-56-33_C50.jpg',
+    '2023-06-26_08-58-19_C50.jpg',
+    '2023-06-26_19-34-29_C50.jpg',
+    '2023-06-26_20-18-05_C50.jpg',
+    '2023-06-26_09-32-42_C50.jpg',
+    '2023-06-26_09-00-03_C50.jpg',
+    '2023-06-26_08-50-55_C50.jpg',
+    '2023-06-26_09-07-19_C50.jpg',
+    '2023-06-26_20-33-10_C50.jpg',
+    '2023-06-26_20-50-37_C50.jpg',
+    '2023-06-26_20-28-07_C50.jpg',
+    '2023-06-26_08-51-39_C50.jpg',
+    '2023-06-26_20-29-01_C50.jpg',
+    '2023-06-26_20-13-50_C50.jpg',
+    '2023-06-26_09-20-42_C50.jpg',
+    '2023-06-26_09-15-58_C50.jpg',
+    '2023-06-26_19-49-38_C50.jpg',
+    '2023-06-26_09-25-12_C50.jpg',
+    '2023-06-26_09-05-30_C50.jpg',
+    '2023-06-26_19-57-51_C50.jpg',
+    '2023-06-26_20-32-31_C50.jpg',
+    '2023-06-26_20-18-42_C50.jpg',
+    '2023-06-26_20-44-01_C50.jpg',
+    '2023-06-26_19-53-05_C50.jpg',
+    '2023-06-26_20-01-50_C50.jpg',
+    '2023-06-26_19-48-11_C50.jpg',
+    '2023-06-26_08-59-25_C50.jpg',
+    '2023-06-26_19-45-35_C50.jpg',
+    '2023-06-26_20-14-05_C50.jpg',
+    '2023-06-26_19-45-44_C50.jpg'
+]
+
+def get_img_list(img_dir, limit=None):
 
     img_path_list = glob.glob(f"{img_dir}/*.jpg")
     img_path_list.sort()
@@ -1657,7 +1704,16 @@ def get_img_list(img_dir):
         else:
             img_path_list2.append(img_fpath)
 
-    return img_path_list2
+    img_path_list3 = img_path_list2[:limit]
+
+    if INCLUDE_FILES is not None:
+        img_path_list4 = []
+        for p in img_path_list3:
+            fname = os.path.split(p)[-1]
+            if fname in INCLUDE_FILES:
+                img_path_list4.append(p)
+
+    return img_path_list4
 
 
 def get_original_image_fpath(img_fpath, cropped=True, resized=True) -> str:
@@ -1742,8 +1798,44 @@ class HistEvaluation:
         # this is used for false positive correction
         self.total_res_adapted = copy.deepcopy(self.total_res)
 
+        # this is used to treat the whole image later:
+        self.criticality_container_cache = {}
+
         # helpful for debugging
         self.current_cell_key = None
+
+    def get_criticality_summary(self, save_to_db=False):
+        """
+        iterate over self.criticality_container_cache and return cumulated values
+        """
+
+        summary = Container(
+            crit_cell_number=0, crit_pix_number=0, q95_list=[], crit_pix_above_q95_num=0, crit_score_list=[],
+        )
+        assert len(self.criticality_container_cache) > 20
+        for key, cc in self.criticality_container_cache.items():
+            if cc.is_critical and cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
+                # print(key, cc.crit_pix_nbr)
+                summary.crit_cell_number += 1
+                summary.crit_pix_number += cc.crit_pix_nbr
+                summary.crit_score_list.append(cc.score)
+                summary.q95_list.append(cc.crit_pix_q95)
+                summary.crit_pix_above_q95_num += cc.crit_pix_q95_nbr
+
+        if summary.crit_cell_number:
+            summary.crit_score_avg = np.average(summary.crit_score_list)
+            summary.q95_avg = np.average(summary.q95_list)
+        else:
+            summary.crit_score_avg = -1
+            summary.q95_avg = -1
+
+        if save_to_db:
+            #db["criticality_summary"][self.img_basename] = dict(summary.item_list())
+            db.put("criticality_summary", self.img_basename, value=dict(summary.item_list()), commit=True)
+            db.commit()
+
+        return summary
+
 
     def get_bbox_for_cell(self, hr_row, hr_col):
         return self.ccia.get_bbox_for_cell(hr_row, hr_col)
@@ -1882,6 +1974,8 @@ class HistEvaluation:
             assert isinstance(dc, Container)
             dc.fetch_locals()
 
+        # this decision is made on a higher level
+        res.is_critical = None
         return res
 
     def get_critical_pixel_info(self, cell_hist, cell, q_curve, dc=None):
@@ -1907,6 +2001,7 @@ class HistEvaluation:
             res.crit_pix_mean = np.mean(res.crit_pix_vals)
             res.crit_pix_median = np.median(res.crit_pix_vals)
             res.crit_pix_q95 = np.quantile(res.crit_pix_vals, 0.95)
+            res.crit_pix_q95_nbr = len(cell[cell >= res.crit_pix_q95].flatten())
 
         if dc:
             assert isinstance(dc, Container)
@@ -1987,6 +2082,7 @@ class HistEvaluation:
         res.criticality_score = criticality_container.score
         if self.CS_LIMIT < criticality_container.score:
             res.is_critical = True
+            criticality_container.is_critical = True
         if save_options.get("create_experimental_img"):
             self.save_cell_for_experimental_img(cell_key, cell_hist, q, criticality_container, save_options)
         elif res.is_critical or force_plot:
@@ -2001,6 +2097,8 @@ class HistEvaluation:
             assert isinstance(dc, Container)
             dc.fetch_locals()
 
+
+        self.criticality_container_cache[cell_key] = criticality_container
         return res
 
     def save_cell_for_experimental_img(self, cell_key, cell_hist, q, cc, save_options):
@@ -2015,17 +2113,17 @@ class HistEvaluation:
 
         ccell = self.ccia.get_corrected_cell(*cell_key)
 
-        if cc.crit_pix_nbr >= 5:
+        if cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
             ccell_hl = self.highlight_cell(ccell, cc, hard_blend, blend_value=save_options.get("blend_value", 120))
             ccell_rgb = self.cmap_hl(ccell_hl)[:, :, :3]*255 ##:i
-            print(cell_key)
+            # print(cell_key, cc.crit_pix_nbr)
         else:
             ccell_rgb = 0
 
         self.ccia.replace_cell(self.experimental_img, ccell.raw_cell_bbox, cell_img=ccell_rgb)
 
-    def save_experimental_img(self, fsuffix=""):
-        fname = f"{self.img_basename}_exp_{fsuffix}{self.img_ext}"
+    def save_experimental_img(self, fprefix="", fsuffix=""):
+        fname = f"{fprefix}{self.img_basename}_exp_{fsuffix}{self.img_ext}"
         fpath = os.path.join(self.experimental_img_dir, fname)
 
         os.makedirs(self.experimental_img_dir, exist_ok=True)
@@ -2034,7 +2132,8 @@ class HistEvaluation:
         print(f"written: {fpath}")
 
         # copy original image
-        cmd = f"cp {self.ccia.img_fpath_uncorrected} {self.experimental_img_dir}"
+        orig_fpath = os.path.join(self.experimental_img_dir, f"{fprefix}{self.img_basename}{self.img_ext}")
+        cmd = f"cp {self.ccia.img_fpath_uncorrected} {orig_fpath}"
         print(cmd)
         os.system(cmd)
 
