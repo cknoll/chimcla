@@ -2046,6 +2046,7 @@ class HistEvaluation:
         crit_cell_list = []
         for cell_key in cell_keys:
             if cell_key in exclude_cell_keys:
+                self.ignore_cell_on_experimental_img(cell_key)
                 continue
             res = self.evaluate_cell(cell_key, save_options=save_options)
             if res.is_critical:
@@ -2100,6 +2101,10 @@ class HistEvaluation:
 
         self.criticality_container_cache[cell_key] = criticality_container
         return res
+
+    def ignore_cell_on_experimental_img(self, cell_key):
+        cc = Container(crit_pix_nbr=0)
+        self.save_cell_for_experimental_img(cell_key, cell_hist=None, q=None, cc=cc, save_options={})
 
     def save_cell_for_experimental_img(self, cell_key, cell_hist, q, cc, save_options):
         """

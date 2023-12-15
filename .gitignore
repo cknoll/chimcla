@@ -11,3 +11,4 @@ hist_cache1.dill
 single_bars
 *.sqlite
 bar_imperfections
+tmp*

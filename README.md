@@ -72,6 +72,8 @@
 ### Romys neue Experimentaldaten:
 
 - `py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-47-39_C50.jpg --suffix _psy1`
+- `py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 50`
+- `py3 stage_3e_create_experimental_data_csv.py experimental_imgs_psy01_bm0_bv50`
 - zum interaktiven Experimentieren: `pytest -sk 00_ips tests/`
 
 
@@ -110,12 +112,13 @@ Ergebnisse Besprechung (2023-11-27 10:55):
     - im suffix notieren: farbeinstellungen
     - im Dateinamen notieren gesamt-Kritikalität
 
+    
+--    
+
+- [] Hard Blend 150 oder Median der Softblend-Werte
+- [] Varianz in Tabelle und anottieren
 
 --
-
-nächste Schritte:
-
-rückrechnen von ax4 auf originales Bild
 
 
 
