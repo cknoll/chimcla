@@ -123,6 +123,13 @@ def background(f):
 # ------------------
 
 
+def put_text(image, origin, text, fontScale=0.35, color=(255, 0, 0), thickness=1):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    image = cv2.putText(image, text, origin, font,
+                    fontScale, color, thickness, cv2.LINE_AA)
+    return image
+
+
 def vertical_detrend(img, y_start, y_end, dc=None):
     """
     Identify a linear trend in vertical direction and compensate it.
@@ -1686,6 +1693,8 @@ INCLUDE_FILES = [
     '2023-06-26_19-45-44_C50.jpg'
 ]
 
+INCLUDE_FILES = None
+
 def get_img_list(img_dir, limit=None):
 
     img_path_list = glob.glob(f"{img_dir}/*.jpg")
@@ -1712,6 +1721,8 @@ def get_img_list(img_dir, limit=None):
             fname = os.path.split(p)[-1]
             if fname in INCLUDE_FILES:
                 img_path_list4.append(p)
+    else:
+        img_path_list4 = img_path_list3
 
     return img_path_list4
 
@@ -2118,7 +2129,11 @@ class HistEvaluation:
 
         ccell = self.ccia.get_corrected_cell(*cell_key)
 
-        if cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
+        CRIT_SCORE_THRESH = save_options.get("crit_score_thresh", 20)
+
+        plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) and (cc.score >= CRIT_SCORE_THRESH)
+
+        if plot_cond:
             ccell_hl = self.highlight_cell(ccell, cc, hard_blend, blend_value=save_options.get("blend_value", 120))
             ccell_rgb = self.cmap_hl(ccell_hl)[:, :, :3]*255 ##:i
             # print(cell_key, cc.crit_pix_nbr)
@@ -2126,6 +2141,19 @@ class HistEvaluation:
             ccell_rgb = 0
 
         self.ccia.replace_cell(self.experimental_img, ccell.raw_cell_bbox, cell_img=ccell_rgb)
+
+        if plot_cond and save_options.get("print_std_deviation"):
+            std = float(np.std(cc.crit_pix_vals))
+            mean = int(np.mean(cc.crit_pix_vals))
+            std_str = f"{std:04.1f}"
+            mean_str = f"{mean}"
+
+            dy = 16
+            origin = ccell.raw_cell_bbox[:2] + np.array([0, ccell.raw_cell_bbox[3]+dy])
+            put_text(self.experimental_img, origin, mean_str)
+            origin = ccell.raw_cell_bbox[:2] + np.array([0, ccell.raw_cell_bbox[3]+2*dy])
+            put_text(self.experimental_img, origin, std_str)
+            print(cell_key, std_str)
 
     def save_experimental_img(self, fprefix="", fsuffix=""):
         fname = f"{fprefix}{self.img_basename}_exp_{fsuffix}{self.img_ext}"

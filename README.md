@@ -78,6 +78,34 @@
 
 
 
+
+```
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 50
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 70
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 90
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 110
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 130
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 150
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 170
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 190
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-39_C50.jpg --suffix _psy1 -std -bv 210
+
+
+
+
+# img_dir
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 50
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 70
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 90
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 110
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 130
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 150
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 170
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 190
+
+```
+
+
 #### für Versuchspersonen:
 
 jeweils drei Bilder:
@@ -112,8 +140,8 @@ Ergebnisse Besprechung (2023-11-27 10:55):
     - im suffix notieren: farbeinstellungen
     - im Dateinamen notieren gesamt-Kritikalität
 
-    
---    
+
+--
 
 - [] Hard Blend 150 oder Median der Softblend-Werte
 - [] Varianz in Tabelle und anottieren

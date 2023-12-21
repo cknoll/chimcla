@@ -83,6 +83,13 @@ parser.add_argument(
     type=int,
 )
 
+parser.add_argument(
+    "--print-std-deviation",
+    "-std",
+    help= "print standard deviation of critical pixels for each critical cell onto the image",
+    action="store_true",
+)
+
 args = parser.parse_args()
 
 
@@ -92,7 +99,7 @@ def process_img(img_fpath):
 
     # original_img_fpath = bs.get_original_image_fpath(img_fpath)
 
-    bs.CRIT_PIX_THRESHOLD = 50
+    bs.CRIT_PIX_THRESHOLD = 15
 
 
     fname = os.path.split(img_fpath)[-1]
@@ -107,7 +114,13 @@ def process_img(img_fpath):
     he.initialize_hist_cache()
 
     # default values:
-    save_options = {"create_experimental_img": True, "blend_hard": args.blend_mode == 1, "blend_value": args.blend_value}
+    save_options = {
+        "create_experimental_img": True,
+        "blend_hard": args.blend_mode == 1,
+        "blend_value": args.blend_value,
+        "print_std_deviation": args.print_std_deviation,
+        "crit_score_thresh": 80,
+    }
 
     err_list = []
     try:
