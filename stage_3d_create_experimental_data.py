@@ -99,7 +99,8 @@ def process_img(img_fpath):
 
     # original_img_fpath = bs.get_original_image_fpath(img_fpath)
 
-    bs.CRIT_PIX_THRESHOLD = 15
+    bs.CRIT_PIX_THRESHOLD = 40
+    bs.PREPROCESS_BORDERS = True
 
 
     fname = os.path.split(img_fpath)[-1]
@@ -119,7 +120,10 @@ def process_img(img_fpath):
         "blend_hard": args.blend_mode == 1,
         "blend_value": args.blend_value,
         "print_std_deviation": args.print_std_deviation,
-        "crit_score_thresh": 80,
+        "crit_score_thresh": 40,
+        # determine how much the crit_score_thresh is lowered for every crit pixel
+        "crit_score_slope": -.25,
+
     }
 
     err_list = []

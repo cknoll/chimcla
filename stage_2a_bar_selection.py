@@ -42,6 +42,11 @@ BBOX_EXPECTED_WITH = 26
 BBOX_EXPECTED_HEIGHT = 104
 BBOX_TOL = 6
 
+
+# this serves to suppress unwanted critical pixels at the border for the generation
+# of the experimental images (False by default)
+PREPROCESS_BORDERS = False
+
 # this is used to decide wether outlier columns might be removed
 BBOX_MIN_WITH = 23
 
@@ -54,6 +59,11 @@ vv = {"vmin": 0, "vmax": 255}
 CELL_KEY_END = None
 cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:CELL_KEY_END]
 
+
+def unpack_key(txt: str):
+    return txt[0], txt[1:]
+
+uk = unpack_key
 
 class ExtendedSqliteDict(SqliteDict):
     def put(self, main_key, sub_key, value, commit=False):
@@ -1032,6 +1042,7 @@ class CavityCarrierImageAnalyzer:
         # this will be a dict for handling situations, where finding
         # bboxes is difficult
         self.bbox_cache = None
+        self.corrected_cell_cache = {}
 
         if bboxes:
             self.detrend_upper_row()
@@ -1410,6 +1421,17 @@ class CavityCarrierImageAnalyzer:
 
 
     def get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, force_angle=None, dc=None):
+
+        key = (hr_row, hr_col, e, f, cut_to_bb)
+        cached_res = self.corrected_cell_cache.get(key)
+        if cached_res is not None:
+            return cached_res
+
+        res = self._get_corrected_cell(hr_row, hr_col, e, f, cut_to_bb, plot, force_angle, dc)
+        self.corrected_cell_cache[key] = res
+        return res
+
+    def _get_corrected_cell(self, hr_row, hr_col, e=3, f=3, cut_to_bb=True, plot=False, force_angle=None, dc=None):
 
         raw_cell = self.get_raw_cell(hr_row, hr_col, e, f)
 
@@ -1824,6 +1846,9 @@ class HistEvaluation:
             crit_cell_number=0, crit_pix_number=0, q95_list=[], crit_pix_above_q95_num=0, crit_score_list=[],
         )
         assert len(self.criticality_container_cache) > 20
+
+
+
         for key, cc in self.criticality_container_cache.items():
             if cc.is_critical and cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
                 # print(key, cc.crit_pix_nbr)
@@ -1875,7 +1900,6 @@ class HistEvaluation:
                 cell = None
             self.hist_cache[cell_key].append(hist_smooth)
             self.hist_cache["angles"][cell_key] = dc.angle
-            self.corrected_cell_cache[cell_key] = cell
 
         return self.hist_cache
 
@@ -1919,12 +1943,12 @@ class HistEvaluation:
                 fp.write(f"{fname}\n")
                 fp.write("\n")
 
-    def get_quantiles(self, tup):
+    def get_quantiles(self, cell_key):
         q = Container()
 
-        q.lower = self.total_res[tup]["q_lower"]
-        q.mid = self.total_res[tup]["q_mid"]
-        q.upper = self.total_res[tup]["q_upper"]
+        q.lower = self.total_res[cell_key]["q_lower"]
+        q.mid = self.total_res[cell_key]["q_mid"]
+        q.upper = self.total_res[cell_key]["q_upper"]
         q.ii = np.arange(len(q.lower))
 
         return q
@@ -1998,7 +2022,8 @@ class HistEvaluation:
         res = Container()
 
         # find lowest lightness value (index of q_upper) for which q_upper is zero and stays zero until the end
-        res.crit_lightness = np.diff((q_curve==0)).nonzero()[0][-1] + 1
+        # then subtract 5 to correct for the smoothening of the histogram
+        res.crit_lightness = np.diff((q_curve==0)).nonzero()[0][-1] - 5
 
         res.crit_pix_mask = cell*0
         res.crit_pix_mask[cell > res.crit_lightness] = 1
@@ -2065,6 +2090,16 @@ class HistEvaluation:
         return crit_cell_list
 
 
+    def preprocess_cell_borders(self, cell_key, border_value=65):
+        cell = self.get_corrected_cell(cell_key)
+        cell[:, 0] = border_value
+        cell[:, -1] = border_value
+        cell[0, :] = border_value
+        cell[-1, :] = border_value
+
+        # visible block for debugging
+        # cell[:20, :] = border_value
+
     def evaluate_cell(self, cell_key, dc=None, save_options=None, force_plot=False, recalc_hist=False,):
         """
         returns 0 for an uncritical cell, 1 for a critical cell
@@ -2072,6 +2107,9 @@ class HistEvaluation:
         """
 
         assert save_options is not None
+
+        if PREPROCESS_BORDERS:
+            self.preprocess_cell_borders(cell_key)
 
         # test error handling
         # if "2023-06-26_23-23-21_C0" in img_fpath:
@@ -2129,9 +2167,13 @@ class HistEvaluation:
 
         ccell = self.ccia.get_corrected_cell(*cell_key)
 
-        CRIT_SCORE_THRESH = save_options.get("crit_score_thresh", 20)
+        CRIT_SCORE_THRESH = save_options.get("crit_score_thresh", self.CS_LIMIT)
+        CRIT_SCORE_SLOPE = save_options.get("crit_score_slope", 0)
+        assert CRIT_SCORE_SLOPE <= 0
 
-        plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) and (cc.score >= CRIT_SCORE_THRESH)
+        # plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) and (cc.score >= CRIT_SCORE_THRESH)
+        plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) \
+            and (cc.score >= CRIT_SCORE_THRESH + CRIT_SCORE_SLOPE*cc.crit_pix_nbr)
 
         if plot_cond:
             ccell_hl = self.highlight_cell(ccell, cc, hard_blend, blend_value=save_options.get("blend_value", 120))
@@ -2171,10 +2213,9 @@ class HistEvaluation:
         os.system(cmd)
 
     def get_corrected_cell(self, cell_key):
-        # assume the cache has been filled by self.initialize_hist_cache()
-        cell = self.corrected_cell_cache[cell_key]
-        assert cell is not None
-        return cell
+
+        assert len(self.ccia.corrected_cell_cache) > 60
+        return self.ccia.get_corrected_cell(*cell_key)
 
     def save_corrected_cell(self, cell_key):
         corrected_cell = self.get_corrected_cell(cell_key)
@@ -2218,10 +2259,6 @@ class HistEvaluation:
             dill.dump(self.total_res_adapted, fp)
 
         print(f"File written: {self.total_res_fpath}")
-
-
-
-
 
 
     def fp_correct_for_cell(self, cell_pict_fpath):
@@ -2305,18 +2342,17 @@ class HistEvaluation:
         ax0.axis("off")
 
         cell_rgb = self.ccia.get_raw_cell(*cell_key, rgb=True, uncorrected=True)
-        corrected_cell = self.ccia.get_corrected_cell(*cell_key)
 
         # in general the corrected cell might have less rows and columns than the original cell
         # ignore missing rows for now
         # -> fill up the missing columns with nan to achieve equally looking bars
 
         col_diff = cell_mono.shape[1] - corrected_cell.shape[1]
-        nan_arr = np.zeros(cell_mono.shape[0]) + np.nan
 
         correction_angle = corrected_cell.angle
 
         def add_nan(cell):
+            nan_arr = np.zeros(cell.shape[0]) + np.nan
             return np.column_stack([cell, *([nan_arr]*col_diff)])
 
         ax1.imshow(cell_rgb)
@@ -2358,7 +2394,7 @@ class HistEvaluation:
 
         plt.title(f"{correction_angle:01.2f}° A={cc.score:04.2f}")
 
-        if self.ev_crit_pix:
+        if 1 or self.ev_crit_pix:
             # visualize information about critical pixels (see self.get_critical_pixel_info())
             plt.sca(ax5)
 
@@ -2367,6 +2403,7 @@ class HistEvaluation:
 
             # more text information
             if cc.crit_pix_nbr >= 5:
+                # not all information is available for cells with few critical pixels
 
                 x, y = cc.crit_pix_mean, 4
                 plt.plot([x]*2, [0, y], ":", color="0.6")
@@ -2391,21 +2428,22 @@ class HistEvaluation:
                 y_offset -= dy
                 plt.text(x_offset, y_offset, f"         q95 = {cc.crit_pix_q95:.1f}", **ff)
 
-                # contour of critical pixels (useful for debugging)
-                if 0:
-                    plt.sca(ax3)
-                    plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+            # contour of critical pixels (useful for debugging)
+            if 0:
+                plt.sca(ax3)
+                plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
 
-                # highlight of critical pixels
-                plt.sca(ax4)
+            # highlight of critical pixels
+            plt.sca(ax4)
 
-                corrected_cell_hl = self.highlight_cell(corrected_cell, cc, hard_blend=True)
-                # https://matplotlib.org/stable/gallery/color/colormap_reference.html
-                plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
+            corrected_cell_hl = self.highlight_cell(corrected_cell, cc, hard_blend=True)
+            # https://matplotlib.org/stable/gallery/color/colormap_reference.html
+            plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
         if save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)
             plt.savefig(new_fpath)
+            print(new_fpath)
             plt.close()
             # self.create_symlink(new_fpath, cc.score)
 

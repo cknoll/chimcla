@@ -144,9 +144,25 @@ Ergebnisse Besprechung (2023-11-27 10:55):
 --
 
 - [] Hard Blend 150 oder Median der Softblend-Werte
-- [] Varianz in Tabelle und anottieren
+- [] Varianz in Tabelle und annotieren
+- [] Tab separiert
+- S123_2023-06-26_08-51-33_C50_exp_soft_50 debuggen
 
 --
+
+- S123_2023-06-26_08-51-33_C50_exp_soft_50 debuggen
+
+py3 stage_3d_create_experimental_data.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-33_C50.jpg --suffix _psy1 -std -bv 210
+
+-> Es kommt nur S94 raus
+Zelle B19 wird hervorgehoben
+
+Was bedeuten die Zahlen? mittelwert und Standardabweichung
+
+
+b17 analyse:
+
+py3 stage_3b_hist_area_based_classification.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-33_C50.jpg
 
 
 

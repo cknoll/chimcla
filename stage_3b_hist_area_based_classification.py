@@ -106,6 +106,9 @@ def process_img(img_fpath):
 
     training_data_flag = args.generate_training_data
 
+    # only for debugging
+    # bs.PREPROCESS_BORDERS = True
+
     he = bs.HistEvaluation(
         img_fpath, suffix=args.suffix, ev_crit_pix=True, training_data_flag=training_data_flag,
     )
