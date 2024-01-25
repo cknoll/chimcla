@@ -21,6 +21,13 @@
     - `py3 stage1f_evaluate_csv__copy_to_dir.py cropped/chunk0XYZ_shading_corrected/output/assigned_classes.csv`
 
 
+
+### Probleme:
+
+2023-06-26_07-54-48_C0.jpg could not find bbox, even with detrend and different threshold
+
+
+
 ## Stage 2 (wip):
 
 - für jedes Bild: für jedes Stäbchen ein Histogramm:
@@ -102,6 +109,21 @@ py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carst
 py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 150
 py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 170
 py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected --suffix _psy01 -bm 0 -bv 190
+
+
+
+Sonntag:
+
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk007_shading_corrected --suffix _psy01 -bm 0 -bv 60
+
+
+
+
+# problematische Bilder beim Erzeugen der CSV-Datei (KeyError):
+
+'2023-06-27_04-19-04_C0'
+'2023-06-27_09-38-31_C5'
+
 
 ```
 

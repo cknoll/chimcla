@@ -11,6 +11,7 @@ import itertools as it
 import collections
 import argparse
 from colorama import Fore, Style
+import pathlib
 
 import dill
 
@@ -37,6 +38,18 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '--img_dir',
     help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0",
+    default=None,
+)
+
+parser.add_argument(
+    '--img_dir_base',
+    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/",
+    default=None,
+)
+
+parser.add_argument(
+    '--img_dir_src',
+    help="directory with already processed images -> extract the basename",
     default=None,
 )
 
@@ -110,9 +123,7 @@ def process_img(img_fpath):
     #     # save time: only process known images
     #     print("nope")
     #     return
-    he = bs.HistEvaluation(img_fpath, suffix=args.suffix, ev_crit_pix=True)
 
-    he.initialize_hist_cache()
 
     # default values:
     save_options = {
@@ -127,6 +138,14 @@ def process_img(img_fpath):
     }
 
     err_list = []
+    try:
+        he = bs.HistEvaluation(img_fpath, suffix=args.suffix, ev_crit_pix=True)
+        he.initialize_hist_cache()
+    except (bs.MissingBoundingBoxes, ValueError) as ex:
+        path = os.path.join(*pathlib.Path(img_fpath).parts[-2:])
+        print(bs.yellow(path), bs.bred(str(ex)))
+        return
+
     try:
         crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
     except Exception as ex:
@@ -149,7 +168,8 @@ def process_img(img_fpath):
         bs.db.put("criticality_summary", he.img_basename, value=dict(summary.item_list()), commit=True)
 
         score_str = str(int(summary.crit_score_avg))
-        he.save_experimental_img(fprefix=f"S{score_str}_", fsuffix=fsuffix)
+        # he.save_experimental_img(fprefix=f"S{score_str}_", fsuffix=fsuffix)
+        he.save_experimental_img(fprefix=f"P{summary.crit_pix_number}_", fsuffix=fsuffix)
 
 
 from collections import defaultdict
@@ -203,7 +223,12 @@ def aio_main():
 
     update_cell_mappings()
 
-    arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
+    if args.img_dir:
+        arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
+    else:
+        assert args.img_dir_base
+        assert args.img_dir_src
+        arg_list = get_img_list_from_src_dir()[:args.limit]
 
     # prepare options for passing to individual calls
     options = {}
@@ -224,11 +249,42 @@ def aio_main():
             "\n".join(ERROR_CMDS),
         )
 
+
+
+def get_img_list_from_src_dir():
+
+    # taken from stage_3e
+    dn = args.img_dir_src
+    paths = glob.glob(f"{dn}/*jpg")
+    base_names0 = [p.replace(f"{dn}/", "") for p in paths if "exp_" not in p]
+    base_names = ["_".join(bn.split("_")[1:]) for bn in base_names0]
+    base_names_set = set(base_names)
+
+    dn2 = args.img_dir_base
+    original_img_paths = glob.glob(f"{dn2}/*_shading_corrected/*jpg")
+
+    relevant_img_paths = []
+    for p in original_img_paths:
+        if os.path.split(p)[1] in base_names_set:
+            relevant_img_paths.append(p)
+
+    return relevant_img_paths
+
+
+
 def main():
 
     if args.img:
         process_img(args.img)
     elif args.img_dir:
+        aio_main()
+    elif args.img_dir_base:
+        # only process images which have been found to be relevant by another run
+        # used to create new color variations
+
+        # py3 stage_3d_create_experimental_data.py --img_dir_base /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped --img_dir_src experimental_imgs_psy01_bm0_bv60 --suffix _psy01 -bm 0 -bv 60
+        # py3 stage_3d_create_experimental_data.py --img_dir_base /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped --img_dir_src experimental_imgs_psy01_bm0_bv60 --suffix _psy01 -bm 1 -bv 110
+        assert not args.img_dir
         aio_main()
     else:
         parser.print_help()

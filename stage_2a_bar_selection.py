@@ -1844,11 +1844,12 @@ class HistEvaluation:
 
         summary = Container(
             crit_cell_number=0, crit_pix_number=0, q95_list=[], crit_pix_above_q95_num=0, crit_score_list=[],
+            crit_pix_vals=[],
         )
         assert len(self.criticality_container_cache) > 20
 
 
-
+        # iterate over critical cells
         for key, cc in self.criticality_container_cache.items():
             if cc.is_critical and cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
                 # print(key, cc.crit_pix_nbr)
@@ -1857,13 +1858,30 @@ class HistEvaluation:
                 summary.crit_score_list.append(cc.score)
                 summary.q95_list.append(cc.crit_pix_q95)
                 summary.crit_pix_above_q95_num += cc.crit_pix_q95_nbr
+                summary.crit_pix_vals.append(cc.crit_pix_vals)
 
         if summary.crit_cell_number:
             summary.crit_score_avg = np.average(summary.crit_score_list)
             summary.q95_avg = np.average(summary.q95_list)
+
+            summary.crit_pix_vals = np.concatenate(summary.crit_pix_vals)
+            summary.crit_pix_mean = np.mean(summary.crit_pix_vals)
+            summary.crit_pix_std = np.std(summary.crit_pix_vals)
+            summary.crit_pix_median = np.median(summary.crit_pix_vals)
+            summary.crit_pix_q95 = np.quantile(summary.crit_pix_vals, .95)
+            summary.crit_pix_q05 = np.quantile(summary.crit_pix_vals, .05)
         else:
             summary.crit_score_avg = -1
             summary.q95_avg = -1
+
+            summary.crit_pix_mean = -1
+            summary.crit_pix_std = -1
+            summary.crit_pix_median = -1
+            summary.crit_pix_q95 = -1
+            summary.crit_pix_q05 = -1
+
+        # don't save all the pixel values in the database
+        del summary.crit_pix_vals
 
         if save_to_db:
             #db["criticality_summary"][self.img_basename] = dict(summary.item_list())
@@ -1997,7 +2015,7 @@ class HistEvaluation:
         res.score = area2
         res.score_str = f"{int(res.score):04d}"
 
-
+        # get additional information (like number of critical pixels)
         if ev_crit_pix or (ev_crit_pix is None and self.ev_crit_pix):
             tmp_res = self.get_critical_pixel_info(cell_hist, cell, q_curve=q.mid, dc=dc)
 
@@ -2147,7 +2165,6 @@ class HistEvaluation:
             assert isinstance(dc, Container)
             dc.fetch_locals()
 
-
         self.criticality_container_cache[cell_key] = criticality_container
         return res
 
@@ -2174,6 +2191,9 @@ class HistEvaluation:
         # plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) and (cc.score >= CRIT_SCORE_THRESH)
         plot_cond = (cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD) \
             and (cc.score >= CRIT_SCORE_THRESH + CRIT_SCORE_SLOPE*cc.crit_pix_nbr)
+
+        # useful for debugging
+        # IPS(cell_key == uk("b6"))
 
         if plot_cond:
             ccell_hl = self.highlight_cell(ccell, cc, hard_blend, blend_value=save_options.get("blend_value", 120))
@@ -2483,6 +2503,26 @@ class HistEvaluation:
             os.symlink(os.path.join("..", fname), os.path.join(dst_dir, fname))
         except FileExistsError:
             pass
+
+
+
+from colorama import Style, Fore
+
+
+def bright(txt):
+    return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bgreen(txt):
+    return f"{Fore.GREEN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bred(txt):
+    return f"{Fore.RED}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def yellow(txt):
+    return f"{Fore.YELLOW}{txt}{Style.RESET_ALL}"
 
 
 if __name__ == "__main__":

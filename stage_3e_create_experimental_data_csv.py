@@ -44,6 +44,25 @@ parser.add_argument(
 args = parser.parse_args()
 
 
+def get_all_files_for_basename(dirname: str, basename: str):
+
+    # example:
+    # bn = '2023-06-26_09-05-30_C50.jpg'
+    # res = [
+    # 'experimental_imgs_psy01_bm0_bv60/P178_2023-06-26_09-05-30_C50.jpg',
+    # 'experimental_imgs_psy01_bm0_bv60/P178_2023-06-26_09-05-30_C50_exp_hard_110.jpg',
+    # 'experimental_imgs_psy01_bm0_bv60/P178_2023-06-26_09-05-30_C50_exp_soft_60.jpg'
+    # ]
+
+    res = glob.glob(f"{dirname}/*{os.path.splitext(basename)[0]}*")
+
+    # drop the dirname
+    res = [os.path.split(elt)[1] for elt in res]
+
+    assert len(res) == 3
+    return res
+
+
 def main():
 
     dn = args.dirname
@@ -52,22 +71,38 @@ def main():
     base_names = ["_".join(bn.split("_")[1:]) for bn in base_names0]
     import pandas as pd
 
-
-    data = {"fname": [], "crit_cells": [], "crit_pix": [], "max_q95": [], "pix_above_q95": []}
+    data = {
+        "fname_raw": [],
+        "fname_orig": [],
+        "fname_hard": [],
+        "fname_soft": [],
+        "crit_cells": [], "crit_pix": [], "max_q95": [], "pix_above_q95": [],
+        "crit_pix_mean": [],
+        "crit_pix_std": [],
+        "crit_pix_median": [],
+        "crit_pix_q95": [],
+        "crit_pix_q05": [],
+    }
 
     df = pd.DataFrame(data)
 
     for bn in base_names:
+        fnames = get_all_files_for_basename(dirname=dn, basename=bn)
         try:
             s = summary = Container(**bs.db["criticality_summary"][bn[:-4]])
         except KeyError as ex:
-            print(str(ex))
+            print(f"KeyError for {str(ex)}")
             continue
-        df.loc[len(df.index)] = [bn, s.crit_cell_number, s.crit_pix_number, np.max(s.q95_list), s.crit_pix_above_q95_num]
+        df.loc[len(df.index)] = [
+            bn, *fnames, s.crit_cell_number, s.crit_pix_number, np.max(s.q95_list), s.crit_pix_above_q95_num,
+            s.crit_pix_mean, s.crit_pix_std, s.crit_pix_median, s.crit_pix_q95, s.crit_pix_q05,
+        ]
 
 
     csv_fname = os.path.join(dn, "_data.csv")
-    df.to_csv(csv_fname)
+
+    # tab-separated csv
+    df.to_csv(csv_fname, sep='\t')
     print(f"file written {csv_fname}")
 
 if __name__ == "__main__":
