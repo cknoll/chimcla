@@ -95,6 +95,13 @@ parser.add_argument(
     type=int,
 )
 
+parser.add_argument(
+    "--adgen-mode",
+    "-ad",
+    help="activate annotation data generation mode (default is analysis mode)",
+    action="store_true",
+)
+
 args = parser.parse_args()
 
 
@@ -115,7 +122,7 @@ def process_img(img_fpath):
     he.initialize_hist_cache()
 
     # default values:
-    save_options = {"save_plot": True, "push_db": True}
+    save_options = {"save_plot": True, "push_db": True, "adgen_mode": args.adgen_mode}
 
     if args.no_imgs:
         save_options.pop("save_plot")

@@ -2325,24 +2325,41 @@ class HistEvaluation:
         :param q:  quantile container
         """
 
+        # pack all relevant data in a container to pass it to the plotting function
+        c = cell_data = Container(cc=cc, cell_hist=cell_hist, q=q, save_options=save_options)
+
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
-        new_fname = f"{basename}_{hr_row}{hr_col}{ext}"
-        new_fpath = f"{self.critical_hist_dir}/{new_fname}"
+        c.new_fname = f"{basename}_{hr_row}{hr_col}{ext}"
+        c.new_fpath = f"{self.critical_hist_dir}/{c.new_fname}"
 
         if save_options["push_db"]:
             # anchor::db_keys
             keys = ["crit_pix_nbr", "crit_pix_mean", "crit_pix_median", "crit_pix_q95", "score_str"]
-            db.put_container(new_fname, cc, keys)
+            db.put_container(c.new_fname, cc, keys)
             db.commit()
 
         if not any( (save_options.get("create_plot"), save_options.get("save_plot")) ):
             # no reason to create image
             return
 
-        cell_key =  (hr_row, hr_col)
-        cell_mono = self.ccia.get_raw_cell(*cell_key, uncorrected=True)
-        corrected_cell = self.get_corrected_cell(cell_key)
+
+        c.cell_key =  (hr_row, hr_col)
+        c.cell_mono = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True)
+        c.corrected_cell = self.get_corrected_cell(c.cell_key)
+
+        adgen_mode = save_options["adgen_mode"]
+        if adgen_mode:
+            self._plot_cell_annotation_data_image(cell_data)
+        else:
+            self._plot_cell_analysis_image(cell_data)
+
+    def _plot_cell_annotation_data_image(self, cell_data: Container):
+        raise NotImplementedError("see next commit")
+
+    def _plot_cell_analysis_image(self, cell_data: Container):
+
+        c = cell_data
 
         # create all axis objects
         fig = plt.figure(figsize=(9, 10))
@@ -2353,7 +2370,7 @@ class HistEvaluation:
         ax5 = fig.add_subplot(gs0[1, 4:])
 
         # trim border (which was increased before rotation)
-        x, y, w, h = self.ccia.get_bbox_for_cell(*cell_key)[:4]
+        x, y, w, h = self.ccia.get_bbox_for_cell(*c.cell_key)[:4]
         new_img = self.ccia.img_uncorrected.copy()
         dx = dy = 3
         lw = 2  # linewidth
@@ -2361,15 +2378,15 @@ class HistEvaluation:
         ax0.imshow(new_img)
         ax0.axis("off")
 
-        cell_rgb = self.ccia.get_raw_cell(*cell_key, rgb=True, uncorrected=True)
+        cell_rgb = self.ccia.get_raw_cell(*c.cell_key, rgb=True, uncorrected=True)
 
         # in general the corrected cell might have less rows and columns than the original cell
         # ignore missing rows for now
         # -> fill up the missing columns with nan to achieve equally looking bars
 
-        col_diff = cell_mono.shape[1] - corrected_cell.shape[1]
+        col_diff = c.cell_mono.shape[1] - c.corrected_cell.shape[1]
 
-        correction_angle = corrected_cell.angle
+        correction_angle = c.corrected_cell.angle
 
         def add_nan(cell):
             nan_arr = np.zeros(cell.shape[0]) + np.nan
@@ -2378,31 +2395,31 @@ class HistEvaluation:
         ax1.imshow(cell_rgb)
         ax1.axis("off")
 
-        ax2.imshow(cell_mono, **vv)
+        ax2.imshow(c.cell_mono, **vv)
         ax2.axis("off")
-        ax2.set_title(str(cell_mono.shape))
+        ax2.set_title(str(c.cell_mono.shape))
 
-        ax3.imshow(add_nan(corrected_cell), **vv)
+        ax3.imshow(add_nan(c.corrected_cell), **vv)
         ax3.axis("off")
-        ax3.set_title(f"{corrected_cell.shape}")
+        ax3.set_title(f"{c.corrected_cell.shape}")
 
-        ax4.imshow(add_nan(corrected_cell), **vv)
+        ax4.imshow(add_nan(c.corrected_cell), **vv)
         ax4.axis("off")
-        ax4.set_title(f"{corrected_cell.shape}")
+        ax4.set_title(f"{c.corrected_cell.shape}")
 
         plt.sca(ax5)  # set current axis
 
-        plt.plot(q.ii, q.mid)
-        plt.plot(q.ii, q.lower)
-        plt.plot(q.ii, q.upper)
-        plt.plot(q.ii, cell_hist, alpha=0.9, lw=3, ls="--")
+        plt.plot(c.q.ii, c.q.mid)
+        plt.plot(c.q.ii, c.q.lower)
+        plt.plot(c.q.ii, c.q.upper)
+        plt.plot(c.q.ii, c.cell_hist, alpha=0.9, lw=3, ls="--")
         x_offset = 40
         y_offset = 8.7
         plt.axis([-5, 260, 0, 9.5])
 
         ff = {"fontfamily": "monospace"}
 
-        plt.text(x_offset, y_offset, f"{cc.area_str}", **ff)
+        plt.text(x_offset, y_offset, f"{c.cc.area_str}", **ff)
 
         plt.subplots_adjust(
             left=0.01,
@@ -2412,60 +2429,62 @@ class HistEvaluation:
             # wspace=0,
         )
 
-        plt.title(f"{correction_angle:01.2f}° A={cc.score:04.2f}")
+        plt.title(f"{correction_angle:01.2f}° A={c.cc.score:04.2f}")
 
         if 1 or self.ev_crit_pix:
             # visualize information about critical pixels (see self.get_critical_pixel_info())
             plt.sca(ax5)
 
             # vertical line, where critical pixels begin
-            plt.plot([cc.crit_lightness]*2, [0, 8], "k--")
+            plt.plot([c.cc.crit_lightness]*2, [0, 8], "k--")
 
             # more text information
-            if cc.crit_pix_nbr >= 5:
+            if c.cc.crit_pix_nbr >= 5:
                 # not all information is available for cells with few critical pixels
 
-                x, y = cc.crit_pix_mean, 4
+                x, y = c.cc.crit_pix_mean, 4
                 plt.plot([x]*2, [0, y], ":", color="0.6")
                 plt.text(x, y, "avg", **ff)
 
-                x, y = cc.crit_pix_median, 5
+                x, y = c.cc.crit_pix_median, 5
                 plt.plot([x]*2, [0, y], ":", color="0.6")
                 plt.text(x, y, "med", **ff)
 
-                x, y = cc.crit_pix_q95, 6
+                x, y = c.cc.crit_pix_q95, 6
                 plt.plot([x]*2, [0, y], ":", color="0.6")
                 plt.text(x, y, "qnt", **ff)
 
 
                 x_offset = 122
                 dy = 0.5
-                plt.text(x_offset, y_offset, f"#crit-pixels = {cc.crit_pix_nbr}", **ff)
+                plt.text(x_offset, y_offset, f"#crit-pixels = {c.cc.crit_pix_nbr}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"        mean = {cc.crit_pix_mean:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"        mean = {c.cc.crit_pix_mean:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"      median = {cc.crit_pix_median:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"      median = {c.cc.crit_pix_median:.1f}", **ff)
                 y_offset -= dy
-                plt.text(x_offset, y_offset, f"         q95 = {cc.crit_pix_q95:.1f}", **ff)
+                plt.text(x_offset, y_offset, f"         q95 = {c.cc.crit_pix_q95:.1f}", **ff)
 
             # contour of critical pixels (useful for debugging)
             if 0:
                 plt.sca(ax3)
-                plt.contour(cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
+                plt.contour(c.cc.crit_pix_mask, levels=[0.5], colors="#ff2020", linewidths=2)
 
             # highlight of critical pixels
             plt.sca(ax4)
 
-            corrected_cell_hl = self.highlight_cell(corrected_cell, cc, hard_blend=True)
+            corrected_cell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend=True)
             # https://matplotlib.org/stable/gallery/color/colormap_reference.html
             plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
-        if save_options["save_plot"]:
-            os.makedirs(self.critical_hist_dir, exist_ok=True)
-            plt.savefig(new_fpath)
-            print(new_fpath)
-            plt.close()
-            # self.create_symlink(new_fpath, cc.score)
+
+            if c.save_options["save_plot"]:
+                os.makedirs(self.critical_hist_dir, exist_ok=True)
+                plt.savefig(c.new_fpath)
+                print(c.new_fpath)
+                plt.close()
+                # self.create_symlink(new_fpath, cc.score)
+
 
     @staticmethod
     def highlight_cell(corrected_cell, cc, hard_blend=True, blend_value=120):
