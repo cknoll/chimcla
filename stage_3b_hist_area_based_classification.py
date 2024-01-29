@@ -171,6 +171,8 @@ def aio_main():
         options["--generate-training-data"] =  True
     if args.no_imgs:
         options["--no-imgs"] =  True
+    if args.adgen_mode:
+        options["--adgen-mode"] =  True
 
     if args.no_parallel:
         for arg in arg_list:

@@ -2317,8 +2317,6 @@ class HistEvaluation:
 
         self.total_res_adapted[cell_key]["q_upper"] = q.new_upper
 
-
-
     def save_and_plot_critical_cell(self, img_fpath, hr_row, hr_col, cell_hist, q, cc, save_options):
         """
         :param cc: criticality_container
@@ -2355,7 +2353,22 @@ class HistEvaluation:
             self._plot_cell_analysis_image(cell_data)
 
     def _plot_cell_annotation_data_image(self, cell_data: Container):
-        raise NotImplementedError("see next commit")
+
+        c = cell_data
+
+        c.cell_bgr = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True, rgb=True)
+
+        multicell = np.concatenate([c.cell_bgr]*4, axis=1)
+
+        res = cv2.imwrite(c.new_fpath, c.cell_bgr, [cv2.IMWRITE_JPEG_QUALITY, 98])
+        assert res, f"Something went wrong during the creation of {c.new_fpath}"
+        print(f"file written: {c.new_fpath}")
+
+
+        multicell_fpath = os.path.join(self.critical_hist_dir, f"x_{c.new_fname}")
+        res = cv2.imwrite(multicell_fpath, multicell, [cv2.IMWRITE_JPEG_QUALITY, 98])
+        assert res, f"Something went wrong during the creation of {multicell_fpath}"
+        print(f"file written: {multicell_fpath}")
 
     def _plot_cell_analysis_image(self, cell_data: Container):
 
