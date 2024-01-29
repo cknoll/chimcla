@@ -182,12 +182,21 @@ Zelle B19 wird hervorgehoben
 Was bedeuten die Zahlen? mittelwert und Standardabweichung
 
 
-b17 analyse:
+b17 Analyse zum Debuggen:
 
 py3 stage_3b_hist_area_based_classification.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-51-33_C50.jpg
 
+---
+
+py3 stage_3e_create_experimental_data_csv.py --diagram "/home/ck/mnt/XAI-DIA-gl/Carsten/_selection_round3_2024-01-16-experimental-bilder-hard110-soft60"
 
 
+
+--
+
+Statistisches Übersichtsdiagram Fehlerfläche vs. Helligkeit
+
+/home/ck/mnt/XAI-DIA-gl/Carsten/_selection_round3_2024-01-16-experimental-bilder-hard110-soft60/definitely keep
 
 
 
