@@ -81,7 +81,8 @@ def get_all_files_for_basename(dirname: str, basename: str):
 
 def get_base_names_in_dir(dirpath):
     paths = glob.glob(f"{dirpath}/*jpg")
-    base_names0 = [p.replace(f"{dirpath}/", "") for p in paths if "exp_" not in p]
+    # base_names0 = [p.replace(f"{dirpath}/", "") for p in paths if "exp_" not in p]
+    base_names0 = [os.path.split(p)[-1] for p in paths if "exp_" not in p]
     base_names = ["_".join(bn.split("_")[1:]) for bn in base_names0]
     return base_names
 
