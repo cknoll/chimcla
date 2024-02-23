@@ -199,6 +199,15 @@ Statistisches Übersichtsdiagram Fehlerfläche vs. Helligkeit
 /home/ck/mnt/XAI-DIA-gl/Carsten/_selection_round3_2024-01-16-experimental-bilder-hard110-soft60/definitely keep
 
 
+# CNN-Trainingsdaten
+
+Befehl 2024-01-29:
+py3 stage_3b_hist_area_based_classification.py -ad --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_shading_corrected/ --suffix _chunk000_complete2 --limit 8
+
+dann aux_rename_cell_imgs.py
+
+
+
 
 # Datensparstrategie:
 
