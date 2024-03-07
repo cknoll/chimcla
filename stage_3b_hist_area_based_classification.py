@@ -11,7 +11,7 @@ import dill
 
 from ipydex import IPS, activate_ips_on_exception
 
-activate_ips_on_exception()
+# activate_ips_on_exception()
 
 from stage_2a_bar_selection import (
     load_img,

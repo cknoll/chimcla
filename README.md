@@ -207,6 +207,31 @@ py3 stage_3b_hist_area_based_classification.py -ad --img_dir /home/ck/mnt/XAI-DI
 dann aux_rename_cell_imgs.py
 
 
+2024-02-23 11:47:00
+
+py3 stage_3b_hist_area_based_classification.py -ad --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _chunk001_cell_training2
+
+-> alle Bilder >= S60 nach /home/ck/XAI-DIA-bilder kopiert
+
+
+-> py3 aux_rename_cell_imgs.py /home/ck/XAI-DIA-bilder
+
+-> PyQt-image-annotation-tool anwenden
+
+->
+
+
+
+
+
+### debugging:
+2023-06-26_08-49-11_C50
+
+
+stage_3b_hist_area_based_classification.py --img /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/2023-06-26_08-49-11_C50.jpg --suffix _chunk001_cell_training --adgen-mode
+
+
+CS_LIMIT = 40 wirkungslos?
 
 
 # Datensparstrategie:

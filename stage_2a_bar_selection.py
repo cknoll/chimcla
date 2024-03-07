@@ -1799,6 +1799,9 @@ class HistEvaluation:
     # limit for which criticality score (cs) a histogram is considered an anomaly
     CS_LIMIT = 20
 
+    # This is for adgen_mode
+    CS_LIMIT = 40
+
     def __init__(self, img_fpath: str, suffix: str = "", ev_crit_pix=False, training_data_flag=False):
         """
         :param ev_crit_pix:         bool; default False; evaluate critical pixels
@@ -2328,7 +2331,7 @@ class HistEvaluation:
 
         path, fname = os.path.split(img_fpath)
         basename, ext = os.path.splitext(fname)
-        c.new_fname = f"{basename}_{hr_row}{hr_col}{ext}"
+        c.new_fname = f"s{int(cc.score)}_{basename}_{hr_row}{hr_col}{ext}"
         c.new_fpath = f"{self.critical_hist_dir}/{c.new_fname}"
 
         if save_options["push_db"]:
@@ -2358,17 +2361,17 @@ class HistEvaluation:
 
         c.cell_bgr = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True, rgb=True)
 
-        multicell = np.concatenate([c.cell_bgr]*4, axis=1)
 
         res = cv2.imwrite(c.new_fpath, c.cell_bgr, [cv2.IMWRITE_JPEG_QUALITY, 98])
         assert res, f"Something went wrong during the creation of {c.new_fpath}"
         print(f"file written: {c.new_fpath}")
 
-
-        multicell_fpath = os.path.join(self.critical_hist_dir, f"x_{c.new_fname}")
-        res = cv2.imwrite(multicell_fpath, multicell, [cv2.IMWRITE_JPEG_QUALITY, 98])
-        assert res, f"Something went wrong during the creation of {multicell_fpath}"
-        print(f"file written: {multicell_fpath}")
+        if 0:
+            multicell = np.concatenate([c.cell_bgr]*4, axis=1)
+            multicell_fpath = os.path.join(self.critical_hist_dir, f"x_{c.new_fname}")
+            res = cv2.imwrite(multicell_fpath, multicell, [cv2.IMWRITE_JPEG_QUALITY, 98])
+            assert res, f"Something went wrong during the creation of {multicell_fpath}"
+            print(f"file written: {multicell_fpath}")
 
     def _plot_cell_analysis_image(self, cell_data: Container):
 
