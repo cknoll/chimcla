@@ -2359,8 +2359,8 @@ class HistEvaluation:
 
         c = cell_data
 
-        c.cell_bgr = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True, rgb=True)
-
+        cell_rgb = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True, rgb=True)
+        c.cell_bgr = cv2.cvtColor(cell_rgb, cv2.COLOR_RGB2BGR)
 
         res = cv2.imwrite(c.new_fpath, c.cell_bgr, [cv2.IMWRITE_JPEG_QUALITY, 98])
         assert res, f"Something went wrong during the creation of {c.new_fpath}"
