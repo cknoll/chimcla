@@ -221,7 +221,12 @@ py3 stage_3b_hist_area_based_classification.py -ad --img_dir /home/ck/mnt/XAI-DI
 ->
 
 
+## Übersicht über bisher schon gelabelte Bilder
 
+- Januar 2024 (Carsten): /home/ck/XAI-DIA-bilder/___chunk_0000 (1329)
+- Februar 2024 (Carsten): /home/ck/XAI-DIA-bilder/__chunk_0001 (355) (manuell ab s60 ausgewählt)
+-      Ursprung: /home/ck/iee-ge/XAI-DIA/image_classification/stage2/critical_hist_chunk001_cell_training2 (916 Dateien ab s20)
+- April 2024
 
 
 ### debugging:
