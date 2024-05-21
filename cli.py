@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import glob
+import random
 
 import cv2
 
@@ -10,7 +11,12 @@ from ipydex import IPS
 
 def create_groups():
 
-    N = 500
+    N = 500  # number of
+    p = 0.4  # fraction of repeated images
+    q = 1 - p  # fraction of group specific images
+    Np = int(N*p)  # number of
+    Nq = N - Np
+
 
     parser = argparse.ArgumentParser(
         prog=sys.argv[0],
@@ -38,8 +44,34 @@ def create_groups():
     for subdir in subdirs:
         imgs = glob.glob(f"{subdir}/s*.jpg")
         image_paths.extend(imgs)
+    random.seed(1246)
+    random.shuffle(image_paths)
 
-    IPS()
+    T = len(image_paths)
+    nbr_of_groups = (T // Nq) + 1
+
+    groups = []
+
+    for i in range(nbr_of_groups):
+        i0 = i*Nq
+        i1 = (i+1)*Nq
+        group = image_paths[i0:i1]
+        rest  = image_paths[:i0] + image_paths[i1:]
+        random.shuffle(rest)
+
+        # the last group might be incomplete, thus we have to determine length every time
+        L = len(group)
+        group.extend(rest[:(N-L)])
+        groups.append(group)
+
+    for i, group in enumerate(groups, start=1):
+        gdir = os.path.join(args.dir, "_results", f"group{i:04d}")
+        os.makedirs(gdir, exist_ok=True)
+        for fpath in group:
+            fname = os.path.split(fpath)[1]
+            target_path = os.path.join(gdir, fname)
+            cmd = f"cp {fpath} {target_path}"
+            os.system(cmd)
 
 
 def bgr_convert():
