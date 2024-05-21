@@ -227,6 +227,10 @@ py3 stage_3b_hist_area_based_classification.py -ad --img_dir /home/ck/mnt/XAI-DI
 - Februar 2024 (Carsten): /home/ck/XAI-DIA-bilder/__chunk_0001 (355) (manuell ab s60 ausgewählt)
 -      Ursprung: /home/ck/iee-ge/XAI-DIA/image_classification/stage2/critical_hist_chunk001_cell_training2 (916 Dateien ab s20)
 - April 2024
+    - chocolate_rename_cell_imgs .
+
+
+nächste Schritte: Hochlanden, testhalber labeln, runterladen
 
 
 ### debugging:

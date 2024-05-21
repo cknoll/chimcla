@@ -1,10 +1,45 @@
 import os
 import sys
 import argparse
+import glob
 
 import cv2
 
 from ipydex import IPS
+
+
+def create_groups():
+
+    N = 500
+
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description=f'This program creates directories with {N} cell images each. It also creates a json report',
+    )
+
+    parser.add_argument(
+        'dir',
+        help="root directory",
+    )
+
+    args = parser.parse_args()
+    dircontent = os.listdir(args.dir)
+
+    subdirs = []
+    elt: str
+    for elt in os.listdir(args.dir):
+        if elt.startswith("_"):
+            continue
+        path = os.path.join(args.dir, elt)
+        if os.path.isdir(path):
+            subdirs.append(path)
+
+    image_paths = []
+    for subdir in subdirs:
+        imgs = glob.glob(f"{subdir}/s*.jpg")
+        image_paths.extend(imgs)
+
+    IPS()
 
 
 def bgr_convert():
