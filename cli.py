@@ -3,6 +3,7 @@ import sys
 import argparse
 import glob
 import random
+import tqdm
 
 import cv2
 
@@ -64,12 +65,13 @@ def create_groups():
         group.extend(rest[:(N-L)])
         groups.append(group)
 
-    for i, group in enumerate(groups, start=1):
-        gdir = os.path.join(args.dir, "_results", f"group{i:04d}")
+    for i, group in tqdm.tqdm(enumerate(groups, start=1)):
+        gdir = os.path.join(args.dir, "_results", f"gruppe{i:04d}")
         os.makedirs(gdir, exist_ok=True)
         for fpath in group:
             fname = os.path.split(fpath)[1]
-            target_path = os.path.join(gdir, fname)
+            cell_key = fname[:-4].split("_")[-1]
+            target_path = os.path.join(gdir, f"{cell_key}_{fname}")
             cmd = f"cp {fpath} {target_path}"
             os.system(cmd)
 
@@ -117,14 +119,17 @@ def rename_cell_imgs():
         description='This program renames image files, such that the cell comes first',
     )
 
-
     parser.add_argument(
         'dir',
         help="directory",
     )
 
     args = parser.parse_args()
-    fnames = os.listdir(args.dir)
+    _rename_cell_imgs(args.dir)
+
+
+def _rename_cell_imgs(dirname):
+    fnames = os.listdir(dirname)
 
     fnames.sort()
 
@@ -134,8 +139,8 @@ def rename_cell_imgs():
         cell_key = fname[:-4].split("_")[-1]
 
 
-        old_path = os.path.join(args.dir, fname)
-        new_path = os.path.join(args.dir, f"{cell_key}_{fname}")
+        old_path = os.path.join(dirname, fname)
+        new_path = os.path.join(dirname, f"{cell_key}_{fname}")
 
 
         cmd = f"mv {old_path} {new_path}"
