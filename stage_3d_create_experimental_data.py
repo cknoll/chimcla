@@ -1,5 +1,7 @@
 """
-This file serves for creating images for Romys Chocolate Experiment (as discussed in Nov. 2023)
+This file serves for
+- creating images for Romys Chocolate Experiment (as discussed in Nov. 2023)
+- creating data (images and numerical) for history evaluation
 
 """
 
@@ -13,8 +15,9 @@ import argparse
 from colorama import Fore, Style
 import pathlib
 
-import dill
+import pandas as pd
 
+import ipydex
 from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
@@ -32,7 +35,7 @@ ERROR_CMDS = []
 
 parser = argparse.ArgumentParser(
     prog=sys.argv[0],
-    description='This program creates histogram style plots for every unusual cell (also considering the area)',
+    description='This program evaluates single or multiple chocolate images. See docstring for more details.',
 )
 
 parser.add_argument(
@@ -41,12 +44,15 @@ parser.add_argument(
     default=None,
 )
 
+# see usage example below
 parser.add_argument(
     '--img_dir_base',
     help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/",
     default=None,
 )
 
+
+# see usage example below
 parser.add_argument(
     '--img_dir_src',
     help="directory with already processed images -> extract the basename",
@@ -81,6 +87,8 @@ parser.add_argument(
     type=int,
 )
 
+
+# parameters for Romys experiments
 parser.add_argument(
     "--blend-value",
     "-bv",
@@ -103,7 +111,23 @@ parser.add_argument(
     action="store_true",
 )
 
+# parameters for history evaluation
+# This means: iterate over images
+# generate:
+# - _criticality_list.csv: col1 a sorted list (summed criticality score) col2: filename
+# - output directory with critical images with Filenames S2801_<basename>.jpg
+
+parser.add_argument(
+    "--history-evaluation",
+    "-H",
+    help= "generate data for history evaluation",
+    action="store_true",
+)
+
 args = parser.parse_args()
+
+
+
 
 
 def process_img(img_fpath):
@@ -138,8 +162,12 @@ def process_img(img_fpath):
     }
 
     err_list = []
+    img_fname = os.path.split(img_fpath)[-1]
     try:
-        he = bs.HistEvaluation(img_fpath, suffix=args.suffix, ev_crit_pix=True)
+        ipydex.sys.excepthook = ipydex.sys_orig_excepthook
+        he = bs.HistEvaluation(
+            img_fpath, suffix=args.suffix, ev_crit_pix=True, history_eval_flag=args.history_evaluation,
+        )
         he.initialize_hist_cache()
     except (bs.MissingBoundingBoxes, ValueError) as ex:
         path = os.path.join(*pathlib.Path(img_fpath).parts[-2:])
@@ -150,7 +178,6 @@ def process_img(img_fpath):
         crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
     except Exception as ex:
         print(img_fpath, ex)
-        img_fname = os.path.split(img_fpath)[-1]
         err_list.extend([img_fname, str(ex)])
         crit_cell_list = None
         raise
@@ -160,16 +187,24 @@ def process_img(img_fpath):
     else:
         fsuffix = f"soft"
     fsuffix = f"{fsuffix}_{args.blend_value}"
-    summary = he.get_criticality_summary()
+    summary = he.get_criticality_summary(save_to_db=True)
     if summary.crit_score_avg > 50:
 
         # bs.db["criticality_summary"][he.img_basename] = dict(summary.item_list())
         # bs.db.commit()
         bs.db.put("criticality_summary", he.img_basename, value=dict(summary.item_list()), commit=True)
 
-        score_str = str(int(summary.crit_score_avg))
-        # he.save_experimental_img(fprefix=f"S{score_str}_", fsuffix=fsuffix)
-        he.save_experimental_img(fprefix=f"P{summary.crit_pix_number}_", fsuffix=fsuffix)
+        if args.history_evaluation:
+            sum_score_str = f"{(int(sum(summary.crit_score_list))):06d}"
+            fprefix=f"S{sum_score_str}_"
+        else:
+            fprefix=f"P{summary.crit_pix_number}_"
+
+        he.save_experimental_img(fprefix=fprefix, fsuffix=fsuffix)
+    else:
+        os.makedirs(he.output_dir, exist_ok=True)
+        with open(os.path.join(he.output_dir, "_uncritical_form-images.txt"), "a") as fp:
+            fp.write(f"{img_fname}\n")
 
 
 from collections import defaultdict
@@ -177,17 +212,28 @@ import re
 
 
 def update_cell_mappings():
+    """
+    creates a dict which maps filenames of form-images like "2023-06-26_08-47-55_C50.jpg"
+    to a list of cells-images ["2023-06-26_08-47-55_C50_a9.jpg", ...]
+    """
 
     pat = re.compile(".*(_.*?)\.jpg")
+
+    # defaultdict with empty lists
     cell_mappings = defaultdict(list)
 
     for key in bs.db.keys():
+        # example:
+        # key = "2023-06-26_08-47-55_C50_a9.jpg"
+        # fname = "2023-06-26_08-47-55_C50.jpg"
 
         if not key.endswith(".jpg"):
             continue
 
         cell_ = pat.match(key).group(1)
         fname = key.replace(cell_, "")
+
+        # fill the list
         cell_mappings[fname].append(key)
 
     bs.db["cell_mappings"] = cell_mappings
@@ -198,19 +244,28 @@ def update_cell_mappings():
 def run_this_script(img_path, **kwargs):
 
     options = kwargs.get("options", {})
-    option_str_elements = []
+
+
+    if "--history-evaluation" in options:
+        option_str_elements = []
+        new_suffix = args.suffix
+    else:
+        # original mode (for Romys experimental images)
+        # these two options are default
+        option_str_elements = [f"-bm {args.blend_mode}", f"-bv {args.blend_value}"]
+        new_suffix = f"{args.suffix}_bm{args.blend_mode}_bv{args.blend_value}"
+
     for option, value in options.items():
         if value is True:
             option_str_elements.append(option)
 
     option_str = " ".join(option_str_elements)
 
-    option_str += f"-bm {args.blend_mode} -bv {args.blend_value}"
-
-    new_suffix = f"{args.suffix}_bm{args.blend_mode}_bv{args.blend_value}"
 
     cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {new_suffix} {option_str}".strip()
+    print("\n")
     print(cmd)
+
     res = os.system(cmd)
     res = 0
 
@@ -225,13 +280,22 @@ def aio_main():
 
     if args.img_dir:
         arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
+
+        # for development only consider known critical images
+        # arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
+
     else:
         assert args.img_dir_base
         assert args.img_dir_src
         arg_list = get_img_list_from_src_dir()[:args.limit]
 
+
     # prepare options for passing to individual calls
-    options = {}
+
+    # TODO: this could be more general but currently we only need few options
+    options = {
+        "--history-evaluation": args.history_evaluation,
+    }
 
     if args.no_parallel:
         func = run_this_script
@@ -242,6 +306,9 @@ def aio_main():
         wrapped_func=aiot.background(run_this_script)
         aiot.run(aiot.main(func=wrapped_func, arg_list=arg_list, options=options))
 
+    if args.history_evaluation:
+        generate_criticality_list(arg_list)
+
     if ERROR_CMDS:
         print(
             f"\n{Fore.RED}There where errors with the following commands:\n\n",
@@ -249,6 +316,42 @@ def aio_main():
             "\n".join(ERROR_CMDS),
         )
 
+
+def get_known_critical_images(img_fpaths):
+    """
+    This function is for debugging and development to handle only those images who are already known to be critical
+    """
+    res = []
+    cs = bs.db["criticality_summary"]
+
+    for fpath in img_fpaths:
+        basename = os.path.splitext(os.path.split(fpath)[-1])[0]
+        if basename in cs:
+            res.append(fpath)
+    return res
+
+
+def generate_criticality_list(img_fpaths: list):
+    cs = bs.db["criticality_summary"]
+    csv_data = defaultdict(list)
+
+    for fpath in img_fpaths:
+        basename = os.path.splitext(os.path.split(fpath)[-1])[0]
+        res = cs.get(basename)
+        if res is None:
+            continue
+
+        csv_data["basename"].append(basename)
+        csv_data["criticality"].append(np.round(sum(res["crit_score_list"]), 2))
+
+    df = pd.DataFrame(csv_data)
+    df2 = df.sort_values(by=['criticality'], ascending=False)
+
+    output_dir = bs.db["meta_data"]["output_dir"]
+
+    csv_fpath = os.path.join(output_dir, "_criticality_list.csv")
+    df2.to_csv(csv_fpath)
+    print(f"written: {csv_fpath}")
 
 
 def get_img_list_from_src_dir():

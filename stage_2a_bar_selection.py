@@ -1802,7 +1802,14 @@ class HistEvaluation:
     # This is for adgen_mode
     CS_LIMIT = 40
 
-    def __init__(self, img_fpath: str, suffix: str = "", ev_crit_pix=False, training_data_flag=False):
+    def __init__(
+            self,
+            img_fpath: str,
+            suffix: str = "",
+            ev_crit_pix=False,
+            training_data_flag=False,
+            history_eval_flag=False
+        ):
         """
         :param ev_crit_pix:         bool; default False; evaluate critical pixels
                                     if true additional information about the critical pixels is collected and stored
@@ -1818,7 +1825,10 @@ class HistEvaluation:
         self.training_data_flag=training_data_flag
         self.corrected_cell_cache = {}
         self.critical_hist_dir = self._get_result_dir_from_suffix(suffix)
-        self.experimental_img_dir = f"experimental_imgs{suffix}"
+        if history_eval_flag:
+            self.output_dir = f"stage3_results_{suffix}"
+        else:
+            self.output_dir = f"experimental_imgs{suffix}"
         self.hist_cache = self.initialize_hist_cache()
 
         self.img_dir, self.img_fname = os.path.split(img_fpath)
@@ -1889,6 +1899,7 @@ class HistEvaluation:
         if save_to_db:
             #db["criticality_summary"][self.img_basename] = dict(summary.item_list())
             db.put("criticality_summary", self.img_basename, value=dict(summary.item_list()), commit=True)
+            db.put("meta_data", "output_dir", self.output_dir)
             db.commit()
 
         return summary
@@ -2222,15 +2233,15 @@ class HistEvaluation:
 
     def save_experimental_img(self, fprefix="", fsuffix=""):
         fname = f"{fprefix}{self.img_basename}_exp_{fsuffix}{self.img_ext}"
-        fpath = os.path.join(self.experimental_img_dir, fname)
+        fpath = os.path.join(self.output_dir, fname)
 
-        os.makedirs(self.experimental_img_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
         res = cv2.imwrite(fpath, cv2.cvtColor(self.experimental_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 98])
         assert res, f"Something went wrong during the creation of {fpath}"
         print(f"written: {fpath}")
 
         # copy original image
-        orig_fpath = os.path.join(self.experimental_img_dir, f"{fprefix}{self.img_basename}{self.img_ext}")
+        orig_fpath = os.path.join(self.output_dir, f"{fprefix}{self.img_basename}{self.img_ext}")
         cmd = f"cp {self.ccia.img_fpath_uncorrected} {orig_fpath}"
         print(cmd)
         os.system(cmd)
