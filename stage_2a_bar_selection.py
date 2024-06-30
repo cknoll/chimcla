@@ -1510,7 +1510,7 @@ class AngleAnalyzer:
         # this assumes that stage_02b has already been done
 
         # TODO: extract the relevant data and store in one separate file
-        hist_dict_path = "dicts_stable"
+        hist_dict_path = os.path.join(os.path.dirname(__file__), "dicts_stable")
         self.hist_dict_list = glob.glob(f"{hist_dict_path}/hist_*.dill")
         self.hist_dict_list.sort()
 
@@ -2240,6 +2240,9 @@ class HistEvaluation:
         assert res, f"Something went wrong during the creation of {fpath}"
         print(f"written: {fpath}")
 
+        self.copy_original_image_to_output_folder(fprefix)
+
+    def copy_original_image_to_output_folder(self, fprefix):
         # copy original image
         orig_fpath = os.path.join(self.output_dir, f"{fprefix}{self.img_basename}{self.img_ext}")
         cmd = f"cp {self.ccia.img_fpath_uncorrected} {orig_fpath}"

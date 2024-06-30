@@ -197,10 +197,11 @@ def process_img(img_fpath):
         if args.history_evaluation:
             sum_score_str = f"{(int(sum(summary.crit_score_list))):06d}"
             fprefix=f"S{sum_score_str}_"
+            he.copy_original_image_to_output_folded(fprefix=fprefix, fsuffix=fsuffix)
         else:
             fprefix=f"P{summary.crit_pix_number}_"
 
-        he.save_experimental_img(fprefix=fprefix, fsuffix=fsuffix)
+            he.save_experimental_img(fprefix=fprefix, fsuffix=fsuffix)
     else:
         os.makedirs(he.output_dir, exist_ok=True)
         with open(os.path.join(he.output_dir, "_uncritical_form-images.txt"), "a") as fp:
