@@ -15,6 +15,7 @@ import glob
 
 import pandas as pd
 
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -343,9 +344,48 @@ class MainManager:
 
         # normally for performance reasons iteration over pandas df rows is not recommended
         # here, simplicity matters more
-        for row in relevant_img_df.itertuples(index=False):
+        for img_row in relevant_img_df.itertuples(index=False):
+            self._create_combined_image(img_row)
             break
+
+
+
+    def _create_combined_image(self, img_row):
+        """
+        :param img_row:     pandas.Series; fields: .basename, .dir, .criticality
+        """
+        date_str, time_str, _ = img_row.basename.split("_")
+        time_str = time_str.replace("-", ":")
+        station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
+
+        fig = plt.figure()
+        plt.plot(station_time_vector)
+        fig_arr = self._fig_to_array(fig)
+
+        fprefix=f"S{img_row.criticality}_"
+        fname = f"{fprefix}{img_row.basename}_Cx.jpg"
+        fpath = os.path.join(self.result_dir, fname)
+        res = cv2.imwrite(fpath, cv2.cvtColor(fig_arr, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 98])
+
+
+
         IPS()
+
+    def _fig_to_array(self, fig):
+        # taken from https://stackoverflow.com/a/57988387
+
+        fig.tight_layout(pad=0)
+        ax = plt.gca()
+
+        # To remove the huge white borders
+        ax.margins(0)
+
+        fig.canvas.draw()
+        image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        return image_from_plot
+
 
 
     def _get_relevant_images(self) -> pd.DataFrame:
