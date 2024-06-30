@@ -3,6 +3,9 @@ results/*
 *_results_*/*
 *.egg-info*
 
+# this can be used to easily backup the repo in one file
+git_bundle*.zip
+
 critical_hist
 critical_hist*
 experimental_imgs*

@@ -14,9 +14,16 @@ where = ["src"]
 
 
 [project.scripts]
-chocolate_bgr_convert = "chimcla.cli:bgr_convert"
-chocolate_create_groups = "chimcla.cli:create_groups"
-chocolate_rename_cell_imgs = "chimcla.cli:rename_cell_imgs"
+# convert bgr to rgb
+chimcla_bgr_convert = "chimcla.cli:bgr_convert"
 
 # create experimental data
 chimcla_ced = "chimcla.stage_3d_create_experimental_data:main"
+
+# evaluate logfiles
+chimcla_step_history_eval = "chimcla.util_step_history_from_logfile:main"
+
+
+# specific commands that were once needed
+chimcla_create_groups = "chimcla.cli:create_groups"
+chimcla_rename_cell_imgs = "chimcla.cli:rename_cell_imgs"

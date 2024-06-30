@@ -185,6 +185,12 @@ def _get_fpath_container_from_path_list(path_list) -> Container:
         fname = os.path.splitext(os.path.split(fpath)[1])[0]  # something like '2023-06-26_06-16-09_C50'
 
         # convert file name into iso date time format
+        # assume filename starting like 2023- etc or some prefix like S000056_2023-...
+        if not fname.startswith("202"):
+            idx = fname.index("_")
+            fname = fname[idx+1:]
+        assert fname.startswith("202")
+
         p0, p1, _ = fname.split("_")
         iso_str = f"{p0} {p1.replace('-', ':')}"
 
@@ -222,117 +228,165 @@ def get_img_filenames_from_logfile(all_lines):
 
     return res
 
+def plot_histogram_of_time_deltas(time_deltas):
+    """
+    This function is useful for debugging.
+    """
+    # make a copy of input data
+    time_deltas10 = time_deltas*1
 
-def main():
+    # collapse all values >10 to 10 (for better visualization)
+    time_deltas10[time_deltas >= 10] = 10
+    plt.hist(time_deltas10, bins=[*np.arange(0, 1, .1), *np.arange(1, 9, .1), 10.1], rwidth=0.8, log=not True)
+    plt.show()
 
-    parser = argparse.ArgumentParser(
-        prog='conveyor_belt_history',
-        description='evaluate the conveyor belt history of chocolate images',
-    )
 
-    parser.add_argument('--logfile', "-l", help="the logfile to be evaluated", required=True)
-    parser.add_argument("--image-dir", "-i", help="the image dir to be evaluated")
-    parser.add_argument("--fpaths", "-p", help="text file containing paths")
 
-    args = parser.parse_args()
+class MainManager:
+    def __init__(self):
+        self.parse_args()
+        self.load_logfile()
 
-    # get lines of log file
-    all_lines = load_lines(args.logfile)
+    def parse_args(self):
 
-    # regex_str = r".*Value = moving \(True\).*"
-    regex_str = r".*Value = stop \(False\).*"
+        parser = argparse.ArgumentParser(
+            prog='conveyor_belt_history',
+            description='evaluate the conveyor belt history of chocolate images',
+        )
 
-    # get indices of relevant lines
-    relevant_idcs0 = get_relevant_lines(all_lines, regex=regex_str, return_indices=True)
+        parser.add_argument('--logfile', "-l", help="the logfile to be evaluated", required=True)
+        parser.add_argument("--image-dir", "-i", help="the image dir to be evaluated")
+        parser.add_argument("--fpaths", "-p", help="text file containing paths")
 
-    # get the actual lines (corresponding to these indices)
-    relevant_lines0 = np.array(all_lines)[relevant_idcs0]
+        # his is intended to store the all relevant information in a Database to be easily accessible from other scripts
+        parser.add_argument("--db-mode", "-dm", help="start in database-mode", action="store_true")
 
-    # create first auxiliary manager instance
-    tdm0 = TimeDeltaManager(relevant_lines0)
 
-    # here ↑ we interpret *every* 'Value = moving (True)'-line as relevant line
-    # However, some of these lines come with unrealistic little delay after each other
-    # the next step is to determine the limit time. i.e. the minimal time between two events which is
-    # considered realistic. This is done by looking at the histogram: the working hypothesis thereby:
-    # unrealistic short intervals should occur only seldom. Also, we know that the usual interval is about 3s
+        self.args = parser.parse_args()
 
-    if 0:
-        # histogram for decision where to set the limit value
-        # (this block normally should not be executed)
-        time_deltas10 = tdm0.time_deltas*1
-        time_deltas10[tdm0.time_deltas >= 10] = 10
-        plt.hist(time_deltas10, bins=[*np.arange(0, 1, .1), *np.arange(1, 9, .1), 10.1], rwidth=0.8, log=not True)
-        plt.show()
-        exit()
+    def load_logfile(self):
 
-    # by looking at the histogram this value was chosen:
-    delta_limit = 2.6
+        # get lines of log file
+        self.all_lines = load_lines(self.args.logfile)
 
-    # sort out those lines which are too short after the previous step
-    relevant_lines1 = [relevant_lines0[0]]
-    relevant_idcs1 = [relevant_idcs0[0]]  # this is to save the indices of the original log file
-    dt_saved = 0
+        # regex_str = r".*Value = moving \(True\).*"
+        regex_str = r".*Value = stop \(False\).*"
 
-    # iterate over the time deltas and discard a log line if it comes too short after the last one
-    # TODO: check if i should start at 1? (Because time_deltas refer to those lines starting with index 1)
-    for i, dt in enumerate(tdm0.time_deltas, start=1):
-        if dt_saved + dt >= delta_limit:
-            relevant_lines1.append(relevant_lines0[i])
-            relevant_idcs1.append(relevant_idcs0[i])
-            dt_saved = 0
+        # get indices of relevant lines
+        relevant_idcs0 = get_relevant_lines(self.all_lines, regex=regex_str, return_indices=True)
+
+        # get the actual lines (corresponding to these indices)
+        self.relevant_lines0 = np.array(self.all_lines)[relevant_idcs0]
+
+        # create first auxiliary manager instance
+        self.tdm0 = TimeDeltaManager(self.relevant_lines0)
+
+        # here ↑ we interpret *every* 'Value = moving (True)'-line as relevant line
+        # However, some of these lines come with unrealistic little delay after each other
+        # the next step is to determine the limit time. i.e. the minimal time between two events which is
+        # considered realistic. This is done by looking at the histogram: the working hypothesis thereby:
+        # unrealistic short intervals should occur only seldom. Also, we know that the usual interval is about 3s
+
+        if 0:
+            # histogram for decision where to set the limit value
+            # (this block normally should not be executed)
+            plot_histogram_of_time_deltas(self.tdm0.time_deltas)
+            exit()
+
+        # by looking at the histogram this value was chosen:
+        delta_limit = 2.6
+
+        # sort out those lines which are too short after the previous step
+        self.relevant_lines1 = [self.relevant_lines0[0]]
+        self.relevant_idcs1 = [relevant_idcs0[0]]  # this is to save the indices of the original log file
+        dt_saved = 0
+
+        # iterate over the time deltas and discard a log line if it comes too short after the last one
+        # TODO: check if i should start at 1? (Because time_deltas refer to those lines starting with index 1)
+        for i, dt in enumerate(self.tdm0.time_deltas, start=1):
+            if dt_saved + dt >= delta_limit:
+                self.relevant_lines1.append(self.relevant_lines0[i])
+                self.relevant_idcs1.append(relevant_idcs0[i])
+                dt_saved = 0
+            else:
+                dt_saved += dt
+
+        self.tdm1 = TimeDeltaManager(self.relevant_lines1)
+
+        if 0:
+            plot_histogram_of_time_deltas(self.tdm1.time_deltas)
+            exit()
+        assert min(self.tdm1.time_deltas) > delta_limit
+
+    def main(self):
+        if self.args.db_mode:
+            self.create_db_with_filenames()
         else:
-            dt_saved += dt
-
-    tdm1 = TimeDeltaManager(relevant_lines1)
-    assert min(tdm1.time_deltas) > delta_limit
-
-    # for debugging
-    # i_test = tdm1.get_position_time_vector("2023-06-27 12:59:58,750")
-
-    dirname = "output"
-    os.makedirs(dirname, exist_ok=True)
-
-    # now get filenames of images of interest
-
-    if args.fpaths:
-        c: Container = get_img_filenames_from_file(args.fpaths)
-    elif args.image_dir:
-        c: Container = get_img_filenames_from_dir(args.image_dir)
-
-    else:
-        # TODO handle
-        # those images which are present in the logfile
-
-        c: Container = get_img_filenames_from_logfile(all_lines=all_lines)
-
-    # create final results (visualization of position time vector)
-    for i, (basename, ts) in enumerate(c.time_stamps):
-
-        # quick hack to ignore first 100 boring images
-        if 0 and i <= 100:
-            continue
-
-        position_time_vector, abs_times_str = tdm1.get_position_time_vector(ts, return_abs_times=True)
-        plt.plot(position_time_vector)
-        plt.title(basename)
-        img_fpath = os.path.join(dirname, f"{basename}_ptv.png")
-        tab_fpath = os.path.join(dirname, f"{basename}_tab.csv")
+            self.create_position_time_images()
 
 
-        # np.savetxt(tab_fpath, position_time_vector, delimiter=",")
+    def create_db_with_filenames(self):
 
-        df1 = pd.DataFrame({"duration": np.round(position_time_vector, 3), "timestamp": abs_times_str})
-        df1.to_csv(tab_fpath)
+        c: Container = get_img_filenames_from_logfile(all_lines=self.all_lines)
+        # IPS()
+        msg = "It is not trivial to efficiently store a map from filename to position time vectors"
+        # currently we can stick with the get_img_filenames_from_file option
+        raise NotImplementedError(msg)
 
-        plt.savefig(img_fpath)
-        print(f"{img_fpath} written")
-        plt.close()
+    def create_position_time_images(self):
 
-        if 0 and i >= 3:
-            # stop the script (useful during development)
-            break
+        # for debugging
+        # i_test = self.tdm1.get_position_time_vector("2023-06-27 12:59:58,750")
+
+        dirname = "output"
+        os.makedirs(dirname, exist_ok=True)
+
+        # now get filenames of images of interest
+
+        if self.args.fpaths:
+            c: Container = get_img_filenames_from_file(self.args.fpaths)
+        elif self.args.image_dir:
+            c: Container = get_img_filenames_from_dir(self.args.image_dir)
+
+        else:
+            # TODO handle
+            # those images which are present in the logfile
+
+            c: Container = get_img_filenames_from_logfile(all_lines=self.all_lines)
+
+        # create final results (visualization of position time vector)
+        for i, (basename, ts) in enumerate(c.time_stamps):
+
+            # quick hack to ignore first 100 boring images
+            if 0 and i <= 10:
+                continue
+
+            position_time_vector, abs_times_str = self.tdm1.get_position_time_vector(ts, return_abs_times=True)
+            plt.plot(position_time_vector)
+            plt.title(basename)
+            img_fpath = os.path.join(dirname, f"{basename}_ptv.png")
+            tab_fpath = os.path.join(dirname, f"{basename}_tab.csv")
 
 
+            # np.savetxt(tab_fpath, position_time_vector, delimiter=",")
+
+            df1 = pd.DataFrame({"duration": np.round(position_time_vector, 3), "timestamp": abs_times_str})
+            df1.to_csv(tab_fpath)
+
+            plt.savefig(img_fpath)
+            print(f"{img_fpath} written")
+            plt.close()
+
+            if 0 and i >= 3:
+                # stop the script (useful during development)
+                break
+
+
+# this is executed by the cli script (see pyproject.toml)
+def main():
+    mm = MainManager()
+    mm.main()
+
+# obsolete but does not harm
 if __name__ == "__main__":
     main()
