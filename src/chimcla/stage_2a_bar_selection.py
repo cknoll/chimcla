@@ -2251,8 +2251,10 @@ class HistEvaluation:
     def copy_original_image_to_output_folder(self, fprefix):
         # copy original image
         orig_fpath = os.path.join(self.output_dir, f"{fprefix}{self.img_basename}{self.img_ext}")
+
         cmd = f"cp {self.ccia.img_fpath_uncorrected} {orig_fpath}"
         print(cmd)
+        os.makedirs(self.output_dir, exist_ok=True)
         os.system(cmd)
 
     def get_corrected_cell(self, cell_key):
