@@ -337,6 +337,8 @@ class MainManager:
 
         dirs = glob.glob(pattern)
 
+        res = None
+
         for dirpath in sorted(dirs):
             csv_fpath = os.path.join(dirpath, CSV_FNAME)
             assert os.path.isfile(csv_fpath)
@@ -355,7 +357,12 @@ class MainManager:
             # only those meeting the condition
             df_selected  = df[df.criticality > crit_score_limit]
             df_selected.insert(0, "dir", dirpath)
-            break
+            if res is None:
+                res = df_selected
+            else:
+                res = pd.concat((res, df_selected), ignore_index=True)
+
+        res.sort_values("criticality", ascending=False, inplace=True)
         IPS()
 
 
