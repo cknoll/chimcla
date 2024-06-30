@@ -138,6 +138,8 @@ chimcla_ced --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk
 
 next step: add step-history from log lines to the same image
 
+`chimcla_step_history_eval -l ~/mnt/XAI-DIA-gl/Carsten/logs/classifier-2023-07-10_since_2023-06-26.log --csv-mode stage3_results__history_test_y\* 300`
+
 
 
 #### für Versuchspersonen:
