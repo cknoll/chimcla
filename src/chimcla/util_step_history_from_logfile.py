@@ -261,6 +261,10 @@ class MainManager:
         # his is intended to store the all relevant information in a Database to be easily accessible from other scripts
         parser.add_argument("--db-mode", "-dm", help="start in database-mode", action="store_true")
 
+        # this modes iterates over directories given by PATTERN and processes csv files (ignoring entries based on CRIT_SCORE_LIMIT)
+        parser.add_argument("--csv-mode", "-cm", help="start in csv-mode", nargs=2, metavar=("PATTERN", "CRIT_SCORE_LIMIT"))
+
+
 
         self.args = parser.parse_args()
 
@@ -319,10 +323,18 @@ class MainManager:
         assert min(self.tdm1.time_deltas) > delta_limit
 
     def main(self):
-        if self.args.db_mode:
+        if self.args.csv_mode:
+            self.handle_csv_mode()
+        elif self.args.db_mode:
             self.create_db_with_filenames()
         else:
             self.create_position_time_images()
+
+    def handle_csv_mode(self):
+        CSV_FNAME = "_criticality_list.csv"
+        pattern, crit_score_limit = self.args.csv_mode
+
+        IPS()
 
 
     def create_db_with_filenames(self):
