@@ -332,21 +332,34 @@ class MainManager:
 
     def handle_csv_mode(self):
 
+        self.pattern: str
+        self.pattern, self.crit_score_limit = self.args.csv_mode
         relevant_img_df = self._get_relevant_images()
+
+        assert self.pattern.count("*") == 1
+
+        self.result_dir = self.pattern.replace("*", "_all")
+        os.makedirs(self.result_dir, exist_ok=True)
+
+        # normally for performance reasons iteration over pandas df rows is not recommended
+        # here, simplicity matters more
+        for row in relevant_img_df.itertuples(index=False):
+            break
         IPS()
 
 
     def _get_relevant_images(self) -> pd.DataFrame:
 
         CSV_FNAME = "_criticality_list.csv"
-        pattern, crit_score_limit = self.args.csv_mode
-        crit_score_limit = int(crit_score_limit)
+        self.crit_score_limit = int(self.crit_score_limit)
 
-        dirs = glob.glob(pattern)
+        dirs = glob.glob(self.pattern)
 
         res = None
 
         for dirpath in sorted(dirs):
+            if dirpath.endswith("_all"):
+                continue
             csv_fpath = os.path.join(dirpath, CSV_FNAME)
             if not os.path.isfile(csv_fpath):
                 # temporarily ignore incomplete directories (they are created in parallel)
@@ -365,7 +378,7 @@ class MainManager:
             # ...
 
             # only those meeting the condition
-            df_selected  = df[df.criticality > crit_score_limit]
+            df_selected  = df[df.criticality > self.crit_score_limit]
             df_selected.insert(0, "dir", dirpath)
             if res is None:
                 res = df_selected
