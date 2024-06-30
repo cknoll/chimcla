@@ -22,9 +22,9 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
-from stage2 import stage_2a_bar_selection as bs
+from chimcla import stage_2a_bar_selection as bs
 
-from stage2 import asyncio_tools as aiot
+from chimcla import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
@@ -197,7 +197,7 @@ def process_img(img_fpath):
         if args.history_evaluation:
             sum_score_str = f"{(int(sum(summary.crit_score_list))):06d}"
             fprefix=f"S{sum_score_str}_"
-            he.copy_original_image_to_output_folded(fprefix=fprefix, fsuffix=fsuffix)
+            he.copy_original_image_to_output_folder(fprefix=fprefix)
         else:
             fprefix=f"P{summary.crit_pix_number}_"
 
@@ -262,13 +262,18 @@ def run_this_script(img_path, **kwargs):
 
     option_str = " ".join(option_str_elements)
 
-
-    cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {new_suffix} {option_str}".strip()
+    # this is what is defined in pyproject.toml
+    BASE_CMD = "chimcla_ced"
+    # cmd = f"{sys.executable} {__file__} --img {img_path} --suffix {new_suffix} {option_str}".strip()
+    cmd = f"{BASE_CMD} --img {img_path} --suffix {new_suffix} {option_str}".strip()
     print("\n")
     print(cmd)
 
     res = os.system(cmd)
-    res = 0
+    # res = 0  # turn safety check off in mass production
+    if not res == 0:
+        msg = f"The following command unexpectedly exited with a nonzero code: \n\n{cmd}"
+        raise AssertionError(msg)
 
     if res != 0:
         print("ERROR\n", cmd)

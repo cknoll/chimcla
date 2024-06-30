@@ -1,5 +1,6 @@
 .vscode
 results/*
+*_results_*/*
 *.egg-info*
 
 critical_hist

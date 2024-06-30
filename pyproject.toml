@@ -17,3 +17,6 @@ where = ["src"]
 chocolate_bgr_convert = "chimcla.cli:bgr_convert"
 chocolate_create_groups = "chimcla.cli:create_groups"
 chocolate_rename_cell_imgs = "chimcla.cli:rename_cell_imgs"
+
+# create experimental data
+chimcla_ced = "chimcla.stage_3d_create_experimental_data:main"

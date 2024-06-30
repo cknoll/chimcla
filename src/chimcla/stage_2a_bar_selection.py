@@ -37,6 +37,9 @@ from ipydex import IPS, Container, activate_ips_on_exception
 # activate_ips_on_exception()
 
 
+REPO_ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+DATA_DIR = os.path.join(REPO_ROOT, "data")
+
 
 BBOX_EXPECTED_WITH = 26
 BBOX_EXPECTED_HEIGHT = 104
@@ -89,7 +92,7 @@ class ExtendedSqliteDict(SqliteDict):
             self.put(main_key, sub_key, value, commit)
 
 
-db = ExtendedSqliteDict("file-info.sqlite")
+db = ExtendedSqliteDict(os.path.join(DATA_DIR, "file-info.sqlite"))
 
 
 def load_img(fpath, rgb=False):
@@ -1510,7 +1513,10 @@ class AngleAnalyzer:
         # this assumes that stage_02b has already been done
 
         # TODO: extract the relevant data and store in one separate file
-        hist_dict_path = os.path.join(os.path.dirname(__file__), "dicts_stable")
+
+
+        hist_dict_path = os.path.join(DATA_DIR, "dicts_stable")
+        assert os.path.exists(hist_dict_path)
         self.hist_dict_list = glob.glob(f"{hist_dict_path}/hist_*.dill")
         self.hist_dict_list.sort()
 
@@ -1793,7 +1799,7 @@ class HistEvaluation:
     """
 
     # img_dir = "/home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0"
-    hist_dict_path = "dicts"
+    hist_dict_path = os.path.join(DATA_DIR, "dicts")
     total_res_fpath = f"{hist_dict_path}/_total_res.dill"
 
     # limit for which criticality score (cs) a histogram is considered an anomaly

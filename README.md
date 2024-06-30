@@ -132,7 +132,7 @@ py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carst
 
 This command does what we want:
 ```
-py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_x -H --limit 1 -np
+chimcla_ced --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_x -H --limit 1 -np
 
 ```
 
