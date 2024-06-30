@@ -333,7 +333,15 @@ class MainManager:
     def handle_csv_mode(self):
         CSV_FNAME = "_criticality_list.csv"
         pattern, crit_score_limit = self.args.csv_mode
+        crit_score_limit = int(crit_score_limit)
 
+        dirs = glob.glob(pattern)
+
+        for dirpath in sorted(dirs):
+            csv_fpath = os.path.join(dirpath, CSV_FNAME)
+            assert os.path.isfile(csv_fpath)
+            df = pd.read_csv(csv_fpath)
+            break
         IPS()
 
 
