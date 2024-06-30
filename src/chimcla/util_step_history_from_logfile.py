@@ -331,6 +331,13 @@ class MainManager:
             self.create_position_time_images()
 
     def handle_csv_mode(self):
+
+        relevant_img_df = self._get_relevant_images()
+        IPS()
+
+
+    def _get_relevant_images(self) -> pd.DataFrame:
+
         CSV_FNAME = "_criticality_list.csv"
         pattern, crit_score_limit = self.args.csv_mode
         crit_score_limit = int(crit_score_limit)
@@ -341,6 +348,9 @@ class MainManager:
 
         for dirpath in sorted(dirs):
             csv_fpath = os.path.join(dirpath, CSV_FNAME)
+            if not os.path.isfile(csv_fpath):
+                # temporarily ignore incomplete directories (they are created in parallel)
+                continue
             assert os.path.isfile(csv_fpath)
             # all lines
             df = pd.read_csv(csv_fpath)
@@ -363,7 +373,9 @@ class MainManager:
                 res = pd.concat((res, df_selected), ignore_index=True)
 
         res.sort_values("criticality", ascending=False, inplace=True)
-        IPS()
+
+        return res
+
 
 
     def create_db_with_filenames(self):
