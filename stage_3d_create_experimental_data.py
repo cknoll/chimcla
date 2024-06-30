@@ -281,8 +281,8 @@ def aio_main():
     if args.img_dir:
         arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
 
-        # for development only consider known critical images
-        # arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
+        # for development/debugging: only consider known critical images
+        arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
 
     else:
         assert args.img_dir_base

@@ -127,6 +127,18 @@ py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carst
 
 ```
 
+### History evaluation
+
+
+This command does what we want:
+```
+py3 stage_3d_create_experimental_data.py --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_x -H --limit 1 -np
+
+```
+
+next step: add step-history from log lines to the same image
+
+
 
 #### für Versuchspersonen:
 
