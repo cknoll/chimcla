@@ -340,7 +340,21 @@ class MainManager:
         for dirpath in sorted(dirs):
             csv_fpath = os.path.join(dirpath, CSV_FNAME)
             assert os.path.isfile(csv_fpath)
+            # all lines
             df = pd.read_csv(csv_fpath)
+            df.drop(columns=["Unnamed: 0"], inplace=True)
+
+            # looks like:
+            # Unnamed: 0                 basename  criticality
+            # 0           3  2023-06-26_08-50-55_C50     40268.73
+            # 1          82  2023-06-26_20-18-05_C50      2894.02
+            # 2           6  2023-06-26_08-51-39_C50      2441.10
+            # 3          43  2023-06-26_09-32-42_C50      1584.12
+            # ...
+
+            # only those meeting the condition
+            df_selected  = df[df.criticality > crit_score_limit]
+            df_selected.insert(0, "dir", dirpath)
             break
         IPS()
 
