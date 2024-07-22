@@ -12,8 +12,10 @@ from datetime import datetime as dtm
 from sortedcontainers import SortedDict
 import argparse
 import glob
+from typing import Tuple
 
 import pandas as pd
+from tqdm import tqdm
 
 import cv2
 import numpy as np
@@ -344,10 +346,8 @@ class MainManager:
 
         # normally for performance reasons iteration over pandas df rows is not recommended
         # here, simplicity matters more
-        for img_row in relevant_img_df.itertuples(index=False):
+        for img_row in tqdm(relevant_img_df.itertuples(index=False)):
             self._create_combined_image(img_row)
-            break
-
 
 
     def _create_combined_image(self, img_row):
@@ -358,18 +358,42 @@ class MainManager:
         time_str = time_str.replace("-", ":")
         station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
 
-        fig = plt.figure()
+        _, orig_img_arr = self._get_original_file(img_row)
+
+        # adapt the size of the graph such that it matches the original size
+        ratio = 2
+        orig_width = orig_img_arr.shape[1]
+
+        # this is in inches (200dpi empirically determined)
+        fig_width = orig_width/200
+        fig_height = fig_width*ratio
+
+        fig = plt.figure(figsize=(fig_height, fig_width))
         plt.plot(station_time_vector)
         fig_arr = self._fig_to_array(fig)
+        fig_arr = cv2.cvtColor(fig_arr, cv2.COLOR_RGB2BGR)
+
+        assert orig_img_arr.shape[1:] == fig_arr.shape[1:]
+        joint_array = np.concatenate((orig_img_arr, fig_arr))
 
         fprefix=f"S{img_row.criticality}_"
         fname = f"{fprefix}{img_row.basename}_Cx.jpg"
         fpath = os.path.join(self.result_dir, fname)
-        res = cv2.imwrite(fpath, cv2.cvtColor(fig_arr, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 98])
+
+        res = cv2.imwrite(fpath, joint_array, [cv2.IMWRITE_JPEG_QUALITY, 98])
+        # IPS()
+
+    def _get_original_file(self, img_row) -> Tuple[str, np.ndarray]:
+
+        pattern = os.path.join(img_row.dir, f"*{img_row.basename}*")
+        flist = glob.glob(pattern)
+        assert len(flist) == 1
+        fpath = flist[0]
+        img_arr  = cv2.imread(fpath)
+        return fpath, img_arr
 
 
 
-        IPS()
 
     def _fig_to_array(self, fig):
         # taken from https://stackoverflow.com/a/57988387
