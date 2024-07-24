@@ -1,0 +1,12 @@
+numpy
+scipy
+matplotlib
+pandas
+sqlitedict
+scikit-image
+addict
+opencv-python
+dill
+colorama
+tqdm
+ipydex
