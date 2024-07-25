@@ -30,3 +30,15 @@
         - Note that in order to pass an asterisk character (`*`) as part of an argument to the python script it has to be escaped (prepended by a backslash). Otherwise the shell (e.g. bash) tries to expand it before passing the arguments to the script.
         - `<critical-score-limit>`: Lower limit for "cumulated criticality score" for images which should be considered in the step history creation.
         The criticality score specifies how much a cell image deviates from the expectation (e.g. homogenous brown). Values below 20 are considered unproblematic, values above 100 typically show bright regions or other obvious problems. "Cumulated" means that the criticality scores of all 81 cells of the image are added.
+
+
+### Create Experimental Data (ced)
+
+- overview:
+    - `chimcla_ced --help`
+- usage example:
+    - `chimcla_ced --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_y -H`
+    - explanation:
+        - `--img_dir <path>`: specify source directory
+        - `--suffix <path>`: specify target directory
+        - `-H`: activate history-evaluation mode
