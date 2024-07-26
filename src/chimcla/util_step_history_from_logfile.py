@@ -381,7 +381,8 @@ class MainManager:
         fpath = os.path.join(self.result_dir, fname)
 
         res = cv2.imwrite(fpath, joint_array, [cv2.IMWRITE_JPEG_QUALITY, 98])
-        # IPS()
+        IPS()
+        exit()
 
     def _get_original_file(self, img_row) -> Tuple[str, np.ndarray]:
 
@@ -406,6 +407,18 @@ class MainManager:
 
         fig.canvas.draw()
         image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+
+        dim0, dim1 = fig.canvas.get_width_height()[::-1]  # this is 450, 900
+
+        # on Carstens machine:  image_from_plot.shape[0] -> 1215000
+        # on Saschas machine: image_from_plot.shape[0] -> 4860000 (factor 4 too big)
+
+        # TODO: find out why this is or how to handle both array sizes
+
+        IPS()  # start interactive shell
+        print("stop here because the following reshaping would fail on Saschas machine")
+        exit()
+
         image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
         return image_from_plot
