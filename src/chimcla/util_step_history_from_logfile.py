@@ -253,7 +253,7 @@ class MainManager:
     def parse_args(self):
 
         parser = argparse.ArgumentParser(
-            prog='conveyor_belt_history',
+            prog='chimcla_step_history',
             description='evaluate the conveyor belt history of chocolate images',
         )
 

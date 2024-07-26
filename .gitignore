@@ -18,3 +18,7 @@ single_bars
 *.sqlite
 bar_imperfections
 tmp*
+
+workdata/
+.DS_Store
+src/chimcla/__pycache__/
