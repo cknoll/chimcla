@@ -349,7 +349,6 @@ class MainManager:
         for img_row in tqdm(relevant_img_df.itertuples(index=False)):
             self._create_combined_image(img_row)
 
-
     def _create_combined_image(self, img_row):
         """
         :param img_row:     pandas.Series; fields: .basename, .dir, .criticality
@@ -381,8 +380,6 @@ class MainManager:
         fpath = os.path.join(self.result_dir, fname)
 
         res = cv2.imwrite(fpath, joint_array, [cv2.IMWRITE_JPEG_QUALITY, 98])
-        IPS()
-        exit()
 
     def _get_original_file(self, img_row) -> Tuple[str, np.ndarray]:
 
@@ -410,20 +407,28 @@ class MainManager:
 
         dim0, dim1 = fig.canvas.get_width_height()[::-1]  # this is 450, 900
 
-        # on Carstens machine:  image_from_plot.shape[0] -> 1215000
-        # on Saschas machine: image_from_plot.shape[0] -> 4860000 (factor 4 too big)
+        # check dimensions
+        length = len(image_from_plot)
+        factor = (length / dim0 / dim1 / 3)
+        # on Carstens machine:  length == 1215000 (factor 1)
+        # on Saschas machine: length == 4860000 (factor 4)
 
-        # TODO: find out why this is or how to handle both array sizes
-
-        IPS()  # start interactive shell
-        print("stop here because the following reshaping would fail on Saschas machine")
-        exit()
+        if factor == 1:
+            # array dimensions are as expected
+            image_from_plot = image_from_plot.reshape(dim0, dim1, 3)
+        elif factor == 4:
+            # this can happen on displays with higher resolution
+            image_from_plot = image_from_plot.reshape(dim0*2, dim1*2, 3)
+            # now the image is too big -> downsample it
+            # note: cv2.resize expects the dimension in order: width, height, i.e. dim1, dim0
+            image_from_plot = cv2.resize(image_from_plot, (dim1, dim0), interpolation=cv2.INTER_LINEAR)
+            assert image_from_plot.shape == (dim0, dim1, 3)
+        else:
+            msg = f"matplotlib generated an 1d image array with unexpected length ({factor=})"
+            raise ValueError(msg)
 
         image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-
         return image_from_plot
-
-
 
     def _get_relevant_images(self) -> pd.DataFrame:
 
@@ -431,6 +436,7 @@ class MainManager:
         self.crit_score_limit = int(self.crit_score_limit)
 
         dirs = glob.glob(self.pattern)
+        assert len(dirs) > 0, f"Could not find any directory for pattern {self.pattern}"
 
         res = None
 
