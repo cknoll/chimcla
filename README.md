@@ -42,3 +42,36 @@
         - `--img_dir <path>`: specify source directory
         - `--suffix <path>`: specify target directory
         - `-H`: activate history-evaluation mode
+
+### Split into Lots
+
+#### Background
+
+There are many (\>\>100K) raw images. To simplify their handling they are split into "lots". Each lot corresponds to one cycle of production (e.g. 7 days).
+Each lot is subdivided into chunks of (ca.) 1000 raw images.
+
+
+#### Directory Structure
+
+```
+data_images
+├── to be done
+│   ├──
+│   └──
+└──
+```
+
+
+
+#### Usage
+
+- preparation: create a list of paths:
+    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images`
+    - command: `find . -type f -name '*.png' > png_paths.txt`
+- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/png_paths.txt`
+
+### Create Work Images
+
+!! To be done.
+
+- usage: `chimcla_create_work_images`
