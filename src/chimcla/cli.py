@@ -5,6 +5,8 @@ import glob
 import random
 import tqdm
 
+import addict
+
 import cv2
 
 from ipydex import IPS, activate_ips_on_exception
@@ -152,66 +154,3 @@ def _rename_cell_imgs(dirname):
 def create_work_images():
     from . import stage_0f_resize_and_jpg
     stage_0f_resize_and_jpg.main()
-
-
-def split_into_lots():
-    """
-    Distribute a big list of files (with time stamp names) into subdirectories
-    """
-    import datetime as dt
-    import numpy as np
-    import collections
-
-    parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-    )
-
-    parser.add_argument(
-        'pathlist',
-        help="txt file containing the paths",
-    )
-    args = parser.parse_args()
-
-    basedir = os.path.split(args.pathlist)[0]
-
-    with open(args.pathlist, "r") as fp:
-        pathlist = fp.readlines()
-
-
-    def get_fname(path):
-        return os.path.split(path.strip())[1]
-
-    pathlist.sort(key=get_fname)
-
-
-    fnamelist = [get_fname(path) for path in pathlist]
-
-    cnt = collections.Counter(fnamelist)
-
-    dupes = []
-    for i, path in enumerate(pathlist):
-        if cnt[get_fname(path)] > 1:
-            dupes.append(path)
-
-    IPS()
-    exit()
-
-    date_strings = ["_".join(fname.split("_")[:2]) for fname in fnamelist]
-
-    date_format = r"%Y-%m-%d_%H-%M-%S"
-    activate_ips_on_exception()
-
-    dt_objs = np.array([dt.datetime.strptime(date_str, date_format) for date_str in date_strings])
-    diffs = np.diff(dt_objs)
-
-    pauses = []
-    lot_start_idcs = [0]
-    for i, diff in enumerate(diffs):
-        if diff >=  dt.timedelta(days=1):
-            days = np.round(diff.total_seconds() / (24*3600), 3)
-            pauses.append((days, fnamelist[i], fnamelist[i+1]))
-            lot_start_idcs.append(i + 1)
-
-
-
-    IPS()
