@@ -347,7 +347,22 @@ class MainManager:
         # normally for performance reasons iteration over pandas df rows is not recommended
         # here, simplicity matters more
         for img_row in tqdm(relevant_img_df.itertuples(index=False)):
-            self._create_combined_image(img_row)
+            # self._create_combined_image(img_row)
+            self._create_combined_image_csv(img_row)
+
+
+    def _create_combined_image_csv(self, img_row):
+        """
+        create csv file for further data analysis
+        :param img_row:     pandas.Series; fields: .basename, .dir, .criticality
+        """
+        date_str, time_str, _ = img_row.basename.split("_")
+        time_str = time_str.replace("-", ":")
+        station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
+        #ToDo: remove
+        IPS()
+        exit()
+
 
     def _create_combined_image(self, img_row):
         """
