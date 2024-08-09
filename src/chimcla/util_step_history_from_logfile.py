@@ -361,6 +361,7 @@ class MainManager:
         time_str = time_str.replace("-", ":")
         station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
         #ToDo: remove
+        # station_time_vector.shape -> returns the number of entries
         IPS()
         exit()
 
