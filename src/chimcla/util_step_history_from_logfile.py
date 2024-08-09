@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 from ipydex import activate_ips_on_exception, IPS
 activate_ips_on_exception()
 
+df_csv = pd.DataFrame()
 
 
 # LOG_FILE_PATH = f"{os.environ.get('HOME')}/mnt/XAI-DIA-gl/Carsten/classifier.log"
@@ -267,8 +268,6 @@ class MainManager:
         # this modes iterates over directories given by PATTERN and processes csv files (ignoring entries based on CRIT_SCORE_LIMIT)
         parser.add_argument("--csv-mode", "-cm", help="start in csv-mode", nargs=2, metavar=("PATTERN", "CRIT_SCORE_LIMIT"))
 
-
-
         self.args = parser.parse_args()
 
     def load_logfile(self):
@@ -350,7 +349,36 @@ class MainManager:
 
             # self._create_combined_image(img_row)
             self._create_combined_image_csv(img_row)
+        # Observe the result
+        global df_csv
 
+        # calculate sum of times for each row -> dwell time per position
+        df_csv['dwell_time'] = df_csv.sum(axis=1, numeric_only=True)
+
+
+      
+        # ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
+        # df_sum = df_csv.cumsum()
+        # df_sum.plot()
+        # plt.show()
+
+        #funtzt:
+        # np.random.seed(123456)
+        # ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
+        # ts = ts.cumsum()
+        # ts.plot()
+        # plt.show()
+
+        print(df_csv)
+        df_csv.to_csv("results.csv")            
+
+        df_sum = pd.read_csv('results.csv')
+        df_sum["dwell_time"].plot(kind = 'bar', y = 'dwell_time')
+
+        plt.show()
+
+        # IPS()
+        # exit()
 
     def _create_combined_image_csv(self, img_row):
         """
@@ -360,10 +388,14 @@ class MainManager:
         date_str, time_str, _ = img_row.basename.split("_")
         time_str = time_str.replace("-", ":")
         station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
+
+        # add current time vector data as column to csv data frame
+        df_csv[img_row.basename] = station_time_vector.tolist()
+
         #ToDo: remove
         # station_time_vector.shape -> returns the number of entries
-        IPS()
-        exit()
+        # IPS()
+        # exit()
 
             # if int(img_row.criticality) != 375:
             #     pass #continue
