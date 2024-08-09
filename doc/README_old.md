@@ -1,4 +1,4 @@
-# Aktuelles Vorgehen:
+ Aktuelles Vorgehen:
 
 
 ## Stage 1:

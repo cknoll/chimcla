@@ -355,19 +355,8 @@ class MainManager:
         # calculate sum of times for each row -> dwell time per position
         df_csv['dwell_time'] = df_csv.sum(axis=1, numeric_only=True)
 
-
-      
-        # ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
-        # df_sum = df_csv.cumsum()
-        # df_sum.plot()
-        # plt.show()
-
-        #funtzt:
-        # np.random.seed(123456)
-        # ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
-        # ts = ts.cumsum()
-        # ts.plot()
-        # plt.show()
+        # IPS()
+        # exit()
 
         print(df_csv)
         df_csv.to_csv("results.csv")            
@@ -377,8 +366,8 @@ class MainManager:
 
         plt.show()
 
-        # IPS()
-        # exit()
+        IPS()
+        exit()
 
     def _create_combined_image_csv(self, img_row):
         """
@@ -392,10 +381,12 @@ class MainManager:
         # add current time vector data as column to csv data frame
         df_csv[img_row.basename] = station_time_vector.tolist()
 
+        #ToDo: round the station_times in ms 
+
         #ToDo: remove
         # station_time_vector.shape -> returns the number of entries
-        # IPS()
-        # exit()
+        IPS()
+        exit()
 
             # if int(img_row.criticality) != 375:
             #     pass #continue
