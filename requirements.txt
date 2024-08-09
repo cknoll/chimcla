@@ -11,3 +11,4 @@ dill
 colorama
 tqdm
 ipydex
+pyyaml

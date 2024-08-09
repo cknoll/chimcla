@@ -347,6 +347,7 @@ class MainManager:
         # normally for performance reasons iteration over pandas df rows is not recommended
         # here, simplicity matters more
         for img_row in tqdm(relevant_img_df.itertuples(index=False)):
+
             # self._create_combined_image(img_row)
             self._create_combined_image_csv(img_row)
 
@@ -363,6 +364,10 @@ class MainManager:
         IPS()
         exit()
 
+            # if int(img_row.criticality) != 375:
+            #     pass #continue
+
+            # self._create_combined_image(img_row)
 
     def _create_combined_image(self, img_row):
         """
@@ -382,9 +387,21 @@ class MainManager:
         fig_width = orig_width/200
         fig_height = fig_width*ratio
 
+
         fig = plt.figure(figsize=(fig_height, fig_width))
         plt.plot(station_time_vector)
+        ax = plt.gca()
+        ax.set_yscale('asinh', linear_width=10, base=0)
+
+        plt.ylim(-1, 1e4)
+        plt.xticks(np.arange(0, len(station_time_vector) + 100, 100))
+        yticks = [0, 3, 10, 30, 100, 300, 1000, 3000]
+        plt.yticks(yticks)
+        ax.set_yticklabels([str(tick) for tick in  yticks])
+        plt.grid()
+        # plt.rcParams['figure.subplot.left'] = .4
         fig_arr = self._fig_to_array(fig)
+        plt.close()
         fig_arr = cv2.cvtColor(fig_arr, cv2.COLOR_RGB2BGR)
 
         assert orig_img_arr.shape[1:] == fig_arr.shape[1:]
@@ -405,13 +422,11 @@ class MainManager:
         img_arr  = cv2.imread(fpath)
         return fpath, img_arr
 
-
-
-
     def _fig_to_array(self, fig):
         # taken from https://stackoverflow.com/a/57988387
 
         fig.tight_layout(pad=0)
+        plt.subplots_adjust(left=.08)
         ax = plt.gca()
 
         # To remove the huge white borders

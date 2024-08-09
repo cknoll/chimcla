@@ -55,10 +55,13 @@ Each lot is subdivided into chunks of (ca.) 1000 raw images.
 
 ```
 data_images
-├── to be done
+├── jpg1000                 → rescaled work images (jpg)
+├── raw                     → original images in png format (before saving every image)
+├── raw_jpg                 → original images in jpg format (necessary to reduce transfer load)
 │   ├──
 │   └──
-└──
+│
+└── png_paths.txt           → file created by preparation command
 ```
 
 
@@ -67,11 +70,18 @@ data_images
 
 - preparation: create a list of paths:
     - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images`
-    - command: `find . -type f -name '*.png' > png_paths.txt`
+    - command: `find . -type f -name '*.png' > png_paths.txt` (takes approx. 40s)
 - usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/png_paths.txt`
 
 ### Create Work Images
 
-!! To be done.
+Goal: transform the raw images into "work images. In particular:
+
+- rescale to width of 1000px
+- cut off irrelevant areas
+- perform shading correction
+
+
+These images can then be processed by the cell based evaluation.
 
 - usage: `chimcla_create_work_images`
