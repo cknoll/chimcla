@@ -353,18 +353,35 @@ class MainManager:
         global df_csv
 
         # calculate sum of times for each row -> dwell time per position
-        df_csv['dwell_time'] = df_csv.sum(axis=1, numeric_only=True)
+        df_csv['dt_sum'] = df_csv.sum(axis=1, numeric_only=True)
+
+        # calculate mean of times for each row -> dwell time per position
+        df_csv['dt_mean'] = df_csv.mean(axis=1, numeric_only=True)
+
+        # calculate mean of times for each row -> dwell time per position
+        df_csv['dt_med'] = df_csv.median(axis=1, numeric_only=True)
 
         # IPS()
         # exit()
 
         print(df_csv)
-        df_csv.to_csv("results.csv")            
+        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
+        df_csv.to_excel("results.xlsx", index_label='idx')
 
-        df_sum = pd.read_csv('results.csv')
-        df_sum["dwell_time"].plot(kind = 'bar', y = 'dwell_time')
+        df_sum = pd.read_csv('results.csv', sep ='\t', index_col=0)
+        df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time')
 
+        # convert to numpy array
+        # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        np_sum = df_sum.dt_sum.to_numpy()
+        plt.plot(np_sum)
+        plt.clf()
+        np_sum = df_sum.dt_sum.to_numpy()
+        plt.plot(np_sum)
+
+        #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
         plt.show()
+
 
         IPS()
         exit()
@@ -378,6 +395,9 @@ class MainManager:
         time_str = time_str.replace("-", ":")
         station_time_vector = self.tdm1.get_position_time_vector(f"{date_str} {time_str}")
 
+        # round values
+        station_time_vector = station_time_vector.round(2)
+
         # add current time vector data as column to csv data frame
         df_csv[img_row.basename] = station_time_vector.tolist()
 
@@ -385,8 +405,8 @@ class MainManager:
 
         #ToDo: remove
         # station_time_vector.shape -> returns the number of entries
-        IPS()
-        exit()
+        # IPS()
+        # exit()
 
             # if int(img_row.criticality) != 375:
             #     pass #continue
