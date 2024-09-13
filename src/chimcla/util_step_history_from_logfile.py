@@ -407,59 +407,18 @@ class MainManager:
             self._create_combined_image_csv(img_row)
         # Observe the result
         global df_csv
-
         #print(df_csv)
-        df_count = df_csv
-        df_count_rows = df_count.shape[0] #len(df_count.index)
-        df_count_cols = df_count.shape[1]
 
-        print("Rows = {}, Cols = {}".format(df_count_rows, df_count_cols))
+        # calculate sum of times for each row -> dwell time per position
+        df_csv['dt_sum'] = df_csv.sum(axis=1, numeric_only=True)
 
-        for row in range(df_count_rows):
-            for col in range(df_count_cols):
-                if (df_count.iloc[row,col] >= 30):
-                    df_count.iloc[row,col] = 1
-                    print("YES = {}".format(df_count.iloc[row,col]))
-                else:
-                    df_count.iloc[row,col] = 0
+        # calculate mean of times for each row -> dwell time per position
+        df_csv['dt_mean'] = df_csv.mean(axis=1, numeric_only=True)
 
-        # for i, j in df_count.iterrows():
-            # print("i=" + i + ", j= " + j)
-            # print(i,j)
-            # print
-            # if (np.isnan(df_count.iloc[i,j])):
-            #     print("Not a Number\n")
+        # calculate mean of times for each row -> dwell time per position
+        df_csv['dt_med'] = df_csv.median(axis=1, numeric_only=True)
 
-            # if (df_count.iloc[i,j] >= 30):
-            #     df_count.iloc[i,j] = 1
-            # else:
-            #     df_count.iloc[i,j] = 0
-
-        # print(df_count.iloc[0])
-        # print(df_count.size)
-
-        # iterating over rows using iterrows() function
-        # for i, j in df_count.iterrows():
-        #     # print(i, j)
-        #     if (df_count.iloc[i,j] > 30):
-        #         df_count.iloc[i,j] = 1
-        #     else:
-        #         df_count.iloc[i,j] = 0
-
-
-        # # calculate sum of times for each row -> dwell time per position
-        # df_csv['dt_sum'] = df_csv.sum(axis=1, numeric_only=True)
-
-        # # calculate mean of times for each row -> dwell time per position
-        # df_csv['dt_mean'] = df_csv.mean(axis=1, numeric_only=True)
-
-        # # calculate mean of times for each row -> dwell time per position
-        # df_csv['dt_med'] = df_csv.median(axis=1, numeric_only=True)
-
-        # IPS()
-        # exit()
-
-        print(df_csv)
+        # print(df_csv)
         df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
         df_csv.to_excel("results.xlsx", index_label='idx')
 
@@ -477,6 +436,52 @@ class MainManager:
 
         # #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
         # plt.show()
+
+
+
+
+
+
+        ########################################################################################
+        # count variable - increments if delay is greater than 30 seconds
+        ########################################################################################
+
+        df_count = df_csv
+        df_count_rows = df_count.shape[0] #len(df_count.index)
+        df_count_cols = df_count.shape[1]
+
+        print("Rows = {}, Cols = {}".format(df_count_rows, df_count_cols))
+
+        for row in range(df_count_rows):
+            for col in range(df_count_cols):
+                if (df_count.iloc[row,col] >= 30):
+                    df_count.iloc[row,col] = 1
+                    print("YES = {}".format(df_count.iloc[row,col]))
+                else:
+                    df_count.iloc[row,col] = 0
+
+        # calculate sum of critical times for each row
+        df_count['count_sum'] = df_count.sum(axis=1, numeric_only=True)
+
+        df_count.to_csv("results_count.csv", sep ='\t', index=True, index_label='idx')            
+        df_count.to_excel("results_count.xlsx", index_label='idx')
+
+
+        # read csv data and plot it
+        # df_sum = pd.read_csv('results.csv', sep ='\t', index_col=0)
+        # df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time')
+
+        # # convert to numpy array
+        # # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        # np_sum = df_sum.dt_sum.to_numpy()
+        # plt.plot(np_sum)
+        # plt.clf()  # but: plot only one times doesn't format the graphic correctly
+        # np_sum = df_sum.dt_sum.to_numpy()
+        # plt.plot(np_sum)
+
+        # #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        # plt.show()
+        
 
 
         IPS()
