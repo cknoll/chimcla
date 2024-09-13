@@ -326,7 +326,8 @@ class MainManager:
 
     def main(self):
         if self.args.csv_mode:
-            self.handle_csv_mode()
+            # self.handle_csv_mode()
+            self.handle_csv_mode_count_value()
         elif self.args.db_mode:
             self.create_db_with_filenames()
         else:
@@ -368,6 +369,7 @@ class MainManager:
         df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
         df_csv.to_excel("results.xlsx", index_label='idx')
 
+        # read csv data and plot it
         df_sum = pd.read_csv('results.csv', sep ='\t', index_col=0)
         df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time')
 
@@ -375,7 +377,7 @@ class MainManager:
         # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
         np_sum = df_sum.dt_sum.to_numpy()
         plt.plot(np_sum)
-        plt.clf()
+        plt.clf()  # but: plot only one times doesn't format the graphic correctly
         np_sum = df_sum.dt_sum.to_numpy()
         plt.plot(np_sum)
 
@@ -385,6 +387,102 @@ class MainManager:
 
         IPS()
         exit()
+
+    def handle_csv_mode_count_value(self):
+
+        self.pattern: str
+        self.pattern, self.crit_score_limit = self.args.csv_mode
+        relevant_img_df = self._get_relevant_images()
+
+        assert self.pattern.count("*") == 1
+
+        self.result_dir = self.pattern.replace("*", "_all")
+        os.makedirs(self.result_dir, exist_ok=True)
+
+        # normally for performance reasons iteration over pandas df rows is not recommended
+        # here, simplicity matters more
+        for img_row in tqdm(relevant_img_df.itertuples(index=False)):
+
+            # self._create_combined_image(img_row)
+            self._create_combined_image_csv(img_row)
+        # Observe the result
+        global df_csv
+
+        #print(df_csv)
+        df_count = df_csv
+        df_count_rows = df_count.shape[0] #len(df_count.index)
+        df_count_cols = df_count.shape[1]
+
+        print("Rows = {}, Cols = {}".format(df_count_rows, df_count_cols))
+
+        for row in range(df_count_rows):
+            for col in range(df_count_cols):
+                if (df_count.iloc[row,col] >= 30):
+                    df_count.iloc[row,col] = 1
+                    print("YES = {}".format(df_count.iloc[row,col]))
+                else:
+                    df_count.iloc[row,col] = 0
+
+        # for i, j in df_count.iterrows():
+            # print("i=" + i + ", j= " + j)
+            # print(i,j)
+            # print
+            # if (np.isnan(df_count.iloc[i,j])):
+            #     print("Not a Number\n")
+
+            # if (df_count.iloc[i,j] >= 30):
+            #     df_count.iloc[i,j] = 1
+            # else:
+            #     df_count.iloc[i,j] = 0
+
+        # print(df_count.iloc[0])
+        # print(df_count.size)
+
+        # iterating over rows using iterrows() function
+        # for i, j in df_count.iterrows():
+        #     # print(i, j)
+        #     if (df_count.iloc[i,j] > 30):
+        #         df_count.iloc[i,j] = 1
+        #     else:
+        #         df_count.iloc[i,j] = 0
+
+
+        # # calculate sum of times for each row -> dwell time per position
+        # df_csv['dt_sum'] = df_csv.sum(axis=1, numeric_only=True)
+
+        # # calculate mean of times for each row -> dwell time per position
+        # df_csv['dt_mean'] = df_csv.mean(axis=1, numeric_only=True)
+
+        # # calculate mean of times for each row -> dwell time per position
+        # df_csv['dt_med'] = df_csv.median(axis=1, numeric_only=True)
+
+        # IPS()
+        # exit()
+
+        print(df_csv)
+        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
+        df_csv.to_excel("results.xlsx", index_label='idx')
+
+        # # read csv data and plot it
+        # df_sum = pd.read_csv('results.csv', sep ='\t', index_col=0)
+        # df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time')
+
+        # # convert to numpy array
+        # # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        # np_sum = df_sum.dt_sum.to_numpy()
+        # plt.plot(np_sum)
+        # plt.clf()  # but: plot only one times doesn't format the graphic correctly
+        # np_sum = df_sum.dt_sum.to_numpy()
+        # plt.plot(np_sum)
+
+        # #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        # plt.show()
+
+
+        IPS()
+        exit()
+
+
 
     def _create_combined_image_csv(self, img_row):
         """
@@ -401,17 +499,6 @@ class MainManager:
         # add current time vector data as column to csv data frame
         df_csv[img_row.basename] = station_time_vector.tolist()
 
-        #ToDo: round the station_times in ms 
-
-        #ToDo: remove
-        # station_time_vector.shape -> returns the number of entries
-        # IPS()
-        # exit()
-
-            # if int(img_row.criticality) != 375:
-            #     pass #continue
-
-            # self._create_combined_image(img_row)
 
     def _create_combined_image(self, img_row):
         """
