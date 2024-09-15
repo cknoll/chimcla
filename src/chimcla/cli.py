@@ -152,5 +152,5 @@ def _rename_cell_imgs(dirname):
 
 
 def create_work_images():
-    from . import stage_0f_resize_and_jpg
-    stage_0f_resize_and_jpg.main()
+    from . import stage_1a_preprocessing as s1a
+    s1a.main()

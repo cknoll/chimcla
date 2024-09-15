@@ -338,6 +338,8 @@ def get_known_critical_images(img_fpaths):
 
 
 def generate_criticality_list(img_fpaths: list):
+
+    assert img_fpaths
     cs = bs.db["criticality_summary"]
     csv_data = defaultdict(list)
 
@@ -364,6 +366,7 @@ def get_img_list_from_src_dir():
 
     # taken from stage_3e
     dn = args.img_dir_src
+    # IPS()
     paths = glob.glob(f"{dn}/*jpg")
     base_names0 = [p.replace(f"{dn}/", "") for p in paths if "exp_" not in p]
     base_names = ["_".join(bn.split("_")[1:]) for bn in base_names0]

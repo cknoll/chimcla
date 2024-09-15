@@ -10,10 +10,15 @@ def background(f):
     decorator for paralelization
     """
     # source: https://stackoverflow.com/a/59385935
-    def wrapped(arg, **kwargs):
+    from ipydex import IPS
+    def wrapped(arg, arg2=None, **kwargs):
+        if arg2:
+            print(f"{arg=} ({type(arg)=}), {arg2=} ({type(arg)=})")
 
         func_with_kwargs = functools.partial(f, **kwargs)
         return asyncio.get_event_loop().run_in_executor(None, func_with_kwargs, arg)
+    #
+    # IPS()
 
     return wrapped
 
@@ -36,5 +41,9 @@ async def main(func, arg_list, **kwargs):
 
         aiot.run(aiot.main(myfunc, myargs))
 
-
     """
+
+async_main = main
+
+def async_run(func, arg_list, **kwargs):
+    run(async_main(func, arg_list, **kwargs))

@@ -60,12 +60,10 @@ def main():
         description='This program corrects resizes the original png files and converts to jpg',
     )
 
-
     parser.add_argument('img_dir', help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31")
     parser.add_argument('target_rel_dir', help="target directory (relative to img_dir/..)", nargs="?", default="bilder_jpg0")
 
     args = parser.parse_args()
-
 
     img_dir = args.img_dir.rstrip("/")
     omo.target_dir = os.path.join(img_dir, "..", args.target_rel_dir)
@@ -74,8 +72,6 @@ def main():
     os.makedirs(omo.target_dir, exist_ok=True)
 
     omo.img_path_list = glob.glob(f"{img_dir}/*.png")
-
-
 
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
