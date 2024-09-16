@@ -3,8 +3,7 @@ import unittest
 import glob
 import shutil
 
-from chimcla import stage_2a_bar_selection as bs
-from chimcla import stage_2a_bar_selection
+# Note: for performance reasons some imports are moved inside the tests
 
 from ipydex import IPS, Container
 
@@ -43,6 +42,7 @@ class TestCases1(unittest.TestCase):
         return _RAW_PNG_DIR
 
     def test000__sqlite_db(self):
+        from chimcla import stage_2a_bar_selection as bs
         db = bs.db
 
         # keys: CCI-fnames like "2023-06-26_23-20-31_C0.jpg"
@@ -53,7 +53,6 @@ class TestCases1(unittest.TestCase):
         cmp = db["cell_mappings"]
 
     def test010__preprocessing(self):
-        return
         from chimcla import stage_1a_preprocessing as s1a
         png_dir_path = self.get_png_dir_path()
 
@@ -66,16 +65,18 @@ class TestCases1(unittest.TestCase):
         jpg0_files = glob.glob(pjoin(self.jpg0_dir_path, "*.jpg"))
         # self.assertEqual(len(jpg0_files), 5)
 
-    def test030__bboxes(self):
+    def test020__bboxes(self):
+        from chimcla import stage_2a_bar_selection as bs
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         ccia = bs.CavityCarrierImageAnalyzer(tmp_path, bboxes=True)
 
     def test030__symloghist(self):
-
+        from chimcla import stage_2a_bar_selection as bs
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         bs.get_symlog_hist(tmp_path, *"a 20".split(), dc=None)
 
     def test040__find_critical(self):
+        from chimcla import stage_2a_bar_selection as bs
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-25_C50.jpg")
         he = bs.HistEvaluation(img_fpath=tmp_path)
         he.initialize_hist_cache()
