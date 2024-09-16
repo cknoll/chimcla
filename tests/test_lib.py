@@ -56,14 +56,20 @@ class TestCases1(unittest.TestCase):
         from chimcla import stage_1a_preprocessing as s1a
         png_dir_path = self.get_png_dir_path()
 
-        args = Container(img_dir=png_dir_path, target_rel_dir="jpg0", no_parallel=False)
+        args = Container(img_dir=png_dir_path, target_rel_dir="jpg0", no_parallel=True)
         self.assertEqual(self.jpg0_dir_path, pjoin(TESTDATA, args.target_rel_dir))
 
         self.assertFalse(os.path.isdir(self.jpg0_dir_path))
-        s1a.main(args)
+
+        # get the preprocessor object
+        ppo = s1a.main(args)
 
         jpg0_files = glob.glob(pjoin(self.jpg0_dir_path, "*.jpg"))
-        # self.assertEqual(len(jpg0_files), 5)
+        self.assertEqual(len(jpg0_files), 5)
+
+        err_report_dict = ppo.get_error_report()
+        self.assertEqual(len(err_report_dict[None]), 4)
+        self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs

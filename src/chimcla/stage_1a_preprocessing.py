@@ -5,9 +5,12 @@ This module contains several preprocessing steps which were distributed over mul
 import os
 import argparse
 import glob
+from typing import Dict
+import collections
 
 import cv2
 import numpy as np
+import time
 
 from ipydex import IPS
 
@@ -20,12 +23,43 @@ _EMPTY_SLOT_REF_IMG_PATH = pjoin(CHIMCLA_DATA, "reference", "empty_slot.jpg")
 # region of interest
 _EMPTY_SLOT_REF_IMG_ROI = (30, 930, 85, 600)
 
+class ImageInfoContainer:
+    """
+    Class to track information about individual images
+    """
+    def __init__(self, original_fpath):
+        self.original_fpath = original_fpath
+        self.latest_fpath = original_fpath
+        self.original_dirpath, self.fname = os.path.split(original_fpath)
+        self.basename, _ = os.path.splitext(self.fname)
+
+        self.step01_fpath = None
+        self.step02_fpath = None
+        self.step03_fpath = None
+        self.step04_fpath = None
+        self.step05_fpath = None
+
+        self.error = None
+        self.messages = []
+
+    def __repr__(self):
+
+        if self.error:
+            err_flag = "(err) "
+        else:
+            err_flag = ""
+
+        return f"<IIC {err_flag} {self.fname}>"
+
 
 class Stage1Preprocessor:
     def __init__(self, args):
+        # general preparations
         # see cli.py for arg-definitions
-        # preparation for step 1
         self.args = args
+        self.iic_map: Dict[str, ImageInfoContainer]= {}
+
+        # preparation for step 1
         self.img_dir = args.img_dir.rstrip("/")
         self.jpg0_target_dir_path = os.path.join(self.img_dir, "..", args.target_rel_dir)
         assert os.path.exists(self.img_dir)
@@ -38,55 +72,87 @@ class Stage1Preprocessor:
         self.WIDTH_COMP = 100
         self.HEIGHT_COMP = 67
         self.PIXELS = self.WIDTH_COMP * self.HEIGHT_COMP
+        self.img_ref = self.get_img_for_empty_slot_comp(_EMPTY_SLOT_REF_IMG_PATH)
+
+
+        # for debugging/experiments
+        self.async_counter = 0
+        self.async_res = []
 
     def main(self):
         if self.args.no_parallel:
             for png_fpath in self.png_path_list:
                 self.pipeline(png_fpath)
-
         else:
             # parallelization mode: apply the background-decorator only if needed
             bg_pipeline = background(self.pipeline)
             async_run(bg_pipeline, self.png_path_list)
 
     def pipeline(self, fpath):
-        # self.step01_mogrify_1000jpg(fpath)
-        self.step02_empty_slot_detection_mockup(fpath)
+        iic = self.iic_map[fpath] = ImageInfoContainer(fpath)
+        self.step01_mogrify_1000jpg(iic)
+        self.step02_empty_slot_detection(iic)
 
-    def step01_mogrify_1000jpg(self, fpath):
-        prefix, fname = os.path.split(fpath)
-
-        cmd = f"mogrify -monitor -format jpg -resize 1000 -path {self.jpg0_target_dir_path} {fpath}"
-        # print(cmd, "\n")
-        os.system(cmd)
-
-    def step02_empty_slot_detection_mockup(self, fpath):
-        pass
-    def step02_empty_slot_detection(self, fpath):
-        img1 = self._load_comp_img(fpath)
-        corr = self._get_correlation(img1, img_ref)
-        res = self._post_process(fpath, corr)
-        if res is None:
+    def step01_mogrify_1000jpg(self, iic: ImageInfoContainer):
+        if iic.error is not None:
             return
 
-        print(res)
-        res_list.append(res)
+        iic.step01_fpath = iic.latest_fpath
+        cmd = f"mogrify -monitor -format jpg -resize 1000 -path {self.jpg0_target_dir_path} {iic.step01_fpath}"
+        # print(cmd, "\n")
+        res = os.system(cmd)
+        if res != 0:
+            iic.error = "nonzero exit code of mogrify"
+            iic.messages.append(f"nonzero exit code of mogrify: {res}")
+            return
 
+        # generate the filename for the next step
+        iic.latest_fpath = pjoin(self.jpg0_target_dir_path, f"{iic.basename}.jpg")
 
-    def _load_comp_img(self):
-        if not self.empty_slot_ref_image is not None:
-            return self.empty_slot_ref_image
+    def debug_step02_async_experiments(self, iic: ImageInfoContainer):
+        """
+        This method serves to experiment with the async execution.
+        Results:
+            - instance variables might be changed from outside
+            - local variables remain unchanged
+            - self.async_res.append(...) works (ordering is like it is)
+        """
+        self.async_counter +=1
+        local_value = self.async_counter*1
+        self.async_res.append(f"starting {local_value}, {self.async_counter}")
+        time.sleep(6-self.async_counter*0.5)
+        self.async_res.append(f"result {local_value}, {self.async_counter}")
 
+    def step02_empty_slot_detection(self, iic: ImageInfoContainer):
+        if iic.error is not None:
+            return
+
+        iic.step02_fpath = iic.latest_fpath
+
+        # load that part of the image which is relevant to compare for empty slots
+        img_empty_slot_comp_part = self.get_img_for_empty_slot_comp(iic.step02_fpath)
+        corr = self._get_correlation(img_empty_slot_comp_part, self.img_ref)
+
+        # post process:
+        if corr > 0.95:
+            iic.error = "empty slot detected via correlation"
+            iic.messages.append(f"empty slot detected via correlation ({corr}>0.95)")
+        elif corr > 0.65:
+            iic.error = "empty slot probable via correlation"
+            iic.messages.append(f"empty slot probable via correlation ({corr}>0.65)")
+
+        # `iic.latest_fpath` remains unchanged in this step
+
+    def get_img_for_empty_slot_comp(self, img_fpath):
         ROI = _EMPTY_SLOT_REF_IMG_ROI
 
         # load the image and apply ROI; note that row index (y dimension comes first)
-        image1  = cv2.imread(_EMPTY_SLOT_REF_IMG_PATH)[ROI[2]:ROI[3], ROI[0]:ROI[1], :]
+        image1  = cv2.imread(img_fpath)[ROI[2]:ROI[3], ROI[0]:ROI[1], :]
         img1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
         self.empty_slot_ref_image = self._resize_for_comparison(img1)
         return self.empty_slot_ref_image
 
     def _resize_for_comparison(self, img):
-
 
         res = cv2.resize(img, dsize=(self.WIDTH_COMP, self.HEIGHT_COMP), interpolation=cv2.INTER_CUBIC)
         # res = img  # omit resizing
@@ -101,22 +167,19 @@ class Stage1Preprocessor:
         corr = np.exp(-sadpp)
         return corr
 
-
-    def _post_process(self, fpath, corr):
+    # general evaluation methods
+    def get_error_report(self):
         """
-        depending on corr apply the corresponding action of the CORR_ACTION_MAP
+        return a dict which maps from error messages to iic
+        used for testing
         """
-        for thr, res_template in CORR_ACTION_MAP:
-            if corr > thr:
-                break
-        else:
-            # there was no break -> do nothing
-            return
+        res = collections.defaultdict(list)
+        for iic in self.iic_map.values():
+            res[iic.error].append(iic)
 
-        prefix, fname = os.path.split(fpath)
-
-        res = res_template.format(original_fname=fname, IMG_DIR=IMG_DIR, corr=corr)
         return res
+
+
 
 
 def main(args=None):
@@ -142,3 +205,6 @@ def main(args=None):
 
     s1p = Stage1Preprocessor(args)
     s1p.main()
+
+    # return the omo-like object for testing
+    return s1p
