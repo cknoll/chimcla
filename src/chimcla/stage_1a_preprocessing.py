@@ -20,6 +20,11 @@ from .util import CHIMCLA_DATA
 
 pjoin = os.path.join
 
+
+# the presence of this file indicates that its parent directory is the root
+# of all relevant chimcla-data (see README.md)
+CHIMCLA_DATA_INDICATOR_FNAME = "__chimcla_data__.txt"
+
 _EMPTY_SLOT_REF_IMG_PATH = pjoin(CHIMCLA_DATA, "reference", "empty_slot.jpg")
 # region of interest
 _EMPTY_SLOT_REF_IMG_ROI = (30, 930, 85, 600)
@@ -30,12 +35,13 @@ class ImageInfoContainer:
     Class to track information about individual images
     """
 
-    def __init__(self, original_fpath):
+    def __init__(self, original_fpath, data_base_dir):
         self.original_fpath = original_fpath
         self.latest_fpath = original_fpath
         self.original_dirpath, self.fname = os.path.split(original_fpath)
         self.basename, _ = os.path.splitext(self.fname)
         self.fname_jpg = f"{self.basename}.jpg"
+        self.data_base_dir = data_base_dir
 
         self.step01_fpath = None
         self.step02_fpath = None
@@ -64,12 +70,14 @@ class Stage1Preprocessor:
         self.iic_map: Dict[str, ImageInfoContainer] = {}
 
         self.prefix = args.prefix
-        # preparation for step 1
-        self.img_dir = args.img_dir.rstrip("/")
-        assert os.path.exists(self.img_dir)
-        self.png_path_list = glob.glob(f"{self.img_dir}/*.png")
+        self.original_img_dir = args.img_dir.rstrip("/")
+        self.data_base_dir = self.get_data_base_dir(start=self.original_img_dir)
 
-        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.img_dir, "..", f"{self.prefix}jpg0"))
+        # preparation for step 1
+        assert os.path.exists(self.original_img_dir)
+        self.png_path_list = glob.glob(f"{self.original_img_dir}/*.png")
+
+        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.original_img_dir, "..", f"{self.prefix}jpg0"))
         os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
 
         # preparation for step 2
@@ -104,7 +112,7 @@ class Stage1Preprocessor:
     def pipeline(self, fpath):
         # important: use iic as a local variable here because this method will be
         # run in parallel and write access to instance variables is shared
-        iic = self.iic_map[fpath] = ImageInfoContainer(fpath)
+        iic = self.iic_map[fpath] = ImageInfoContainer(fpath, data_base_dir=self.data_base_dir)
         self.step01_mogrify_1000jpg(iic)
         self.step02_empty_slot_detection(iic)
         self.step03_cropping(iic)
@@ -291,6 +299,23 @@ class Stage1Preprocessor:
             res[iic.error].append(iic)
 
         return res
+
+    def get_data_base_dir(self, start: str):
+        assert os.path.isdir(start)
+
+        if os.path.isfile(pjoin(start, CHIMCLA_DATA_INDICATOR_FNAME)):
+            return start
+
+        new_start = os.path.dirname(start)
+        if new_start == start:
+            msg = (
+                f"Unexpectedly could not find {CHIMCLA_DATA_INDICATOR_FNAME} "
+                f"(starting with {self.original_img_dir})"
+            )
+            raise FileNotFoundError(msg)
+
+        # recursively call this function
+        return self.get_data_base_dir(start=new_start)
 
 
 def main(args=None):

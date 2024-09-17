@@ -55,9 +55,15 @@ Each lot is subdivided into chunks of (ca.) 1000 raw images.
 
 ```
 data_images
-├── jpg1000                 → rescaled work images (jpg)
+├── __chimcla_data__.txt    → the presence of this file indicates that its parent directory
+│                             is the root of all relevant chimcla-data
+├── jpg1000                 → rescaled work images (jpg), result of manual preprocessing
 ├── raw                     → original images in png format (before saving every image)
 ├── raw_jpg                 → original images in jpg format (necessary to reduce transfer load)
+│   ├──
+│   └──
+│
+├── preprocessed            → host to the output dirs of automated preprocessing
 │   ├──
 │   └──
 │

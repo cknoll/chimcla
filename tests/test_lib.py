@@ -74,7 +74,7 @@ class TestCases1(unittest.TestCase):
 
         png_dir_path = self.get_png_dir_path()
 
-        args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=True)
+        args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=self.no_parallel)
 
         # be sure that no leftover from last test is lurking around
         self.assertEqual(len(self.get_tmp_data_dirs()), 0)
@@ -89,6 +89,7 @@ class TestCases1(unittest.TestCase):
         self.assertEqual(len(err_report_dict[None]), 3)
         self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
         self.assertEqual(len(err_report_dict["error during cropping"]), 1)
+        IPS()
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
