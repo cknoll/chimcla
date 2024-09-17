@@ -22,6 +22,9 @@ chimcla_step_history_eval -l classifier-2023-07-10_since_2023-06-26.log -cm bild
 
 cp 2024-07-* ../test        
 
+# get 'Rezept Handler' information from specific logfile
+
+tail -n 10000000 classifier_from_2024-08-01_to_2024-09-01.log | grep 'Rezept Handler' >> rezept.log
 
 
 # plot diagram
