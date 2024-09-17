@@ -75,9 +75,12 @@ data_images
 #### Usage
 
 - preparation: create a list of paths:
-    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images`
-    - command: `find . -type f -name '*.png' > png_paths.txt` (takes approx. 40s)
-- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/png_paths.txt` (took 23m for approx 200K images)
+    - manually move all images from `~/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
+    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
+    - command: `find . -type f -name '*.jpg' > jpg_paths.txt` (takes approx. 40s for 200K image)
+- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
+- manual post processing
+    - move subdirectories of `data_images/raw_jpg/lots/` into `data_images/lots` (make sure that nothing is overwritten)
 
 ### Create Work Images
 
@@ -90,4 +93,4 @@ Goal: transform the raw images into "work images". In particular:
 
 These images can then be processed by the cell based evaluation.
 
-- usage: `chimcla_create_work_images`
+- usage: `chimcla_create_work_images` (script is still work in progress)
