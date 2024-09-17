@@ -10,6 +10,7 @@ import collections
 
 import cv2
 import numpy as np
+import scipy as sc
 import time
 
 from ipydex import IPS
@@ -32,6 +33,7 @@ class ImageInfoContainer:
         self.latest_fpath = original_fpath
         self.original_dirpath, self.fname = os.path.split(original_fpath)
         self.basename, _ = os.path.splitext(self.fname)
+        self.fname_jpg = f"{self.basename}.jpg"
 
         self.step01_fpath = None
         self.step02_fpath = None
@@ -59,13 +61,14 @@ class Stage1Preprocessor:
         self.args = args
         self.iic_map: Dict[str, ImageInfoContainer]= {}
 
+        # self.prefix = args.prefix
         # preparation for step 1
         self.img_dir = args.img_dir.rstrip("/")
-        self.jpg0_target_dir_path = os.path.join(self.img_dir, "..", args.target_rel_dir)
         assert os.path.exists(self.img_dir)
-
-        os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
         self.png_path_list = glob.glob(f"{self.img_dir}/*.png")
+
+        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.img_dir, "..", args.target_rel_dir))
+        os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
 
         # preparation for step 2
         self.empty_slot_ref_image = None
@@ -73,6 +76,14 @@ class Stage1Preprocessor:
         self.HEIGHT_COMP = 67
         self.PIXELS = self.WIDTH_COMP * self.HEIGHT_COMP
         self.img_ref = self.get_img_for_empty_slot_comp(_EMPTY_SLOT_REF_IMG_PATH)
+
+        # preparation for step 3
+        self.cropped_target_dir_path = f"{self.jpg0_target_dir_path}_cropped"
+        os.makedirs(self.cropped_target_dir_path, exist_ok=True)
+
+        # preparation for step 4
+        self.shading_corrected_target_dir_path = f"{self.jpg0_target_dir_path}_shading_corrected"
+        os.makedirs(self.shading_corrected_target_dir_path, exist_ok=True)
 
 
         # for debugging/experiments
@@ -89,9 +100,13 @@ class Stage1Preprocessor:
             async_run(bg_pipeline, self.png_path_list)
 
     def pipeline(self, fpath):
+        # important: use iic as a local variable here because this method will be
+        # run in parallel and write access to instance variables is shared
         iic = self.iic_map[fpath] = ImageInfoContainer(fpath)
         self.step01_mogrify_1000jpg(iic)
         self.step02_empty_slot_detection(iic)
+        self.step03_cropping(iic)
+
 
     def step01_mogrify_1000jpg(self, iic: ImageInfoContainer):
         if iic.error is not None:
@@ -107,7 +122,7 @@ class Stage1Preprocessor:
             return
 
         # generate the filename for the next step
-        iic.latest_fpath = pjoin(self.jpg0_target_dir_path, f"{iic.basename}.jpg")
+        iic.latest_fpath = pjoin(self.jpg0_target_dir_path, iic.fname_jpg)
 
     def debug_step02_async_experiments(self, iic: ImageInfoContainer):
         """
@@ -143,6 +158,34 @@ class Stage1Preprocessor:
 
         # `iic.latest_fpath` remains unchanged in this step
 
+    def step03_cropping(self, iic: ImageInfoContainer):
+        if iic.error is not None:
+            return
+
+        # this is the complete area where the form can be (later there will be another ROI)
+        ROI = (30, 930, 85, 600)
+        # ROI = (0, None, 0, None)  # complete image
+
+        # load the image and apply ROI; note that row index (y dimension comes first)
+        img = cv2.imread(iic.latest_fpath)[ROI[2]:ROI[3], ROI[0]:ROI[1], :]
+        LL = self._lightness_curve_of_y(img)
+        y_idx_edge = self._get_lower_edge(LL)
+
+        FORM_HEIGHT = 460  # (earlier: `HEIGHT_ROI`)
+
+        cropped_img = img[y_idx_edge - FORM_HEIGHT:y_idx_edge, :]
+        new_path = pjoin(self.cropped_target_dir_path, iic.fname_jpg)
+
+        try:
+            cv2.imwrite(new_path, cropped_img, [cv2.IMWRITE_JPEG_QUALITY, 98])
+        except cv2.error as ex:
+            iic.error = "error during cropping"
+            iic.messages.append(f"error during cropping: {ex}")
+
+        iic.latest_fpath = new_path
+
+    # auxiliary methods for step02
+
     def get_img_for_empty_slot_comp(self, img_fpath):
         ROI = _EMPTY_SLOT_REF_IMG_ROI
 
@@ -167,7 +210,52 @@ class Stage1Preprocessor:
         corr = np.exp(-sadpp)
         return corr
 
+    @staticmethod
+    def _lightness_curve_of_y(img: np.ndarray):
+        """
+        :param img:     ndarray with shape[2] = 3 (BGR color convention)
+        """
+
+        if img.dtype not in (np.uint8, int, np.int16):
+            img = np.array(img*255, dtype=np.uint8)
+
+        # assume BGR color convention
+
+        lab_img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        L, a, b = cv2.split(lab_img)
+
+        # average over all x values
+        L_of_y = np.average(L, axis=1)
+        return L_of_y
+
+    @staticmethod
+    def _get_lower_edge(LL):
+        """
+        :param LL:  1d lightness arrow (averaged of x direction) in dependence of y
+        """
+
+        # lower 20% of the image
+        idx1 = int(len(LL)*0.8)
+        part1 = LL[idx1:]
+
+        # Index of the darkest point of the curve
+        idx2 = idx1 + np.argmin(part1)
+
+        # this is the part where it gets darker
+        part2 = LL[idx1:idx2]
+
+        part2_diff = np.diff(part2)
+
+        # empirically determined; might depend on resolution
+        sigma = 2
+        part2_diff_filter = sc.ndimage.gaussian_filter1d(part2_diff, sigma=sigma)
+
+        # get the point of the maximum negative change rate of lightness
+        idx3 = np.argmin(part2_diff_filter)
+        return idx1 + idx3
+
     # general evaluation methods
+
     def get_error_report(self):
         """
         return a dict which maps from error messages to iic

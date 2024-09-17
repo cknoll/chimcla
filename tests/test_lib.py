@@ -68,8 +68,10 @@ class TestCases1(unittest.TestCase):
         self.assertEqual(len(jpg0_files), 5)
 
         err_report_dict = ppo.get_error_report()
-        self.assertEqual(len(err_report_dict[None]), 4)
+        self.assertEqual(len(err_report_dict[None]), 3)
         self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
+        self.assertEqual(len(err_report_dict["error during cropping"]), 1)
+
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
