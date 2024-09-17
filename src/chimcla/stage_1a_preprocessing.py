@@ -24,10 +24,12 @@ _EMPTY_SLOT_REF_IMG_PATH = pjoin(CHIMCLA_DATA, "reference", "empty_slot.jpg")
 # region of interest
 _EMPTY_SLOT_REF_IMG_ROI = (30, 930, 85, 600)
 
+
 class ImageInfoContainer:
     """
     Class to track information about individual images
     """
+
     def __init__(self, original_fpath):
         self.original_fpath = original_fpath
         self.latest_fpath = original_fpath
@@ -59,7 +61,7 @@ class Stage1Preprocessor:
         # general preparations
         # see cli.py for arg-definitions
         self.args = args
-        self.iic_map: Dict[str, ImageInfoContainer]= {}
+        self.iic_map: Dict[str, ImageInfoContainer] = {}
 
         self.prefix = args.prefix
         # preparation for step 1
@@ -85,7 +87,6 @@ class Stage1Preprocessor:
         self.shading_corrected_target_dir_path = f"{self.prefix}shading_corrected"
         os.makedirs(self.shading_corrected_target_dir_path, exist_ok=True)
 
-
         # for debugging/experiments
         self.async_counter = 0
         self.async_res = []
@@ -106,7 +107,6 @@ class Stage1Preprocessor:
         self.step01_mogrify_1000jpg(iic)
         self.step02_empty_slot_detection(iic)
         self.step03_cropping(iic)
-
 
     def step01_mogrify_1000jpg(self, iic: ImageInfoContainer):
         if iic.error is not None:
@@ -132,10 +132,10 @@ class Stage1Preprocessor:
             - local variables remain unchanged
             - self.async_res.append(...) works (ordering is like it is)
         """
-        self.async_counter +=1
-        local_value = self.async_counter*1
+        self.async_counter += 1
+        local_value = self.async_counter * 1
         self.async_res.append(f"starting {local_value}, {self.async_counter}")
-        time.sleep(6-self.async_counter*0.5)
+        time.sleep(6 - self.async_counter * 0.5)
         self.async_res.append(f"result {local_value}, {self.async_counter}")
 
     def step02_empty_slot_detection(self, iic: ImageInfoContainer):
@@ -167,13 +167,13 @@ class Stage1Preprocessor:
         # ROI = (0, None, 0, None)  # complete image
 
         # load the image and apply ROI; note that row index (y dimension comes first)
-        img = cv2.imread(iic.latest_fpath)[ROI[2]:ROI[3], ROI[0]:ROI[1], :]
+        img = cv2.imread(iic.latest_fpath)[ROI[2] : ROI[3], ROI[0] : ROI[1], :]
         LL = self._lightness_curve_of_y(img)
         y_idx_edge = self._get_lower_edge(LL)
 
         FORM_HEIGHT = 460  # (earlier: `HEIGHT_ROI`)
 
-        cropped_img = img[y_idx_edge - FORM_HEIGHT:y_idx_edge, :]
+        cropped_img = img[y_idx_edge - FORM_HEIGHT : y_idx_edge, :]
         new_path = pjoin(self.cropped_target_dir_path, iic.fname_jpg)
 
         try:
@@ -190,7 +190,7 @@ class Stage1Preprocessor:
         ROI = _EMPTY_SLOT_REF_IMG_ROI
 
         # load the image and apply ROI; note that row index (y dimension comes first)
-        image1  = cv2.imread(img_fpath)[ROI[2]:ROI[3], ROI[0]:ROI[1], :]
+        image1 = cv2.imread(img_fpath)[ROI[2] : ROI[3], ROI[0] : ROI[1], :]
         img1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
         self.empty_slot_ref_image = self._resize_for_comparison(img1)
         return self.empty_slot_ref_image
@@ -199,7 +199,7 @@ class Stage1Preprocessor:
 
         res = cv2.resize(img, dsize=(self.WIDTH_COMP, self.HEIGHT_COMP), interpolation=cv2.INTER_CUBIC)
         # res = img  # omit resizing
-        return np.array(res, dtype=float)/255
+        return np.array(res, dtype=float) / 255
 
     def _get_correlation(self, img, img_ref):
         assert img.shape == img_ref.shape
@@ -217,7 +217,7 @@ class Stage1Preprocessor:
         """
 
         if img.dtype not in (np.uint8, int, np.int16):
-            img = np.array(img*255, dtype=np.uint8)
+            img = np.array(img * 255, dtype=np.uint8)
 
         # assume BGR color convention
 
@@ -235,7 +235,7 @@ class Stage1Preprocessor:
         """
 
         # lower 20% of the image
-        idx1 = int(len(LL)*0.8)
+        idx1 = int(len(LL) * 0.8)
         part1 = LL[idx1:]
 
         # Index of the darkest point of the curve
@@ -268,17 +268,15 @@ class Stage1Preprocessor:
         return res
 
 
-
-
 def main(args=None):
 
     if args is None:
         parser = argparse.ArgumentParser(
-            prog='stage_0f_resize_and_jpg',
-            description='This program corrects resizes the original png files and converts to jpg',
+            prog="stage_0f_resize_and_jpg",
+            description="This program corrects resizes the original png files and converts to jpg",
         )
 
-        parser.add_argument('img_dir', help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31")
+        parser.add_argument("img_dir", help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31")
         parser.add_argument(
             "prefix", help="prefix for newly created dirs during preprocessing", nargs="?", default="pp_"
         )

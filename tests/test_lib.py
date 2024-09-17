@@ -50,6 +50,7 @@ class TestCases1(unittest.TestCase):
 
     def test000__sqlite_db(self):
         from chimcla import stage_2a_bar_selection as bs
+
         db = bs.db
 
         # keys: CCI-fnames like "2023-06-26_23-20-31_C0.jpg"
@@ -61,6 +62,7 @@ class TestCases1(unittest.TestCase):
 
     def test010__preprocessing(self):
         from chimcla import stage_1a_preprocessing as s1a
+
         png_dir_path = self.get_png_dir_path()
 
         args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=True)
@@ -81,17 +83,20 @@ class TestCases1(unittest.TestCase):
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
+
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         ccia = bs.CavityCarrierImageAnalyzer(tmp_path, bboxes=True)
 
     def test030__symloghist(self):
         from chimcla import stage_2a_bar_selection as bs
+
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         bs.get_symlog_hist(tmp_path, *"a 20".split(), dc=None)
 
     def test040__find_critical(self):
         from chimcla import stage_2a_bar_selection as bs
+
         tmp_path = pjoin(TESTDATA, "stage1_completed", "2023-06-26_06-19-25_C50.jpg")
         he = bs.HistEvaluation(img_fpath=tmp_path)
         he.initialize_hist_cache()
-        he.find_critical_cells_for_img(save_options = {"save_plot": False, "push_db": False})
+        he.find_critical_cells_for_img(save_options={"save_plot": False, "push_db": False})
