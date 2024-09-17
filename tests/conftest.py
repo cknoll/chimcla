@@ -21,7 +21,8 @@ if os.getenv("PYTEST_IPS") == "True":
         # use frame_upcount=1 to prevent landing somewhere inside the unittest module
         # Note: this works for self.assertTrue but self.assertEqual would require frame_upcount=2
         # TODO: implement `frame_upcount_leave_ut=True` in ipydex
-        ipydex.ips_excepthook(call.excinfo.type, call.excinfo.value, call.excinfo.tb, frame_upcount=1)
+        # TODO: also with frame_upcount=1, there seems to be a problem if an ordinary assert fails
+        ipydex.ips_excepthook(call.excinfo.type, call.excinfo.value, call.excinfo.tb, frame_upcount=0)
 
 
 # source: https://stackoverflow.com/a/55301318 (and llm)

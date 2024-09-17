@@ -18,7 +18,7 @@ TEST_DATA_DIR = pjoin(dir_of_this_file, "testdata")
 
 TEST_PREFIX = "tmp_pp_"
 
-_RAW_PNG_DIR = pjoin(TEST_DATA_DIR, "raw_png")
+TEST_LOT_01 = pjoin(TEST_DATA_DIR, "lots", "2024-09-17", "part000")
 
 
 class TestCases1(unittest.TestCase):
@@ -44,18 +44,21 @@ class TestCases1(unittest.TestCase):
         return dir_list
 
     def get_png_dir_path(self):
-        png_pattern = pjoin(_RAW_PNG_DIR, "*.png")
+
+        PNG_DIR = TEST_LOT_01
+        png_pattern = pjoin(PNG_DIR, "*.png")
+        os.makedirs(PNG_DIR, exist_ok=True)
         png_files = glob.glob(png_pattern)
         jpg_pattern = pjoin(TEST_DATA_DIR, "_jpg_templates", "*.jpg")
         jpg_files = glob.glob(jpg_pattern)
         if len(png_files) < len(jpg_files):
             # create png files from jpg files (needs to be run only once)
             for jpg_fpath in jpg_files:
-                cmd = f"mogrify -monitor -format png -resize 3000 -path {_RAW_PNG_DIR} {jpg_fpath}"
+                cmd = f"mogrify -monitor -format png -resize 3000 -path {PNG_DIR} {jpg_fpath}"
                 # print(cmd)
                 os.system(cmd)
 
-        return _RAW_PNG_DIR
+        return PNG_DIR
 
     def test000__sqlite_db(self):
         from chimcla import stage_2a_bar_selection as bs
@@ -89,7 +92,9 @@ class TestCases1(unittest.TestCase):
         self.assertEqual(len(err_report_dict[None]), 3)
         self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
         self.assertEqual(len(err_report_dict["error during cropping"]), 1)
-        IPS()
+
+        shading_corrected_files = glob.glob(pjoin(ppo.shading_corrected_target_dir_path, "*.jpg"))
+        self.assertEqual(len(shading_corrected_files), 3)
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs

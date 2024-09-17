@@ -71,13 +71,23 @@ class Stage1Preprocessor:
 
         self.prefix = args.prefix
         self.original_img_dir = args.img_dir.rstrip("/")
-        self.data_base_dir = self.get_data_base_dir(start=self.original_img_dir)
+
+        self.data_base_dir = None
+        self.rel_part_path = None
+        self._rel_part_path_list = []
+        self.get_data_base_dir(start=self.original_img_dir)
+
+        # assume something like `['lots', '2024-09-17', 'part000']`
+        assert len(self._rel_part_path_list) > 1
+        self.output_base = pjoin(
+            self.data_base_dir, f"{self.prefix}result", *self._rel_part_path_list[1:]
+        )
 
         # preparation for step 1
         assert os.path.exists(self.original_img_dir)
         self.png_path_list = glob.glob(f"{self.original_img_dir}/*.png")
 
-        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.original_img_dir, "..", f"{self.prefix}jpg0"))
+        self.jpg0_target_dir_path = pjoin(self.output_base, "jpg0")
         os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
 
         # preparation for step 2
@@ -88,12 +98,12 @@ class Stage1Preprocessor:
         self.img_ref = self.get_img_for_empty_slot_comp(_EMPTY_SLOT_REF_IMG_PATH)
 
         # preparation for step 3
-        self.cropped_target_dir_path = f"{self.prefix}cropped"
+        self.cropped_target_dir_path = pjoin(self.output_base, "cropped")
         os.makedirs(self.cropped_target_dir_path, exist_ok=True)
 
         # preparation for step 4
         self.shading_correction_matrix_fpath = pjoin(CHIMCLA_DATA,"shading_correction_matrix.npy")
-        self.shading_corrected_target_dir_path = f"{self.prefix}shading_corrected"
+        self.shading_corrected_target_dir_path = pjoin(self.output_base, "shading_corrected")
         os.makedirs(self.shading_corrected_target_dir_path, exist_ok=True)
 
         # for debugging/experiments
@@ -306,7 +316,8 @@ class Stage1Preprocessor:
         if os.path.isfile(pjoin(start, CHIMCLA_DATA_INDICATOR_FNAME)):
             return start
 
-        new_start = os.path.dirname(start)
+        new_start, segment = os.path.split(start)
+        self._rel_part_path_list.insert(0, segment)
         if new_start == start:
             msg = (
                 f"Unexpectedly could not find {CHIMCLA_DATA_INDICATOR_FNAME} "
@@ -315,7 +326,10 @@ class Stage1Preprocessor:
             raise FileNotFoundError(msg)
 
         # recursively call this function
-        return self.get_data_base_dir(start=new_start)
+        res = self.get_data_base_dir(start=new_start)
+        self.data_base_dir = res
+        self.rel_part_path = pjoin(*self._rel_part_path_list)
+        return res
 
 
 def main(args=None):
