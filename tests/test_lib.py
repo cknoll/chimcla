@@ -21,6 +21,7 @@ TEST_DATA_DIR = pjoin(dir_of_this_file, "testdata")
 TEST_PREFIX = "tmp_pp_"
 
 TEST_LOT_01 = pjoin(TEST_DATA_DIR, "lots", "2024-09-17", "part000")
+TEST_LOT_02 = pjoin(TEST_DATA_DIR, "lots", "2024-07-08_06-03-45__2d__56.7k", "part000")
 
 
 class TestCases1(unittest.TestCase):
@@ -89,9 +90,9 @@ class TestCases1(unittest.TestCase):
     def test_i010__preprocessing(self):
         from chimcla import stage_1a_preprocessing as s1a
 
-        png_dir_path = self.ensure_raw_data_exists(raw_data_target_dir=TEST_LOT_01)
+        raw_data_dir = self.ensure_raw_data_exists(raw_data_target_dir=TEST_LOT_01)
 
-        args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=self.no_parallel)
+        args = Container(img_dir=raw_data_dir, prefix=TEST_PREFIX, no_parallel=self.no_parallel)
 
         # be sure that no leftover from last test is lurking around
         self.assertEqual(len(self.get_tmp_data_dirs()), 0)
@@ -112,6 +113,24 @@ class TestCases1(unittest.TestCase):
 
     def test_i011__preprocessing(self):
         from chimcla import stage_1a_preprocessing as s1a
+
+        raw_data_dir = self.ensure_raw_data_exists(raw_data_target_dir=TEST_LOT_02)
+        args = Container(img_dir=raw_data_dir, prefix=TEST_PREFIX, no_parallel=self.no_parallel)
+
+        # be sure that no leftover from last test is lurking around
+        self.assertEqual(len(self.get_tmp_data_dirs()), 0)
+
+        # get the preprocessor object
+        ppo = s1a.main(args)
+
+        jpg0_files = glob.glob(pjoin(ppo.jpg0_target_dir_path, "*.jpg"))
+        self.assertEqual(len(jpg0_files), 5)
+        err_report_dict = ppo.get_error_report()
+        self.assertEqual(len(err_report_dict[None]), 4)
+        self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
+
+        shading_corrected_files = glob.glob(pjoin(ppo.shading_corrected_target_dir_path, "*.jpg"))
+        self.assertEqual(len(shading_corrected_files), 4)
 
     def test_i020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
