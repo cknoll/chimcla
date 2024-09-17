@@ -1,12 +1,22 @@
 ## Hinweise zur Softwareentwicklung !!!
 
 # 1. Entwicklungsumbung in conda aktivieren!
-# conda activate env311
 
+conda activate env311
+
+# 2. change directory
+cd workdata
+
+# 3. start script
 chimcla_step_history_eval -l classifier-2023-07-10_since_2023-06-26.log -cm bilder1/stage3_results__history_test_y\* 300
 
-# change directory
-cd workdata
+
+
+
+
+## ## ## ##
+## HELPER
+
 
 # copy selected images
 
