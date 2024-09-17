@@ -7,6 +7,7 @@ import argparse
 import glob
 from typing import Dict
 import collections
+from functools import wraps
 
 import cv2
 import numpy as np
@@ -60,6 +61,19 @@ class ImageInfoContainer:
             err_flag = ""
 
         return f"<IIC {err_flag} {self.fname}>"
+
+def handle_error(func):
+    @wraps(func)
+    def wrapper(self, iic):
+        if iic.error is not None:
+            return  # Skip execution if there's an error
+        try:
+            return func(self, iic)  # Call the original function
+        except Exception as ex:
+            err_msg = f"{func.__name__}: Exception ({ex})"
+            iic.error = err_msg
+            return
+    return wrapper
 
 
 class Stage1Preprocessor:
@@ -128,9 +142,8 @@ class Stage1Preprocessor:
         self.step03_cropping(iic)
         self.step04_shading_correction(iic)
 
+    @handle_error
     def step01_mogrify_1000jpg(self, iic: ImageInfoContainer):
-        if iic.error is not None:
-            return
 
         iic.step01_fpath = iic.latest_fpath
         cmd = f"mogrify -monitor -format jpg -resize 1000 -path {self.jpg0_target_dir_path} {iic.step01_fpath}"
@@ -158,10 +171,8 @@ class Stage1Preprocessor:
         time.sleep(6 - self.async_counter * 0.5)
         self.async_res.append(f"result {local_value}, {self.async_counter}")
 
+    @handle_error
     def step02_empty_slot_detection(self, iic: ImageInfoContainer):
-        if iic.error is not None:
-            return
-
         iic.step02_fpath = iic.latest_fpath
 
         # load that part of the image which is relevant to compare for empty slots
@@ -178,9 +189,8 @@ class Stage1Preprocessor:
 
         # `iic.latest_fpath` remains unchanged in this step
 
+    @handle_error
     def step03_cropping(self, iic: ImageInfoContainer):
-        if iic.error is not None:
-            return
 
         # this is the complete area where the form can be (later there will be another ROI)
         ROI = (30, 930, 85, 600)
@@ -204,13 +214,11 @@ class Stage1Preprocessor:
 
         iic.latest_fpath = new_path
 
+    @handle_error
     def step04_shading_correction(self, iic: ImageInfoContainer):
         """
         Apply a predefined correction matrix to the lightness channel
         """
-        if iic.error is not None:
-            return
-
         correction_matrix = np.load(self.shading_correction_matrix_fpath)
 
         img = cv2.imread(iic.latest_fpath)
