@@ -61,13 +61,13 @@ class Stage1Preprocessor:
         self.args = args
         self.iic_map: Dict[str, ImageInfoContainer]= {}
 
-        # self.prefix = args.prefix
+        self.prefix = args.prefix
         # preparation for step 1
         self.img_dir = args.img_dir.rstrip("/")
         assert os.path.exists(self.img_dir)
         self.png_path_list = glob.glob(f"{self.img_dir}/*.png")
 
-        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.img_dir, "..", args.target_rel_dir))
+        self.jpg0_target_dir_path = os.path.abspath(pjoin(self.img_dir, "..", f"{self.prefix}jpg0"))
         os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
 
         # preparation for step 2
@@ -78,11 +78,11 @@ class Stage1Preprocessor:
         self.img_ref = self.get_img_for_empty_slot_comp(_EMPTY_SLOT_REF_IMG_PATH)
 
         # preparation for step 3
-        self.cropped_target_dir_path = f"{self.jpg0_target_dir_path}_cropped"
+        self.cropped_target_dir_path = f"{self.prefix}cropped"
         os.makedirs(self.cropped_target_dir_path, exist_ok=True)
 
         # preparation for step 4
-        self.shading_corrected_target_dir_path = f"{self.jpg0_target_dir_path}_shading_corrected"
+        self.shading_corrected_target_dir_path = f"{self.prefix}shading_corrected"
         os.makedirs(self.shading_corrected_target_dir_path, exist_ok=True)
 
 
@@ -280,7 +280,7 @@ def main(args=None):
 
         parser.add_argument('img_dir', help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31")
         parser.add_argument(
-            "target_rel_dir", help="target directory (relative to img_dir/..)", nargs="?", default="bilder_jpg0"
+            "prefix", help="prefix for newly created dirs during preprocessing", nargs="?", default="pp_"
         )
         parser.add_argument(
             "--no-parallel",

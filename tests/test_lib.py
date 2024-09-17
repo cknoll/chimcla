@@ -14,6 +14,8 @@ pjoin = os.path.join
 dir_of_this_file = os.path.dirname(__file__)
 TESTDATA = pjoin(dir_of_this_file, "testdata")
 
+TEST_PREFIX = "tmp_pp_"
+
 _RAW_PNG_DIR = pjoin(TESTDATA, "raw_png")
 
 
@@ -21,11 +23,16 @@ class TestCases1(unittest.TestCase):
 
     def setUp(self) -> None:
         self.jpg0_dir_path = pjoin(TESTDATA, "jpg0")
-
         return super().setUp()
 
     def tearDown(self):
-        shutil.rmtree(self.jpg0_dir_path, ignore_errors=True)
+        dir_list = self.get_tmp_data_dirs()
+        for dir in dir_list:
+            shutil.rmtree(dir, ignore_errors=True)
+
+    def get_tmp_data_dirs(self):
+        dir_list = glob.glob(f"{TEST_PREFIX}*")
+        return dir_list
 
     def get_png_dir_path(self):
         png_pattern = pjoin(_RAW_PNG_DIR, "*.png")
@@ -56,22 +63,21 @@ class TestCases1(unittest.TestCase):
         from chimcla import stage_1a_preprocessing as s1a
         png_dir_path = self.get_png_dir_path()
 
-        args = Container(img_dir=png_dir_path, target_rel_dir="jpg0", no_parallel=True)
-        self.assertEqual(self.jpg0_dir_path, pjoin(TESTDATA, args.target_rel_dir))
+        args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=True)
 
-        self.assertFalse(os.path.isdir(self.jpg0_dir_path))
+        # be sure that no leftover from last test is lurking around
+        self.assertEqual(len(self.get_tmp_data_dirs()), 0)
 
         # get the preprocessor object
         ppo = s1a.main(args)
 
-        jpg0_files = glob.glob(pjoin(self.jpg0_dir_path, "*.jpg"))
+        jpg0_files = glob.glob(pjoin(ppo.jpg0_target_dir_path, "*.jpg"))
         self.assertEqual(len(jpg0_files), 5)
 
         err_report_dict = ppo.get_error_report()
         self.assertEqual(len(err_report_dict[None]), 3)
         self.assertEqual(len(err_report_dict["empty slot probable via correlation"]), 1)
         self.assertEqual(len(err_report_dict["error during cropping"]), 1)
-
 
     def test020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
