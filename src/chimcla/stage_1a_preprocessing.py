@@ -84,6 +84,7 @@ class Stage1Preprocessor:
         os.makedirs(self.cropped_target_dir_path, exist_ok=True)
 
         # preparation for step 4
+        self.shading_correction_matrix_fpath = pjoin(CHIMCLA_DATA,"shading_correction_matrix.npy")
         self.shading_corrected_target_dir_path = f"{self.prefix}shading_corrected"
         os.makedirs(self.shading_corrected_target_dir_path, exist_ok=True)
 
@@ -107,6 +108,7 @@ class Stage1Preprocessor:
         self.step01_mogrify_1000jpg(iic)
         self.step02_empty_slot_detection(iic)
         self.step03_cropping(iic)
+        self.step04_shading_correction(iic)
 
     def step01_mogrify_1000jpg(self, iic: ImageInfoContainer):
         if iic.error is not None:
@@ -181,6 +183,29 @@ class Stage1Preprocessor:
         except cv2.error as ex:
             iic.error = "error during cropping"
             iic.messages.append(f"error during cropping: {ex}")
+
+        iic.latest_fpath = new_path
+
+    def step04_shading_correction(self, iic: ImageInfoContainer):
+        """
+        Apply a predefined correction matrix to the lightness channel
+        """
+        if iic.error is not None:
+            return
+
+        correction_matrix = np.load(self.shading_correction_matrix_fpath)
+
+        img = cv2.imread(iic.latest_fpath)
+        lab_img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        L, a, b = cv2.split(lab_img)
+
+        L_new = np.array(np.clip(L*correction_matrix, 0, 255), dtype=np.uint8)
+        img_new = cv2.cvtColor(cv2.merge((L_new, a, b)), cv2.COLOR_LAB2BGR)
+
+        new_path = pjoin(self.shading_corrected_target_dir_path, iic.fname_jpg)
+        res = cv2.imwrite(new_path, img_new, [cv2.IMWRITE_JPEG_QUALITY, 98])
+
+        assert res, f"Something went wrong during the creation of {new_path}"
 
         iic.latest_fpath = new_path
 
