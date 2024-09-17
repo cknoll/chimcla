@@ -9,6 +9,8 @@ import pytest
 
 from ipydex import IPS, Container
 
+from chimcla import util
+
 # run eg with `pytest -s -k test01``
 
 pjoin = os.path.join
@@ -43,24 +45,36 @@ class TestCases1(unittest.TestCase):
         dir_list = glob.glob(pjoin(TEST_DATA_DIR, f"{TEST_PREFIX}*"))
         return dir_list
 
-    def get_png_dir_path(self):
+    def ensure_raw_data_exists(self, raw_data_target_dir):
+        """
+        For testing we want to process realistic raw data (e.g. big png files).
+        However, we do not want to include this big data in the repository.
 
-        PNG_DIR = TEST_LOT_01
-        png_pattern = pjoin(PNG_DIR, "*.png")
-        os.makedirs(PNG_DIR, exist_ok=True)
-        png_files = glob.glob(png_pattern)
-        jpg_pattern = pjoin(TEST_DATA_DIR, "_jpg_templates", "*.jpg")
-        jpg_files = glob.glob(jpg_pattern)
-        if len(png_files) < len(jpg_files):
+        Solution: We include relatively small jpg templates and "inflate" them when needed.
+        """
+
+        # raw_data_target_dir = TEST_LOT_01
+        os.makedirs(raw_data_target_dir, exist_ok=True)
+        raw_data_target_files = util.get_png_or_jpg_list(raw_data_target_dir)
+
+        # TODO: extract the relative lot-part path more elegantly by reusing respective code
+        # from Stage1Preprocessor.get_data_base_dir
+        # for now we assume certain structure like ".../lots//2024-09-17/part000"
+
+        relevant_parts = raw_data_target_dir.split(os.path.sep)[-2:]
+
+        template_pattern = pjoin(TEST_DATA_DIR, "_jpg_templates", *relevant_parts, "*.jpg")
+        jpg_files = glob.glob(template_pattern)
+        if len(raw_data_target_files) < len(jpg_files):
             # create png files from jpg files (needs to be run only once)
             for jpg_fpath in jpg_files:
-                cmd = f"mogrify -monitor -format png -resize 3000 -path {PNG_DIR} {jpg_fpath}"
+                cmd = f"mogrify -monitor -format png -resize 3000 -path {raw_data_target_dir} {jpg_fpath}"
                 # print(cmd)
                 os.system(cmd)
 
-        return PNG_DIR
+        return raw_data_target_dir
 
-    def test000__sqlite_db(self):
+    def test_i000__sqlite_db(self):
         from chimcla import stage_2a_bar_selection as bs
 
         db = bs.db
@@ -72,10 +86,10 @@ class TestCases1(unittest.TestCase):
         self.assertIn("cell_mappings", db)
         cmp = db["cell_mappings"]
 
-    def test010__preprocessing(self):
+    def test_i010__preprocessing(self):
         from chimcla import stage_1a_preprocessing as s1a
 
-        png_dir_path = self.get_png_dir_path()
+        png_dir_path = self.ensure_raw_data_exists(raw_data_target_dir=TEST_LOT_01)
 
         args = Container(img_dir=png_dir_path, prefix=TEST_PREFIX, no_parallel=self.no_parallel)
 
@@ -96,19 +110,22 @@ class TestCases1(unittest.TestCase):
         shading_corrected_files = glob.glob(pjoin(ppo.shading_corrected_target_dir_path, "*.jpg"))
         self.assertEqual(len(shading_corrected_files), 3)
 
-    def test020__bboxes(self):
+    def test_i011__preprocessing(self):
+        from chimcla import stage_1a_preprocessing as s1a
+
+    def test_i020__bboxes(self):
         from chimcla import stage_2a_bar_selection as bs
 
         tmp_path = pjoin(TEST_DATA_DIR, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         ccia = bs.CavityCarrierImageAnalyzer(tmp_path, bboxes=True)
 
-    def test030__symloghist(self):
+    def test_i030__symloghist(self):
         from chimcla import stage_2a_bar_selection as bs
 
         tmp_path = pjoin(TEST_DATA_DIR, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
         bs.get_symlog_hist(tmp_path, *"a 20".split(), dc=None)
 
-    def test040__find_critical(self):
+    def test_i040__find_critical(self):
         from chimcla import stage_2a_bar_selection as bs
 
         tmp_path = pjoin(TEST_DATA_DIR, "stage1_completed", "2023-06-26_06-19-25_C50.jpg")

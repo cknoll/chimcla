@@ -14,10 +14,11 @@ import numpy as np
 import scipy as sc
 import time
 
-from ipydex import IPS
+from ipydex import IPS, set_trace
 
 from .asyncio_tools import background, async_run
 from .util import CHIMCLA_DATA
+from . import util
 
 pjoin = os.path.join
 
@@ -99,7 +100,9 @@ class Stage1Preprocessor:
 
         # preparation for step 1
         assert os.path.exists(self.original_img_dir)
-        self.png_path_list = glob.glob(f"{self.original_img_dir}/*.png")
+
+        # note: during the course of the project raw image format switched from png to jpg
+        self.orig_img_path_list = util.get_png_or_jpg_list(self.original_img_dir)
 
         self.jpg0_target_dir_path = pjoin(self.output_base, "jpg0")
         os.makedirs(self.jpg0_target_dir_path, exist_ok=True)
@@ -126,12 +129,12 @@ class Stage1Preprocessor:
 
     def main(self):
         if self.args.no_parallel:
-            for png_fpath in self.png_path_list:
+            for png_fpath in self.orig_img_path_list:
                 self.pipeline(png_fpath)
         else:
             # parallelization mode: apply the background-decorator only if needed
             bg_pipeline = background(self.pipeline)
-            async_run(bg_pipeline, self.png_path_list)
+            async_run(bg_pipeline, self.orig_img_path_list)
 
     def pipeline(self, fpath):
         # important: use iic as a local variable here because this method will be
@@ -319,6 +322,7 @@ class Stage1Preprocessor:
         return res
 
     def get_data_base_dir(self, start: str):
+        start = os.path.abspath(start)
         assert os.path.isdir(start)
 
         if os.path.isfile(pjoin(start, CHIMCLA_DATA_INDICATOR_FNAME)):
