@@ -53,8 +53,8 @@ data_images
 #### Usage
 
 - preparation: create a list of paths:
-    - manually move all images from `~/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
-    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
+    - manually move all images from `$HOME/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `$HOME/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
+    - workdir: `$HOME/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
     - command: `find . -type f -name '*.jpg' > jpg_paths.txt` (takes approx. 40s for 200K image)
 - usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
 - manual post processing
@@ -95,3 +95,11 @@ data_images
         - `--img_dir <path>`: specify source directory
         - `--suffix <path>`: specify target directory
         - `-H`: activate history-evaluation mode
+    - further options:
+        - `--help`: print help (see all options)
+        - `--limit LIMIT`: limit the number of processed files
+        - `--no-parallel`: sequential mode (no parallelization) → better for debugging
+- another example:
+    - store the long path in an environment variable to make the actual command easier understandable
+    - `export IMG_DIR="$HOME/mnt/XAI-DIA-gl/Carsten/data_images/pp_result/2024-07-08_06-03-45__2d__56.7k/part000/shading_corrected"`
+    - `chimcla_ced --img_dir $IMG_DIR --suffix _history_eval -H --limit 10 --no-parallel`
