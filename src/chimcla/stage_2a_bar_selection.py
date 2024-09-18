@@ -34,7 +34,7 @@ from skimage.io import imread
 
 from ipydex import IPS, Container, activate_ips_on_exception
 
-# activate_ips_on_exception()
+activate_ips_on_exception()
 
 
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
@@ -208,6 +208,7 @@ def get_bbox_list_robust(img, expected_number, plot=False, return_all=False, dc=
 def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
     # notes for thresh: 70 resulted as too low, 80 as too high
 
+    # plot = True  # !! ony for debugging
     if plot:
         img2 = rgb(img*1)
 
@@ -249,6 +250,8 @@ def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
 
     if plot:
         plt.imshow(img2)
+        plt.figure()
+        plt.imshow(inverted_thresh_img)
         plt.show()
 
     # fill debug container
@@ -264,7 +267,12 @@ def assign_row_col(bbox_list):
     problem: The list of bounding boxes is not sorted. it has to be calculated in which
     row an col every bb is. Also after this function the bbox_list is sorted (starting with 1st row)
     """
-    # 3 rows, 27 cols
+
+    # 3 rows, 27 cols -> 81 cells
+    if len(bbox_list) != 81:
+        msg = f"unexpected number (not 81) of bounding boxes: {len(bbox_list)}"
+        raise ValueError(msg)
+
     bbox_arr = np.array(bbox_list)
 
     # this was generated from a reference image
@@ -1659,12 +1667,16 @@ def get_border_columns(cell_img, dark_value_thresh=100, dark_share_thresh=0.7, d
 
 
 pfname = collections.namedtuple(typename="pfname", field_names="dir date time klass cell ext".split())
-def analyze_img_fpath(fpath):
+def analyze_img_fpath(fpath) -> pfname:
+    """
+    Convert a path into a `pfname`-object (with attributes like `.date`, `.time`, ...)
+    """
 
     path, fname = os.path.split(fpath)
     assert "#" not in fname
     fname2 = fname.replace("_", "#") # because # is contained in \w
-    regex = re.compile("^([\d-]*?)#([\d-]*?)#(\w+)#??(\w*?)\.(.*?)$")
+    # the (...)-expressions correspond to dir date time klass cell ext
+    regex = re.compile(r"^([\d-]*?)#([\d-]*?)#(\w+)#??(\w*?)\.(.*?)$")
     re_res = regex.match(fname2)
     return pfname(path, *re_res.groups())
 

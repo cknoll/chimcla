@@ -18,7 +18,7 @@ import pathlib
 import pandas as pd
 
 import ipydex
-from ipydex import IPS, activate_ips_on_exception
+from ipydex import IPS, activate_ips_on_exception, set_trace
 
 activate_ips_on_exception()
 
@@ -82,7 +82,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--limit",
-    help="limit the number of files",
+    help="limit the number of processed files",
     default=None,
     type=int,
 )
@@ -164,7 +164,9 @@ def process_img(img_fpath):
     err_list = []
     img_fname = os.path.split(img_fpath)[-1]
     try:
-        ipydex.sys.excepthook = ipydex.sys_orig_excepthook
+        debug = True
+        if not debug:
+            ipydex.sys.excepthook = ipydex.sys_orig_excepthook
         he = bs.HistEvaluation(
             img_fpath, suffix=args.suffix, ev_crit_pix=True, history_eval_flag=args.history_evaluation,
         )
@@ -172,7 +174,8 @@ def process_img(img_fpath):
     except (bs.MissingBoundingBoxes, ValueError) as ex:
         path = os.path.join(*pathlib.Path(img_fpath).parts[-2:])
         print(bs.yellow(path), bs.bred(str(ex)))
-        return
+        if debug:
+            raise ex
 
     try:
         crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
@@ -287,8 +290,8 @@ def aio_main():
     if args.img_dir:
         arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
 
-        # for development/debugging: only consider known critical images
-        arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
+        # this once was a special use case (might become relevant again): only consider known critical images
+        # arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
 
     else:
         assert args.img_dir_base
