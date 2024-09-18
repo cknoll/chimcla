@@ -409,6 +409,8 @@ class MainManager:
         global df_csv
         #print(df_csv)
 
+        df_count = df_csv.copy() # important here, before calculating additional columns
+
         # calculate sum of times for each row -> dwell time per position
         df_csv['dt_sum'] = df_csv.sum(axis=1, numeric_only=True)
 
@@ -443,10 +445,11 @@ class MainManager:
 
 
         ########################################################################################
-        # count variable - increments if delay is greater than 30 seconds
+        # count variable - increments if delay is greater than x seconds
         ########################################################################################
 
-        df_count = df_csv
+        delay_threshold = 10
+
         df_count_rows = df_count.shape[0] #len(df_count.index)
         df_count_cols = df_count.shape[1]
 
@@ -454,9 +457,9 @@ class MainManager:
 
         for row in range(df_count_rows):
             for col in range(df_count_cols):
-                if (df_count.iloc[row,col] >= 30):
+                if (df_count.iloc[row,col] >= delay_threshold):
+                    print("Delay > {}s: val = {}, row = {}, col = {}".format(delay_threshold,df_count.iloc[row,col], row, col))
                     df_count.iloc[row,col] = 1
-                    print("YES = {}".format(df_count.iloc[row,col]))
                 else:
                     df_count.iloc[row,col] = 0
 
@@ -468,19 +471,19 @@ class MainManager:
 
 
         # read csv data and plot it
-        # df_sum = pd.read_csv('results.csv', sep ='\t', index_col=0)
-        # df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time')
+        df_plot_count = pd.read_csv('results_count.csv', sep ='\t', index_col=0)
+        df_plot_count["count_sum"].plot(kind = 'bar', y = 'count_sum')
 
-        # # convert to numpy array
-        # # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
-        # np_sum = df_sum.dt_sum.to_numpy()
-        # plt.plot(np_sum)
-        # plt.clf()  # but: plot only one times doesn't format the graphic correctly
-        # np_sum = df_sum.dt_sum.to_numpy()
-        # plt.plot(np_sum)
+        # convert to numpy array
+        # alternative: df_sum["dt_abs"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        np_count = df_plot_count.count_sum.to_numpy()
+        plt.plot(np_count)
+        plt.clf()  # but: plot only one times doesn't format the graphic correctly
+        np_count = df_count.count_sum.to_numpy()
+        plt.plot(np_count)
 
-        # #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
-        # plt.show()
+        #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
+        plt.show()
         
 
 

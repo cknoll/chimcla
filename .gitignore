@@ -22,3 +22,6 @@ tmp*
 workdata/
 .DS_Store
 src/chimcla/__pycache__/
+
+
+*.log
