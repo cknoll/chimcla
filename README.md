@@ -109,3 +109,30 @@ data_images
     - store the long path in an environment variable to make the actual command easier understandable
     - `export IMG_DIR="$HOME/mnt/XAI-DIA-gl/Carsten/data_images/pp_result/2024-07-08_06-03-45__2d__56.7k/part000/shading_corrected"`
     - `chimcla_ced --img_dir $IMG_DIR --suffix _history_eval -H --limit 10 --no-parallel`
+
+
+## Background information
+
+### Exposure Time:
+
+During production lot `2024-06-18_12-15-58__1d__14.0k` we fixed a problem with the exposure time.
+
+- Last old image: `part002/2024-06-18_17-47-20_C0.png` (usually these images ended on `_C50` for "pause mode")
+- First new image: `part002/2024-06-18_18-21-01_C51.png`
+- See also: `git blame` in the xaidia-server repo.
+
+
+### Image saving frequency (PNG → JPG):
+
+During production lot `2024-06-18_12-15-58__1d__14.0k` we fixed the problem that not every image was saved.
+
+- Last old image: `part013/2024-06-19_16-30-38_C51.png`
+- First new image: `part013/2024-06-20_10-58-57_C51.png `
+
+This caused problems with the image transfer (too much data per time). Thus we changed the saving format from png to jpg. Theses changes took action beginning from the first image of `2024-06-20_11-10-00__1d__24.5k/part000`.
+
+### Problems with the lamp (or camera)
+
+In August there have been problems with too dark images. We changed the exposure time (and restarted everything)- Problems seemed to be solved but overall lightness of the images might have changed. Images now get `_C54` in pause mode.
+
+Later we discovered that images got gradually darker again over some hours.
