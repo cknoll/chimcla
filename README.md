@@ -60,6 +60,12 @@ data_images
 - manual post processing
     - move subdirectories of `data_images/raw_jpg/lots/` into `data_images/lots` (make sure that nothing is overwritten)
 
+#### Find images within lot dirs
+
+- go to the lot-dir which is the youngest before your date
+- Example: `find . -iname "*2023-06-27_09-10*"`
+
+
 ### Create Work Images
 
 - Example call: `chimcla_create_work_images ~/mnt/XAI-DIA-gl/Carsten/data_images/lots/2024-07-08_06-03-45__2d__56.7k/part000`
