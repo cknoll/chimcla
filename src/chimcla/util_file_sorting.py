@@ -72,9 +72,10 @@ def split_into_lots():
 
     basedir = os.path.split(args.pathlist)[0]
 
+    print(f"reading {args.pathlist} ...")
+
     with open(args.pathlist, "r") as fp:
         pathlist = fp.readlines()
-
 
     def get_fname(path):
         return os.path.split(path.strip())[1]
@@ -130,9 +131,10 @@ def split_into_lots():
     with open(meta_data_fname, "w") as fp:
         yaml.safe_dump(metadata.to_dict(), fp)
 
-
     for lot in metadata.lots:
 
+        # this is to prevent double work
+        # TODO: explicitly handle incomplete lots from the last run
         dir_path = os.path.join(basedir, "lots", lot.dirname)
         if os.path.exists(dir_path):
             continue
@@ -150,5 +152,5 @@ def split_into_lots():
             if os.path.exists(original_path):
                 os.system(cmd)
 
-
-    IPS()
+        print(f"processed: {dir_path}")
+    print("all done")

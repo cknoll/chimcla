@@ -1,16 +1,12 @@
-[project]
-name = "chimcla"
-version = "0.2.0"
-
-
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
-# [project.package]
-[tool.setuptools.packages.find]
-where = ["src"]
-
+[project]
+name = "chimcla"
+readme = "README.md"
+requires-python = ">=3.11"
+dynamic = ["dependencies", "version"]
 
 
 [project.scripts]
@@ -36,3 +32,18 @@ chimcla_create_work_images = "chimcla.cli:create_work_images"
 
 # chimcla_create_groups = "chimcla.cli:create_groups"
 # chimcla_rename_cell_imgs = "chimcla.cli:rename_cell_imgs"
+
+
+
+# [project.package]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "chimcla.__version__"}
+
+# this siginificantly speeds up pytest
+[tool.pytest.ini_options]
+testpaths = [ "tests"]
