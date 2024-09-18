@@ -25,6 +25,7 @@ chimcla_split_into_lots = "chimcla.util_file_sorting:split_into_lots"
 
 # stage0 of image processing
 chimcla_create_work_images = "chimcla.cli:create_work_images"
+chimcla_pipeline = "chimcla.cli:pipeline"
 
 
 

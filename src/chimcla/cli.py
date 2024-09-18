@@ -154,3 +154,16 @@ def _rename_cell_imgs(dirname):
 def create_work_images():
     from . import stage_1a_preprocessing as s1a
     s1a.main()
+
+
+def pipeline():
+    """
+    This is the entry point of the main processing pipeline
+    """
+
+    msg ="""
+    Idea: it might be convenient to start the "whole" pipeline with one command
+    However, currently it is unclear whether there will be a use case for this.
+    """
+
+    print(msg)
