@@ -17,6 +17,59 @@
 **Note:** Only parts of the chimcla functionality have been ported to the "professional" command line interface (see section `[project.scripts]` in `pyproject.toml`). Other parts are only available as ordinary python scripts. See also `docs/README_old.md`.
 
 
+### Split into Lots
+
+#### Background
+
+There are many (\>\>100K) raw images. To simplify their handling they are split into "lots". Each lot corresponds to one cycle of production (e.g. 7 days).
+Each lot is subdivided into chunks of (ca.) 1000 raw images.
+
+
+#### Directory Structure
+
+```
+data_images
+├── __chimcla_data__.txt    → the presence of this file indicates that its parent directory
+│                             is the root of all relevant chimcla-data
+├── jpg1000                 → rescaled work images (jpg), result of manual preprocessing
+├── raw                     → original images in png format (before saving every image)
+├── raw_jpg                 → original images in jpg format (necessary to reduce transfer load)
+│   ├──
+│   └──
+│
+├── pp_result               → host to the output dirs of automated preprocessing
+│   ├── ...
+│   └── <lotdir>
+│       ├── part000
+│       │   └── shading_corrected
+│       │                   ↳ main output of preprocessing
+│       └── ...
+│
+└── png_paths.txt           → file created by preparation command
+```
+
+
+
+#### Usage
+
+- preparation: create a list of paths:
+    - manually move all images from `~/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
+    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
+    - command: `find . -type f -name '*.jpg' > jpg_paths.txt` (takes approx. 40s for 200K image)
+- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
+- manual post processing
+    - move subdirectories of `data_images/raw_jpg/lots/` into `data_images/lots` (make sure that nothing is overwritten)
+
+### Create Work Images
+
+- Example call: `chimcla_create_work_images ~/mnt/XAI-DIA-gl/Carsten/data_images/lots/2024-07-08_06-03-45__2d__56.7k/part000`
+    - Results: within `~/mnt/XAI-DIA-gl/Carsten/data_images/pp_result/2024-07-08_06-03-45__2d__56.7k/part000` the following subdirectories are created:
+    - `jpg0` → intermediate results (can be deleted)
+    - `cropped` → intermediate results (can be deleted)
+    - `shading_corrected` → starting point for cell based evaluation
+
+
+
 ### Step History Evaluation
 
 - overview:
@@ -42,55 +95,3 @@
         - `--img_dir <path>`: specify source directory
         - `--suffix <path>`: specify target directory
         - `-H`: activate history-evaluation mode
-
-### Split into Lots
-
-#### Background
-
-There are many (\>\>100K) raw images. To simplify their handling they are split into "lots". Each lot corresponds to one cycle of production (e.g. 7 days).
-Each lot is subdivided into chunks of (ca.) 1000 raw images.
-
-
-#### Directory Structure
-
-```
-data_images
-├── __chimcla_data__.txt    → the presence of this file indicates that its parent directory
-│                             is the root of all relevant chimcla-data
-├── jpg1000                 → rescaled work images (jpg), result of manual preprocessing
-├── raw                     → original images in png format (before saving every image)
-├── raw_jpg                 → original images in jpg format (necessary to reduce transfer load)
-│   ├──
-│   └──
-│
-├── preprocessed            → host to the output dirs of automated preprocessing
-│   ├──
-│   └──
-│
-└── png_paths.txt           → file created by preparation command
-```
-
-
-
-#### Usage
-
-- preparation: create a list of paths:
-    - manually move all images from `~/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
-    - workdir: `~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
-    - command: `find . -type f -name '*.jpg' > jpg_paths.txt` (takes approx. 40s for 200K image)
-- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
-- manual post processing
-    - move subdirectories of `data_images/raw_jpg/lots/` into `data_images/lots` (make sure that nothing is overwritten)
-
-### Create Work Images
-
-Goal: transform the raw images into "work images". In particular:
-
-- rescale to width of 1000px
-- cut off irrelevant areas
-- perform shading correction
-
-
-These images can then be processed by the cell based evaluation.
-
-- usage: `chimcla_create_work_images` (script is still work in progress)
