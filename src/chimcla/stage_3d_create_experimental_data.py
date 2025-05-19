@@ -27,108 +27,6 @@ from chimcla import stage_2a_bar_selection as bs
 from chimcla import asyncio_tools as aiot
 
 
-exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
-
-
-ERROR_CMDS = []
-
-
-parser = argparse.ArgumentParser(
-    prog=sys.argv[0],
-    description='This program evaluates single or multiple chocolate images. See docstring for more details.',
-)
-
-parser.add_argument(
-    '--img_dir',
-    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0",
-    default=None,
-)
-
-# see usage example below
-parser.add_argument(
-    '--img_dir_base',
-    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/",
-    default=None,
-)
-
-
-# see usage example below
-parser.add_argument(
-    '--img_dir_src',
-    help="directory with already processed images -> extract the basename",
-    default=None,
-)
-
-parser.add_argument(
-    '--img',
-    help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-17-41_C50.jpg",
-    default=None,
-)
-
-parser.add_argument(
-    "--suffix",
-    "-s",
-    help="specify suffix for output folder",
-    default="_chunk_psy_test",
-)
-
-
-parser.add_argument(
-    "--no-parallel",
-    "-np",
-    help="sequential mode (no parallelization)",
-    action="store_true",
-)
-
-parser.add_argument(
-    "--limit",
-    help="limit the number of processed files",
-    default=None,
-    type=int,
-)
-
-
-# parameters for Romys experiments
-parser.add_argument(
-    "--blend-value",
-    "-bv",
-    default=120,
-    type=int,
-)
-
-parser.add_argument(
-    "--blend-mode",
-    "-bm",
-    help= "0 (soft, default) or 1 (hard)",
-    default=0,
-    type=int,
-)
-
-parser.add_argument(
-    "--print-std-deviation",
-    "-std",
-    help= "print standard deviation of critical pixels for each critical cell onto the image",
-    action="store_true",
-)
-
-# parameters for history evaluation
-# This means: iterate over images
-# generate:
-# - _criticality_list.csv: col1 a sorted list (summed criticality score) col2: filename
-# - output directory with critical images with Filenames S2801_<basename>.jpg
-
-parser.add_argument(
-    "--history-evaluation",
-    "-H",
-    help= "generate data for history evaluation",
-    action="store_true",
-)
-
-args = parser.parse_args()
-
-
-
-
 
 def process_img(img_fpath):
 
@@ -405,4 +303,101 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    # TODO: move this into ManagerClass
+
+    exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
+    ERROR_CMDS = []
+
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description='This program evaluates single or multiple chocolate images. See docstring for more details.',
+    )
+
+    parser.add_argument(
+        '--img_dir',
+        help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0",
+        default=None,
+    )
+
+    # see usage example below
+    parser.add_argument(
+        '--img_dir_base',
+        help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/",
+        default=None,
+    )
+
+
+    # see usage example below
+    parser.add_argument(
+        '--img_dir_src',
+        help="directory with already processed images -> extract the basename",
+        default=None,
+    )
+
+    parser.add_argument(
+        '--img',
+        help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-17-41_C50.jpg",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--suffix",
+        "-s",
+        help="specify suffix for output folder",
+        default="_chunk_psy_test",
+    )
+
+
+    parser.add_argument(
+        "--no-parallel",
+        "-np",
+        help="sequential mode (no parallelization)",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--limit",
+        help="limit the number of processed files",
+        default=None,
+        type=int,
+    )
+
+
+    # parameters for Romys experiments
+    parser.add_argument(
+        "--blend-value",
+        "-bv",
+        default=120,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--blend-mode",
+        "-bm",
+        help= "0 (soft, default) or 1 (hard)",
+        default=0,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--print-std-deviation",
+        "-std",
+        help= "print standard deviation of critical pixels for each critical cell onto the image",
+        action="store_true",
+    )
+
+    # parameters for history evaluation
+    # This means: iterate over images
+    # generate:
+    # - _criticality_list.csv: col1 a sorted list (summed criticality score) col2: filename
+    # - output directory with critical images with Filenames S2801_<basename>.jpg
+
+    parser.add_argument(
+        "--history-evaluation",
+        "-H",
+        help= "generate data for history evaluation",
+        action="store_true",
+    )
+
+    args = parser.parse_args()
     main()

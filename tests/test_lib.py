@@ -7,7 +7,7 @@ import pytest
 
 # Note: for performance reasons some imports are moved inside the tests
 
-from ipydex import IPS, Container
+from ipydex import IPS, Container, set_trace
 
 from chimcla import util
 
@@ -136,6 +136,14 @@ class TestCases1(unittest.TestCase):
         from chimcla import stage_2a_bar_selection as bs
 
         tmp_path = pjoin(TEST_DATA_DIR, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
+        set_trace()
+        ccia = bs.CavityCarrierImageAnalyzer(tmp_path, bboxes=True)
+
+    def test_i025__bboxes_new(self):
+        from chimcla import stage_2a1_bar_selection_new as bs
+
+        tmp_path = pjoin(TEST_DATA_DIR, "stage1_completed", "2023-06-26_06-19-58_C50.jpg")
+        # if this passes 81 rows could be found
         ccia = bs.CavityCarrierImageAnalyzer(tmp_path, bboxes=True)
 
     def test_i030__symloghist(self):

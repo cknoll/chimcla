@@ -7,7 +7,6 @@ import argparse
 import glob
 from typing import Dict
 import collections
-from functools import wraps
 
 import cv2
 import numpy as np
@@ -17,7 +16,7 @@ import time
 from ipydex import IPS, set_trace
 
 from .asyncio_tools import background, async_run
-from .util import CHIMCLA_DATA
+from .util import CHIMCLA_DATA, ImageInfoContainer, handle_error
 from . import util
 
 pjoin = os.path.join
@@ -31,50 +30,6 @@ _EMPTY_SLOT_REF_IMG_PATH = pjoin(CHIMCLA_DATA, "reference", "empty_slot.jpg")
 # region of interest
 _EMPTY_SLOT_REF_IMG_ROI = (30, 930, 85, 600)
 
-
-class ImageInfoContainer:
-    """
-    Class to track information about individual images
-    """
-
-    def __init__(self, original_fpath, data_base_dir):
-        self.original_fpath = original_fpath
-        self.latest_fpath = original_fpath
-        self.original_dirpath, self.fname = os.path.split(original_fpath)
-        self.basename, _ = os.path.splitext(self.fname)
-        self.fname_jpg = f"{self.basename}.jpg"
-        self.data_base_dir = data_base_dir
-
-        self.step01_fpath = None
-        self.step02_fpath = None
-        self.step03_fpath = None
-        self.step04_fpath = None
-        self.step05_fpath = None
-
-        self.error = None
-        self.messages = []
-
-    def __repr__(self):
-
-        if self.error:
-            err_flag = "(err) "
-        else:
-            err_flag = ""
-
-        return f"<IIC {err_flag} {self.fname}>"
-
-def handle_error(func):
-    @wraps(func)
-    def wrapper(self, iic):
-        if iic.error is not None:
-            return  # Skip execution if there's an error
-        try:
-            return func(self, iic)  # Call the original function
-        except Exception as ex:
-            err_msg = f"{func.__name__}: Exception ({ex})"
-            iic.error = err_msg
-            return
-    return wrapper
 
 
 class Stage1Preprocessor:
