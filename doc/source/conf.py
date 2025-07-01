@@ -24,8 +24,11 @@ extensions = [
 ]
 
 autodoc2_render_plugin = "myst"
+autodoc2_module_all_regexes = [r".*"]
+autodoc2_output_dir = "api"
+autodoc2_hidden_objects = ["__strongref__", "__weakref__", "__annotations__"]
 autodoc2_packages = [
-    "../../src/pyirk",
+    "../../src/chimcla",
 ]
 
 # markdown conversion extensions
