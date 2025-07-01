@@ -11,6 +11,9 @@ dynamic = ["dependencies", "version"]
 
 [project.scripts]
 # convert bgr to rgb
+chimcla_main = "chimcla.cli:main"
+
+# convert bgr to rgb
 chimcla_bgr_convert = "chimcla.cli:bgr_convert"
 
 # create experimental data

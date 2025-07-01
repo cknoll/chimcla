@@ -23,5 +23,7 @@ workdata/
 .DS_Store
 src/chimcla/__pycache__/
 
+doc/build
+
 
 *.log

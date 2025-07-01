@@ -17,3 +17,4 @@ pyyaml
 sphinx
 sphinx-autodoc-typehints
 recommonmark
+watchdog

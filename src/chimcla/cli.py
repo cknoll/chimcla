@@ -7,8 +7,6 @@ import tqdm
 
 import addict
 
-import cv2
-
 from ipydex import IPS, activate_ips_on_exception
 
 
@@ -78,8 +76,35 @@ def create_groups():
             os.system(cmd)
 
 
+def main():
+
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description="chimcla main command line interface "
+        "(for all functions which do not have their own script)",
+    )
+
+    parser.add_argument("command", help="general command (see cli.py)")
+
+    args = parser.parse_args()
+
+    if args.command == "prepare-docs":
+        from .util_doc import generate_module_docs
+        generate_module_docs()
+    elif args.command == "build-docs":
+        from .util_doc import make_html_doc
+        make_html_doc()
+    elif args.command == "continuously-build-docs":
+        from .util_doc import make_html_doc
+        make_html_doc()
+    else:
+        msg = f"unknown chimcla command: {args.command}"
+        print(msg)
+
 def bgr_convert():
 
+    # performing this import here speeds up cli usage for all other commands
+    import cv2
 
     parser = argparse.ArgumentParser(
         prog=sys.argv[0],

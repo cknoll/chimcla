@@ -1,0 +1,1 @@
+The files `make.bat` and `Makefile` were created by `sphinx-quickstart`. They are not necessary in our scenario.
