@@ -1,24 +1,10 @@
 # Module Documentation
 
-* [asyncio_tools](modules/asyncio_tools.md)
-* [aux_rename_cell_imgs](modules/aux_rename_cell_imgs.md)
-* [cli](modules/cli.md)
-* [log_time_filter](modules/log_time_filter.md)
-* [release](modules/release.md)
-* [stage_0f_resize_and_jpg](modules/stage_0f_resize_and_jpg.md)
-* [stage_1a_preprocessing](modules/stage_1a_preprocessing.md)
-* [stage_2a1_bar_selection_new](modules/stage_2a1_bar_selection_new.md)
-* [stage_2a_bar_selection](modules/stage_2a_bar_selection.md)
-* [stage_2b_bar_C0_hist_dict](modules/stage_2b_bar_C0_hist_dict.md)
-* [stage_2c_hist_based_anomaly_detection](modules/stage_2c_hist_based_anomaly_detection.md)
-* [stage_3a_hist_based_classification](modules/stage_3a_hist_based_classification.md)
-* [stage_3b_hist_area_based_classification](modules/stage_3b_hist_area_based_classification.md)
-* [stage_3c_create_file_names](modules/stage_3c_create_file_names.md)
-* [stage_3e_create_experimental_data_csv](modules/stage_3e_create_experimental_data_csv.md)
-* [util](modules/util.md)
-* [util_bgr_convert](modules/util_bgr_convert.md)
-* [util_doc](modules/util_doc.md)
-* [util_file_sorting](modules/util_file_sorting.md)
-* [util_img](modules/util_img.md)
-* [util_sort_into_folder](modules/util_sort_into_folder.md)
-* [util_step_history_from_logfile](modules/util_step_history_from_logfile.md)
+
+test
+
+```{toctree}
+:maxdepth: 1
+
+../apidocs/index
+```
