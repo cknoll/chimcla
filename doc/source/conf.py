@@ -30,6 +30,7 @@ autodoc2_output_dir = "api"
 autodoc2_hidden_objects = ["undoc"]
 autodoc2_skip_module_regexes = [
     r".*\.__main__$",
+    r".*\.stage_3d_create_experimental_data$",
 ]
 autodoc2_hide_module_imports = False
 autodoc2_packages = [
