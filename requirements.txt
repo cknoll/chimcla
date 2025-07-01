@@ -16,5 +16,5 @@ pyyaml
 # for documentation
 sphinx
 sphinx-autodoc-typehints
-recommonmark
 watchdog
+myst-parser

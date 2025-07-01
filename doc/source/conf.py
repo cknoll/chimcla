@@ -1,6 +1,3 @@
-import recommonmark
-from recommonmark.parser import CommonMarkParser
-
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -20,17 +17,19 @@ extensions = [
     # ...
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
+    "myst_parser",  # for markdown
     # ...
 ]
+
 
 templates_path = ['_templates']
 exclude_patterns = []
 
-source_suffix = ['.rst', '.md']
-parser = CommonMarkParser()
 
-
-
+source_suffix = [".rst", ".md"]
+source_parsers = {
+    ".md": "myst_parser.sphinx_",
+}
 
 
 # -- Options for HTML output -------------------------------------------------
