@@ -14,7 +14,6 @@
 * [stage_3a_hist_based_classification](modules/stage_3a_hist_based_classification.md)
 * [stage_3b_hist_area_based_classification](modules/stage_3b_hist_area_based_classification.md)
 * [stage_3c_create_file_names](modules/stage_3c_create_file_names.md)
-* [stage_3d_create_experimental_data](modules/stage_3d_create_experimental_data.md)
 * [stage_3e_create_experimental_data_csv](modules/stage_3e_create_experimental_data_csv.md)
 * [util](modules/util.md)
 * [util_bgr_convert](modules/util_bgr_convert.md)

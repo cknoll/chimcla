@@ -14,19 +14,24 @@ author = 'Carsten Knoll, Sascha Weber'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    # ...
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
-    "myst_parser",  # for markdown
-    "autodoc2",
-    "sphinx.ext.autosummary",
-    # ...
+    'myst_parser',
+    'autodoc2',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
 ]
 
 autodoc2_render_plugin = "myst"
-autodoc2_module_all_regexes = [r".*"]
+autodoc2_module_all_regexes = [r".*"] 
 autodoc2_output_dir = "api"
 autodoc2_hidden_objects = ["undoc"]
+autodoc2_skip_module_regexes = [
+    r".*\.__main__$",
+]
+autodoc2_hide_module_imports = False
 autodoc2_packages = [
     "../../src/chimcla",
 ]
