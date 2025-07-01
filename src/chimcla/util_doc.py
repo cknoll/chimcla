@@ -19,9 +19,9 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
         module_dir = output_dir/"modules"
 
     import pkgutil
-    index_path = os.path.join(output_dir, 'index.md')
+    index_path = os.path.join(output_dir, 'api_links.md')
 
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(module_dir, exist_ok=True)
 
     with open(index_path, 'w') as index_file:
         index_file.write('# Module Documentation\n\n')
