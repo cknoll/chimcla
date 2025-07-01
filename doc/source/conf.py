@@ -18,7 +18,32 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx_autodoc_typehints',
     "myst_parser",  # for markdown
+    "autodoc2",
+    "sphinx.ext.autosummary",
     # ...
+]
+
+autodoc2_render_plugin = "myst"
+autodoc2_packages = [
+    "../../src/pyirk",
+]
+
+# markdown conversion extensions
+myst_enable_extensions = [
+    # "amsmath",
+    # "attrs_inline",
+    "colon_fence",
+    # "deflist",
+    # "dollarmath",
+    # "fieldlist",
+    # "html_admonition",
+    # "html_image",
+    # "linkify",
+    # "replacements",
+    # "smartquotes",
+    # "strikethrough",
+    # "substitution",
+    # "tasklist",
 ]
 
 
