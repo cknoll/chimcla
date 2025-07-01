@@ -44,6 +44,43 @@ As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` 
             _work_images)*"]
 ```
 
+### Preprocessing
+
+#### `stage_0f_resize_and_jpg.py` → probably obsolete
+
+- Convert images to jpg (originally we used .png) and resize width to 1000px.
+- uses `asyncio` to allow for parallel processing → speedup
+- not yet included in the chimcla command line interface (see `cli.py`)
+- "0f" comes from some internal versioning which enumerated the necessary processing steps
+
+#### `stage_1a_preprocessing.py` → important
+
+Contains class `Stage1Preprocessor` with:
+```python
+    def pipeline(self, fpath):
+        # ...
+        iic = self.iic_map[fpath] = ImageInfoContainer(fpath, data_base_dir=self.data_base_dir)
+        self.step01_mogrify_1000jpg(iic)
+        self.step02_empty_slot_detection(iic)
+        self.step03_cropping(iic)
+        self.step04_shading_correction(iic)
+```
+
+> **TODO:** not yet included in the chimcla command line interface (see `cli.py`)
+
+
+#### `stage_2a_bar_selection.py` → important
+
+- There is an (incomplete) newer version of this module: `stage_2a1_bar_selection_new.py`
+
+- contains:
+    - class `CavityCarrierImageAnalyzer` ("FormenTrägerBildAnalyzer")
+    - class `ExtendedSqliteDict`
+
+
+---
+
+---
 
 ## Important `chimcla` Commands
 

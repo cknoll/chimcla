@@ -12,3 +12,8 @@ colorama
 tqdm
 ipydex
 pyyaml
+
+# for documentation
+sphinx
+sphinx-autodoc-typehints
+recommonmark
