@@ -3,6 +3,7 @@
 
 ## Installation
 
+
 ### Preparation
 
 - `pip install --upgrade pip setuptools wheel`
@@ -12,7 +13,25 @@
 
 - `pip install -e .`
 
-## Important commands
+
+### General Remark on Installing Python Packages
+
+As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` for the above commands. The third-party tool `uv` (see <https://docs.astral.sh/uv/>) handles installations and upgrade much faster than the original tool `pip` (which is, however, the recommended fallback in case of problems).
+
+
+## Pipeline Description
+
+This is a test whether mermaid is rendered at gitlab:
+
+```mermaid
+  graph TD;
+      A-->B;
+      A-->C;
+      B-->D;
+      C-->D;
+```
+
+## Important `chimcla` Commands
 
 **Note:** Only parts of the chimcla functionality have been ported to the "professional" command line interface (see section `[project.scripts]` in `pyproject.toml`). Other parts are only available as ordinary python scripts. See also `docs/README_old.md`.
 
@@ -91,7 +110,9 @@ data_images
         The criticality score specifies how much a cell image deviates from the expectation (e.g. homogenous brown). Values below 20 are considered unproblematic, values above 100 typically show bright regions or other obvious problems. "Cumulated" means that the criticality scores of all 81 cells of the image are added.
 
 
-### Create Experimental Data (ced)
+### Creation of Experimental Data ("ced")
+
+This tool suite deals with the creation of images aimed for a particular user study carried out in early 2024.
 
 - overview:
     - `chimcla_ced --help`
