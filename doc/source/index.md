@@ -2,7 +2,17 @@
 
 This documentation covers the chimcla package, which provides tools for image analysis and classification of cavity carrier images.
 
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+api_links
+```
+
 ## Main Package
+
+[123](api_links.md)
 
 ```{py:module} chimcla
 ```
