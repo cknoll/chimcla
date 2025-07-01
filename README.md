@@ -19,17 +19,31 @@
 As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` for the above commands. The third-party tool `uv` (see <https://docs.astral.sh/uv/>) handles installations and upgrade much faster than the original tool `pip` (which is, however, the recommended fallback in case of problems).
 
 
-## Pipeline Description
+## (Preliminary) Pipeline Description
 
-This is a test whether mermaid is rendered at gitlab:
+<!-- The following is a "mermaid chart". It is automatically rendered by gitlab and github. Locally it can be previewed e.g. in vs code by this plugin: https://docs.mermaidchart.com/plugins/visual-studio-code.  -->
 
 ```mermaid
-  graph TD;
-      A-->B;
-      A-->C;
-      B-->D;
-      C-->D;
+  graph TD
+    A["Lot Preparation
+    *(chimcla_split_into_lots)*"] --> |separated lots|B[Form Image
+    Preprocessing]
+    B --> C[Bar-Separation]
+    C --> D["Brightness evaluation
+    (S-Value calculation)"]
+    D -->F["Step History
+            Evaluation
+            *(chimcla_step
+            _history_eval)*"]
+    D -->G["Generation of
+            Experimental Images
+            *(chimcla_ced)*"]
+    D --> E["Generation of
+            CNN Training Data
+            *(chimcla_create
+            _work_images)*"]
 ```
+
 
 ## Important `chimcla` Commands
 
