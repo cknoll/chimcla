@@ -36,7 +36,7 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
             #     f.write(f".. automodule:: {module_name}\n    :members:\n")
 
             # Add the module to the index
-            index_file.write(f"* [{module_name}](apidocs/{package_name}/{module_name}.md)\n")
+            index_file.write(f"* [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
 
             # print(f"File created: {module_path}")
         print(f"File created: {index_path}")
