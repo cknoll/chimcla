@@ -1,6 +1,7 @@
 # Module Documentation
 
 - [asyncio_tools](apidocs/chimcla/chimcla.asyncio_tools.md)
+    - Lines: 52
     - Docstring:
         > ```
         >
@@ -8,6 +9,7 @@
         >
         > ```
 - [aux_rename_cell_imgs](apidocs/chimcla/chimcla.aux_rename_cell_imgs.md)
+    - Lines: 46
     - Docstring:
         > ```
         >
@@ -15,6 +17,7 @@
         >
         > ```
 - [cli](apidocs/chimcla/chimcla.cli.md)
+    - Lines: 201
     - Docstring:
         > ```
         >
@@ -22,6 +25,7 @@
         >
         > ```
 - [log_time_filter](apidocs/chimcla/chimcla.log_time_filter.md)
+    - Lines: 97
     - Docstring:
         > ```
         >
@@ -30,6 +34,7 @@
         >
         > ```
 - [release](apidocs/chimcla/chimcla.release.md)
+    - Lines: 4
     - Docstring:
         > ```
         >
@@ -37,6 +42,7 @@
         >
         > ```
 - [stage_0f_resize_and_jpg](apidocs/chimcla/chimcla.stage_0f_resize_and_jpg.md)
+    - Lines: 88
     - Docstring:
         > ```
         >
@@ -50,6 +56,7 @@
         >
         > ```
 - [stage_1a_preprocessing](apidocs/chimcla/chimcla.stage_1a_preprocessing.md)
+    - Lines: 337
     - Docstring:
         > ```
         >
@@ -67,6 +74,7 @@
         >
         > ```
 - [stage_2a1_bar_selection_new](apidocs/chimcla/chimcla.stage_2a1_bar_selection_new.md)
+    - Lines: 722
     - Docstring:
         > ```
         >
@@ -75,6 +83,7 @@
         >
         > ```
 - [stage_2a_bar_selection](apidocs/chimcla/chimcla.stage_2a_bar_selection.md)
+    - Lines: 2614
     - Docstring:
         > ```
         >
@@ -88,31 +97,37 @@
         >
         > ```
 - [stage_2b_bar_C0_hist_dict](apidocs/chimcla/chimcla.stage_2b_bar_C0_hist_dict.md)
+    - Lines: 147
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [stage_2c_hist_based_anomaly_detection](apidocs/chimcla/chimcla.stage_2c_hist_based_anomaly_detection.md)
+    - Lines: 23
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [stage_3a_hist_based_classification](apidocs/chimcla/chimcla.stage_3a_hist_based_classification.md)
+    - Lines: 190
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [stage_3b_hist_area_based_classification](apidocs/chimcla/chimcla.stage_3b_hist_area_based_classification.md)
+    - Lines: 203
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [stage_3c_create_file_names](apidocs/chimcla/chimcla.stage_3c_create_file_names.md)
+    - Lines: 239
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
+    - Lines: 403
     - Docstring:
         > ```
         >
@@ -123,11 +138,13 @@
         >
         > ```
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
+    - Lines: 222
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [util](apidocs/chimcla/chimcla.util.md)
+    - Lines: 75
     - Docstring:
         > ```
         >
@@ -135,21 +152,25 @@
         >
         > ```
 - [util_bgr_convert](apidocs/chimcla/chimcla.util_bgr_convert.md)
+    - Lines: 47
     - Docstring:
         > ```
         > [empty]
         > ```
 - [util_doc](apidocs/chimcla/chimcla.util_doc.md)
+    - Lines: 106
     - Docstring:
         > ```
         > [empty]
         > ```
 - [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)
+    - Lines: 156
     - Docstring:
         > ```
         > [empty]
         > ```
 - [util_img](apidocs/chimcla/chimcla.util_img.md)
+    - Lines: 25
     - Docstring:
         > ```
         >
@@ -157,11 +178,13 @@
         >
         > ```
 - [util_sort_into_folder](apidocs/chimcla/chimcla.util_sort_into_folder.md)
+    - Lines: 51
     - Docstring:
         > ```
         > [could not import]
         > ```
 - [util_step_history_from_logfile](apidocs/chimcla/chimcla.util_step_history_from_logfile.md)
+    - Lines: 710
     - Docstring:
         > ```
         >
