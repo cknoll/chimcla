@@ -19,49 +19,21 @@
 As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` for the above commands. The third-party tool `uv` (see <https://docs.astral.sh/uv/>) handles installations and upgrade much faster than the original tool `pip` (which is, however, the recommended fallback in case of problems).
 
 
-## (Preliminary) Pipeline Description
-
-<!-- The following is a "mermaid chart". It is automatically rendered by gitlab and github. Locally it can be previewed e.g. in vs code by this plugin: https://docs.mermaidchart.com/plugins/visual-studio-code.  -->
-
-```mermaid
-  graph TD
-    A["Lot Preparation
-    *(chimcla_split_into_lots)*"] --> |separated lots|B[Form Image
-    Preprocessing]
-    B --> C[Bar-Separation]
-    C --> D["Brightness evaluation
-    (S-Value calculation)"]
-    D -->F["Step History
-            Evaluation
-            *(chimcla_step
-            _history_eval)*"]
-    D -->G["Generation of
-            Experimental Images
-            *(chimcla_ced)*"]
-    D --> E["Generation of
-            CNN Training Data
-            *(chimcla_create
-            _work_images)*"]
-```
-
-### Preprocessing
-
-
-
-#### `stage_2a_bar_selection.py` → important
-
-- There is an (incomplete) newer version of this module: `stage_2a1_bar_selection_new.py`
-
-
-
----
-
 ---
 
 ## Important `chimcla` Commands
 
-**Note:** Only parts of the chimcla functionality have been ported to the "professional" command line interface (see section `[project.scripts]` in `pyproject.toml`). Other parts are only available as ordinary python scripts. See also `docs/README_old.md`.
+**Note:** Only parts of the chimcla functionality has been ported to the "professional" command line interface (see section `[project.scripts]` in `pyproject.toml`). Other parts are only available as ordinary python scripts. See also `docs/README_old.md`.
 
+
+### Generate the Documentation
+
+- ensure that chimcla (is installed correctly)
+- `chimcla_main prepare-docs`
+    - regenerates `docs/source/api_links.md`; only necessary after changing the modules
+- `chimcla_main build-docs`
+    - creates the html documentation inside `docs/build`
+    - entrypoint: [`docs/build/index.html`](docs/build/index.html)
 
 ### Split into Lots
 
