@@ -177,6 +177,9 @@ def _rename_cell_imgs(dirname):
 
 
 def create_work_images():
+    """
+    Perform stage 1 creating images for further research.
+    """
     from . import stage_1a_preprocessing as s1a
     s1a.main()
 
