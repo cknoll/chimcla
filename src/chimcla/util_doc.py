@@ -29,7 +29,7 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
     assert os.path.isfile(Path(package_path)/"__init__.py")
     if output_dir is None:
         repo_root = os.path.dirname(os.path.dirname(package_path))
-        output_dir = Path(repo_root)/"doc"/"source"
+        output_dir = Path(repo_root)/"docs"/"source"
         module_dir = output_dir/"modules"
 
     import pkgutil
@@ -88,7 +88,7 @@ def get_wrapped_quoted_docstring(module_docstring, qq):
 
 
 def make_html_doc():
-    subprocess.run(['sphinx-build', '-b', 'html', 'doc/source', 'doc/build'])
+    subprocess.run(['sphinx-build', '-b', 'html', 'docs/source', 'docs/build'])
 
 
 class DocumentationGenerator(FileSystemEventHandler):
