@@ -1,5 +1,15 @@
 """
-This module contains several preprocessing steps which were distributed over multiple scripts in earlier versions
+This module contains several preprocessing steps which were distributed over
+multiple scripts in earlier versions.
+
+Contains class `Stage1Preprocessor` with method pipeline(self, fpath):
+
+- self.step01_mogrify_1000jpg(iic)
+- self.step02_empty_slot_detection(iic)
+- self.step03_cropping(iic)
+- self.step04_shading_correction(iic)
+
+**TODO:** not yet included in the chimcla command line interface (see `cli.py`)
 """
 
 import os

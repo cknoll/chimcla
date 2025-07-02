@@ -1,7 +1,8 @@
 """
-This Module is a rewrite of the historically grown module stage_2a_bar_selection.
-It should eventually replace it.
+This Module is a (yet incomplete) rewrite of the historically grown module stage_2a_bar_selection.
+It should eventually replace it. Currently it is only used in the tests.
 """
+
 import os
 from typing import Dict
 import itertools as it

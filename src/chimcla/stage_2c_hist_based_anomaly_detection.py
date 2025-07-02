@@ -1,3 +1,7 @@
+"""
+Very short wrapper for `HistEvaluation.find_critical_cells()`
+"""
+
 import os
 import sys
 import numpy as np

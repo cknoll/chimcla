@@ -1,3 +1,13 @@
+"""
+
+This module is probably obsolete
+(and not included in the chimcla command line interface (see `cli.py`))
+
+- Convert images to jpg (originally we used .png) and resize width to 1000px.
+- uses `asyncio` to allow for parallel processing → speedup
+- "0f" comes from some internal versioning which enumerated the necessary processing steps
+"""
+
 # based on: http://localhost:8888/notebooks/iee-ge/XAI-DIA/image_classification/stage1/c_determine_shading_correction.ipynb
 
 

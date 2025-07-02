@@ -1,3 +1,7 @@
+"""
+Command line interface.
+"""
+
 import os
 import sys
 import argparse

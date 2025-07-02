@@ -3,57 +3,89 @@
 - [asyncio_tools](apidocs/chimcla/chimcla.asyncio_tools.md)
     - Docstring:
         > ```
-        > [empty]
+        >
+        > Helper module; provides useful functions for running python code in background or in parallel.
+        >
         > ```
 - [aux_rename_cell_imgs](apidocs/chimcla/chimcla.aux_rename_cell_imgs.md)
     - Docstring:
         > ```
-        > 
+        >
         > This script renames image files, such that the cell comes first.
-        > 
+        >
         > ```
 - [cli](apidocs/chimcla/chimcla.cli.md)
     - Docstring:
         > ```
-        > [empty]
+        >
+        > Command line interface.
+        >
         > ```
 - [log_time_filter](apidocs/chimcla/chimcla.log_time_filter.md)
     - Docstring:
         > ```
-        > 
+        >
         > This script is used to filter log file by timestamps
-        > 
-        > 
+        >
+        >
         > ```
 - [release](apidocs/chimcla/chimcla.release.md)
     - Docstring:
         > ```
-        > [empty]
+        >
+        > Define the version number of chimcla. Nothing else.
+        >
         > ```
 - [stage_0f_resize_and_jpg](apidocs/chimcla/chimcla.stage_0f_resize_and_jpg.md)
     - Docstring:
         > ```
-        > [empty]
+        >
+        >
+        > This module is probably obsolete
+        > (and not included in the chimcla command line interface (see `cli.py`))
+        >
+        > - Convert images to jpg (originally we used .png) and resize width to 1000px.
+        > - uses `asyncio` to allow for parallel processing → speedup
+        > - "0f" comes from some internal versioning which enumerated the necessary processing steps
+        >
         > ```
 - [stage_1a_preprocessing](apidocs/chimcla/chimcla.stage_1a_preprocessing.md)
     - Docstring:
         > ```
-        > 
-        > This module contains several preprocessing steps which were distributed over multiple scripts in earlier versions
-        > 
+        >
+        > This module contains several preprocessing steps which were distributed over
+        > multiple scripts in earlier versions.
+        >
+        > Contains class `Stage1Preprocessor` with method pipeline(self, fpath):
+        >
+        > - self.step01_mogrify_1000jpg(iic)
+        > - self.step02_empty_slot_detection(iic)
+        > - self.step03_cropping(iic)
+        > - self.step04_shading_correction(iic)
+        >
+        > **TODO:** not yet included in the chimcla command line interface (see `cli.py`)
+        >
         > ```
 - [stage_2a1_bar_selection_new](apidocs/chimcla/chimcla.stage_2a1_bar_selection_new.md)
     - Docstring:
         > ```
-        > 
-        > This Module is a rewrite of the historically grown module stage_2a_bar_selection.
-        > It should eventually replace it.
-        > 
+        >
+        > This Module is a (yet incomplete) rewrite of the historically grown module stage_2a_bar_selection.
+        > It should eventually replace it. Currently it is only used in the tests.
+        >
         > ```
 - [stage_2a_bar_selection](apidocs/chimcla/chimcla.stage_2a_bar_selection.md)
     - Docstring:
         > ```
-        > [empty]
+        >
+        > **Important**
+        >
+        > Historically grown and messy module for bar selection (or "separation")
+        >
+        > - contains:
+        >     - class `CavityCarrierImageAnalyzer` ("FormenTrägerBildAnalyzer")
+        >     - class `ExtendedSqliteDict`
+        >
         > ```
 - [stage_2b_bar_C0_hist_dict](apidocs/chimcla/chimcla.stage_2b_bar_C0_hist_dict.md)
     - Docstring:
@@ -83,12 +115,12 @@
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
     - Docstring:
         > ```
-        > 
+        >
         > This file serves for
         > - creating images for Romys Chocolate Experiment (as discussed in Nov. 2023)
         > - creating data (images and numerical) for history evaluation
-        > 
-        > 
+        >
+        >
         > ```
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
     - Docstring:
@@ -98,9 +130,9 @@
 - [util](apidocs/chimcla/chimcla.util.md)
     - Docstring:
         > ```
-        > 
+        >
         > This module contains general utility functions
-        > 
+        >
         > ```
 - [util_bgr_convert](apidocs/chimcla/chimcla.util_bgr_convert.md)
     - Docstring:
@@ -120,9 +152,9 @@
 - [util_img](apidocs/chimcla/chimcla.util_img.md)
     - Docstring:
         > ```
-        > 
+        >
         > Contains image related utility functions
-        > 
+        >
         > ```
 - [util_sort_into_folder](apidocs/chimcla/chimcla.util_sort_into_folder.md)
     - Docstring:
@@ -132,11 +164,11 @@
 - [util_step_history_from_logfile](apidocs/chimcla/chimcla.util_step_history_from_logfile.md)
     - Docstring:
         > ```
-        > 
+        >
         > This script is used to evaluate logfile
-        > 
+        >
         > example call:
         > python step_history_from_logfile.py -l ~/mnt/XAI-DIA-gl/Carsten/logs/classifier-2023-07-10_since_2023-06-26.log
-        > 
-        > 
+        >
+        >
         > ```

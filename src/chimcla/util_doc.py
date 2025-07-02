@@ -44,15 +44,23 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
             # quoting prefix
             qq = f"{' '*8}> "
 
-            quoted_module_docstring = f"\n{module_docstring}".replace("\n", f"\n{qq}")
-            wrapped_quoted_module_docstring  = f"\n{qq}```{quoted_module_docstring}\n{qq}```"
-
+            wrapped_quoted_module_docstring = get_wrapped_quoted_docstring(module_docstring, qq)
 
             index_file.write(f"- [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
             index_file.write(f"    - Docstring:{wrapped_quoted_module_docstring}\n")
 
             # print(f"File created: {module_path}")
         print(f"File created: {index_path}")
+
+
+def get_wrapped_quoted_docstring(module_docstring, qq):
+    quoted_module_docstring = f"\n{module_docstring}".replace("\n", f"\n{qq}")
+    wrapped_quoted_module_docstring  = f"\n{qq}```{quoted_module_docstring}\n{qq}```"
+    wrapped_quoted_module_docstring = "\n".join(
+                [elt.rstrip() for elt in wrapped_quoted_module_docstring.split("\n")]
+            )
+
+    return wrapped_quoted_module_docstring
 
 
 def make_html_doc():

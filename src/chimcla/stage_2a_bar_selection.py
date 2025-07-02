@@ -1,3 +1,14 @@
+"""
+**Important**
+
+Historically grown and messy module for bar selection (or "separation")
+
+- contains:
+    - class `CavityCarrierImageAnalyzer` ("FormenTrägerBildAnalyzer")
+    - class `ExtendedSqliteDict`
+"""
+
+
 # based on: http://localhost:8888/notebooks/iee-ge/XAI-DIA/image_classification/stage1/c_determine_shading_correction.ipynb
 
 

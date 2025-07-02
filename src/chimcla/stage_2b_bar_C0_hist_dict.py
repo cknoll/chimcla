@@ -1,3 +1,13 @@
+"""
+Command line interface script for functionality from stage_2a_bar_selection.
+
+Main feature: run time-consuming tasks in parallel (using asyncio_tools)
+
+Not yet included in chimcla.cli
+
+Maybe obsolete?
+"""
+
 import os
 import sys
 import numpy as np

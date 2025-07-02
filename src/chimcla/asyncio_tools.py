@@ -1,3 +1,6 @@
+"""
+Helper module; provides useful functions for running python code in background or in parallel.
+"""
 
 import asyncio
 from asyncio import run
@@ -7,7 +10,7 @@ import functools
 
 def background(f):
     """
-    decorator for paralelization
+    decorator for parallelization
     """
     # source: https://stackoverflow.com/a/59385935
     from ipydex import IPS
