@@ -21,7 +21,7 @@ def check_date(date_string):
         date_day = date_string[8:10]
 
         if (date_year.isdigit() and date_month.isdigit() and date_day.isdigit()):
-        
+
             if (2020 <= int(date_year) <= 2030):
                 if (1 <= int(date_month) <= 12):
                     if (1 <= int(date_day) <= 31):
@@ -39,9 +39,9 @@ def save_logfile(filter_list, begin_date, end_date, path):
 class MainManager:
     def __init__(self):
         self.parse_args()
-        if not (check_date(self.args.begin) and check_date(self.args.end)): 
+        if not (check_date(self.args.begin) and check_date(self.args.end)):
             print("Input invalid, please check the begin and end date!")
-            exit()       
+            exit()
         self.load_logfile()
 
     def parse_args(self):
@@ -73,7 +73,7 @@ class MainManager:
             if check_date(row[:10]):
                 # get date
                 day_string = row[:10]
-               
+
                 # check if date is in range
                 day_date = datetime.strptime(day_string, "%Y-%m-%d")
 
@@ -83,7 +83,7 @@ class MainManager:
                 else:
                     if day_date > end_date:     #stops if there are more entries after the relevant period
                         break
-                    
+
         # print(*filter_list)
         save_logfile(filter_list, self.args.begin, self.args.end, os.path.dirname(self.args.logfile))
 

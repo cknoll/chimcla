@@ -366,7 +366,7 @@ class MainManager:
         # exit()
 
         print(df_csv)
-        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
+        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')
         df_csv.to_excel("results.xlsx", index_label='idx')
 
         # read csv data and plot it
@@ -421,7 +421,7 @@ class MainManager:
         df_csv['dt_med'] = df_csv.median(axis=1, numeric_only=True)
 
         # print(df_csv)
-        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')            
+        df_csv.to_csv("results.csv", sep ='\t', index=True, index_label='idx')
         df_csv.to_excel("results.xlsx", index_label='idx')
 
         # # read csv data and plot it
@@ -466,7 +466,7 @@ class MainManager:
         # calculate sum of critical times for each row
         df_count['count_sum'] = df_count.sum(axis=1, numeric_only=True)
 
-        df_count.to_csv("results_count.csv", sep ='\t', index=True, index_label='idx')            
+        df_count.to_csv("results_count.csv", sep ='\t', index=True, index_label='idx')
         df_count.to_excel("results_count.xlsx", index_label='idx')
 
 
@@ -484,7 +484,7 @@ class MainManager:
 
         #df_sum["dt_sum"].plot(kind = 'bar', y = 'dwell_time', xticks = range(0,1500,100))
         plt.show()
-        
+
 
 
         IPS()
