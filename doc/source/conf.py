@@ -28,7 +28,7 @@ extensions = [
 ]
 
 autodoc2_render_plugin = "myst"
-autodoc2_hidden_objects = ["undoc"]
+autodoc2_hidden_objects = []
 
 autodoc2_hide_module_imports = False
 autodoc2_packages = [
