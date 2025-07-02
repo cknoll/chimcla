@@ -1,3 +1,10 @@
+"""
+This Module contains classes and functions for the *Lot Preparation*
+step of the processing pipeline.
+
+used by cli.py.
+"""
+
 import os
 import sys
 import argparse

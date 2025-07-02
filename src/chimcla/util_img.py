@@ -1,5 +1,9 @@
 """
-Contains image related utility functions
+Contains two image short related utility functions.
+
+Currently only used in stage_2a1_bar_selection_new.py.
+
+TODO: merge into util.py?
 """
 import os
 import cv2

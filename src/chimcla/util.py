@@ -1,5 +1,11 @@
 """
-This module contains general utility functions
+Important:
+
+This module contains general utility functions used in other chimcla modules.
+
+- ImageInfoContainer
+
+**TODO**: code from other (util) modules might be ported to here to improve code architecture
 """
 
 

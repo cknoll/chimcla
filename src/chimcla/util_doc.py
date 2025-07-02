@@ -1,3 +1,10 @@
+"""
+Module to prepare and execute the generation of documentation (via sphinx).
+
+used by some `chimcla_main ...` commands.
+"""
+
+
 import os
 import subprocess
 import time

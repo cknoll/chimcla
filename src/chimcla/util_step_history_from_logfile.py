@@ -1,8 +1,10 @@
 """
-This script is used to evaluate logfile
+This script is used to evaluate the logfile to create the step history images.
 
 example call:
 python step_history_from_logfile.py -l ~/mnt/XAI-DIA-gl/Carsten/logs/classifier-2023-07-10_since_2023-06-26.log
+
+Not yet included in cli.py.
 
 """
 

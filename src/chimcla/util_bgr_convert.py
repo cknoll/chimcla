@@ -1,3 +1,9 @@
+"""
+This script converts jpg files from BGR TO RGB and vice versa.
+
+Not yet included in cli.py.
+"""
+
 import os
 import sys
 import argparse

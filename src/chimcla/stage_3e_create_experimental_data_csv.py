@@ -1,3 +1,8 @@
+"""
+Script to generate csv data files for Romys Chocolate experiments (late 2024/early 2024)"
+"""
+
+
 import os
 import sys
 import numpy as np
@@ -14,12 +19,12 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
-from stage_2a_bar_selection import (
+from .stage_2a_bar_selection import (
     Container,
 )
 
-import stage_2a_bar_selection as bs
-import asyncio_tools as aiot
+from . import stage_2a_bar_selection as bs
+from . import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]

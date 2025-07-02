@@ -138,60 +138,92 @@
         >
         > ```
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
-    - Lines: 222
-    - Docstring:
-        > ```
-        > [could not import]
-        > ```
-- [util](apidocs/chimcla/chimcla.util.md)
-    - Lines: 75
+    - Lines: 227
     - Docstring:
         > ```
         >
-        > This module contains general utility functions
+        > Script to generate csv data files for Romys Chocolate experiments (late 2024/early 2024)"
+        >
+        > ```
+- [util](apidocs/chimcla/chimcla.util.md)
+    - Lines: 81
+    - Docstring:
+        > ```
+        >
+        > Important:
+        >
+        > This module contains general utility functions used in other chimcla modules.
+        >
+        > - ImageInfoContainer
+        >
+        > **TODO**: code from other (util) modules might be ported to here to improve code architecture
         >
         > ```
 - [util_bgr_convert](apidocs/chimcla/chimcla.util_bgr_convert.md)
-    - Lines: 47
-    - Docstring:
-        > ```
-        > [empty]
-        > ```
-- [util_doc](apidocs/chimcla/chimcla.util_doc.md)
-    - Lines: 106
-    - Docstring:
-        > ```
-        > [empty]
-        > ```
-- [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)
-    - Lines: 156
-    - Docstring:
-        > ```
-        > [empty]
-        > ```
-- [util_img](apidocs/chimcla/chimcla.util_img.md)
-    - Lines: 25
+    - Lines: 53
     - Docstring:
         > ```
         >
-        > Contains image related utility functions
+        > This script converts jpg files from BGR TO RGB and vice versa.
+        >
+        > Not yet included in cli.py.
+        >
+        > ```
+- [util_doc](apidocs/chimcla/chimcla.util_doc.md)
+    - Lines: 113
+    - Docstring:
+        > ```
+        >
+        > Module to prepare and execute the generation of documentation (via sphinx).
+        >
+        > used by some `chimcla_main ...` commands.
+        >
+        > ```
+- [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)
+    - Lines: 163
+    - Docstring:
+        > ```
+        >
+        > This Module contains classes and functions for the *Lot Preparation*
+        > step of the processing pipeline.
+        >
+        > used by cli.py.
+        >
+        > ```
+- [util_img](apidocs/chimcla/chimcla.util_img.md)
+    - Lines: 29
+    - Docstring:
+        > ```
+        >
+        > Contains two image short related utility functions.
+        >
+        > Currently only used in stage_2a1_bar_selection_new.py.
+        >
+        > TODO: merge into util.py?
         >
         > ```
 - [util_sort_into_folder](apidocs/chimcla/chimcla.util_sort_into_folder.md)
-    - Lines: 51
-    - Docstring:
-        > ```
-        > [could not import]
-        > ```
-- [util_step_history_from_logfile](apidocs/chimcla/chimcla.util_step_history_from_logfile.md)
-    - Lines: 710
+    - Lines: 59
     - Docstring:
         > ```
         >
-        > This script is used to evaluate logfile
+        > Helper script to copy images into different class directories based on
+        > a hardcoded csv file (e.g. containing the result of manual labeling).
+        >
+        > Not yet included in cli.py.
+        >
+        > ```
+- [util_step_history_from_logfile](apidocs/chimcla/chimcla.util_step_history_from_logfile.md)
+    - Lines: 712
+    - Docstring:
+        > ```
+        >
+        > This script is used to evaluate the logfile to create the step history images.
         >
         > example call:
         > python step_history_from_logfile.py -l ~/mnt/XAI-DIA-gl/Carsten/logs/classifier-2023-07-10_since_2023-06-26.log
+        >
+        > Not yet included in cli.py.
         >
         >
         > ```
