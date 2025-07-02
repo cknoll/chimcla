@@ -24,6 +24,7 @@ extensions = [
     'sphinx.ext.autosummary',
     # 'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.mermaid',
     # 'sphinx.ext.intersphinx',
 ]
 
@@ -53,6 +54,7 @@ myst_enable_extensions = [
     # "tasklist",
 ]
 
+myst_fence_as_directive = ["mermaid"]
 
 templates_path = ['_templates']
 exclude_patterns = []

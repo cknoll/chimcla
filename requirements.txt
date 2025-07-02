@@ -19,3 +19,4 @@ sphinx-autodoc-typehints
 sphinx-autodoc2
 watchdog
 myst-parser
+sphinxcontrib-mermaid
