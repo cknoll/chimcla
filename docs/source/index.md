@@ -8,6 +8,7 @@ This documentation covers the chimcla package, which provides tools for image an
 :hidden:
 
 api_links
+apidocs/index
 ```
 
 ## Main Package
