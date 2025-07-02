@@ -44,9 +44,7 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
             # quoting prefix
             qq = f"{' '*8}> "
 
-            # TODO-AIDER: determine the number of lines in the module
-            number_of_lines = "??"
-
+            number_of_lines = get_number_of_lines(package_path, module_name)
             wrapped_quoted_module_docstring = get_wrapped_quoted_docstring(module_docstring, qq)
 
             index_file.write(f"- [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
@@ -55,6 +53,19 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
 
             # print(f"File created: {module_path}")
         print(f"File created: {index_path}")
+
+
+def get_number_of_lines(package_path, module_name):
+    try:
+        module_file_path = os.path.join(package_path, f"{module_name}.py")
+        if os.path.isfile(module_file_path):
+            with open(module_file_path, 'r', encoding='utf-8') as fp:
+                number_of_lines = sum(1 for _ in fp)
+        else:
+            number_of_lines = "??"
+    except Exception:
+        number_of_lines = "??"
+    return number_of_lines
 
 
 def get_wrapped_quoted_docstring(module_docstring, qq):
