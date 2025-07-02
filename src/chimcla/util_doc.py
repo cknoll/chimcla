@@ -32,8 +32,18 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
         index_file.write('# Module Documentation\n\n')
         for module_info in pkgutil.walk_packages([package_path]):
             module_name = module_info.name
+            # TODO-AIDER: extract the actual module docstring (use "[empty]" if there is none)
+            module_docstring = "*placeholder_for_module_docstring*"
 
-            index_file.write(f"* [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
+            # quoting prefix
+            qq = f"{' '*8}> "
+
+            quoted_module_docstring = f"\n{module_docstring}".replace("\n", f"\n{qq}")
+            wrapped_quoted_module_docstring  = f"\n{qq}```{quoted_module_docstring}\n{qq}```"
+
+
+            index_file.write(f"- [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
+            index_file.write(f"    - Docstring:{wrapped_quoted_module_docstring}\n")
 
             # print(f"File created: {module_path}")
         print(f"File created: {index_path}")
