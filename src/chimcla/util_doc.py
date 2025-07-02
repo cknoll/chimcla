@@ -1,5 +1,9 @@
 import os
+import subprocess
+import time
 from pathlib import Path
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 
@@ -28,25 +32,11 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
         index_file.write('# Module Documentation\n\n')
         for module_info in pkgutil.walk_packages([package_path]):
             module_name = module_info.name
-            # module_path = os.path.join(module_dir, f"{module_name}.md")
 
-            # # Create the module documentation file
-            # with open(module_path, 'w') as f:
-            #     f.write(f"## {module_name}\n\n")
-            #     f.write(f".. automodule:: {module_name}\n    :members:\n")
-
-            # Add the module to the index
             index_file.write(f"* [{module_name}](apidocs/{package_name}/{package_name}.{module_name}.md)\n")
 
             # print(f"File created: {module_path}")
         print(f"File created: {index_path}")
-
-
-import subprocess
-import time
-import os
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 
 
 def make_html_doc():
