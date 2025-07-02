@@ -77,7 +77,7 @@ def get_number_of_lines(package_path, module_name):
 
 def get_wrapped_quoted_docstring(module_docstring, qq):
     quoted_module_docstring = f"\n{module_docstring}".replace("\n", f"\n{qq}")
-    wrapped_quoted_module_docstring  = f"\n{qq}```{quoted_module_docstring}\n{qq}```"
+    wrapped_quoted_module_docstring  = f"\n{qq}{quoted_module_docstring}\n{qq}"
     wrapped_quoted_module_docstring = "\n".join(
                 [elt.rstrip() for elt in wrapped_quoted_module_docstring.split("\n")]
             )

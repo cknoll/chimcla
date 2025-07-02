@@ -3,48 +3,48 @@
 - [asyncio_tools](apidocs/chimcla/chimcla.asyncio_tools.md)
     - Lines: 52
     - Docstring:
-        > ```
+        >
         >
         > Helper module; provides useful functions for running python code in background or in parallel.
         >
-        > ```
+        >
 - [aux_rename_cell_imgs](apidocs/chimcla/chimcla.aux_rename_cell_imgs.md)
     - Lines: 46
     - Docstring:
-        > ```
+        >
         >
         > This script renames image files, such that the cell comes first.
         >
-        > ```
+        >
 - [cli](apidocs/chimcla/chimcla.cli.md)
     - Lines: 201
     - Docstring:
-        > ```
+        >
         >
         > Command line interface.
         >
-        > ```
+        >
 - [log_time_filter](apidocs/chimcla/chimcla.log_time_filter.md)
     - Lines: 97
     - Docstring:
-        > ```
+        >
         >
         > This script is used to filter log file by timestamps
         >
         >
-        > ```
+        >
 - [release](apidocs/chimcla/chimcla.release.md)
     - Lines: 4
     - Docstring:
-        > ```
+        >
         >
         > Define the version number of chimcla. Nothing else.
         >
-        > ```
+        >
 - [stage_0f_resize_and_jpg](apidocs/chimcla/chimcla.stage_0f_resize_and_jpg.md)
     - Lines: 88
     - Docstring:
-        > ```
+        >
         >
         >
         > This module is probably obsolete
@@ -54,11 +54,11 @@
         > - uses `asyncio` to allow for parallel processing → speedup
         > - "0f" comes from some internal versioning which enumerated the necessary processing steps
         >
-        > ```
+        >
 - [stage_1a_preprocessing](apidocs/chimcla/chimcla.stage_1a_preprocessing.md)
     - Lines: 337
     - Docstring:
-        > ```
+        >
         >
         > This module contains several preprocessing steps which were distributed over
         > multiple scripts in earlier versions.
@@ -72,20 +72,20 @@
         >
         > **TODO:** not yet included in the chimcla command line interface (see `cli.py`)
         >
-        > ```
+        >
 - [stage_2a1_bar_selection_new](apidocs/chimcla/chimcla.stage_2a1_bar_selection_new.md)
     - Lines: 722
     - Docstring:
-        > ```
+        >
         >
         > This Module is a (yet incomplete) rewrite of the historically grown module stage_2a_bar_selection.
         > It should eventually replace it. Currently it is only used in the tests.
         >
-        > ```
+        >
 - [stage_2a_bar_selection](apidocs/chimcla/chimcla.stage_2a_bar_selection.md)
     - Lines: 2614
     - Docstring:
-        > ```
+        >
         >
         > **Important**
         >
@@ -95,60 +95,60 @@
         >     - class `CavityCarrierImageAnalyzer` ("FormenTrägerBildAnalyzer")
         >     - class `ExtendedSqliteDict`
         >
-        > ```
+        >
 - [stage_2b_bar_C0_hist_dict](apidocs/chimcla/chimcla.stage_2b_bar_C0_hist_dict.md)
     - Lines: 147
     - Docstring:
-        > ```
+        >
         > [could not import]
-        > ```
+        >
 - [stage_2c_hist_based_anomaly_detection](apidocs/chimcla/chimcla.stage_2c_hist_based_anomaly_detection.md)
     - Lines: 23
     - Docstring:
-        > ```
+        >
         > [could not import]
-        > ```
+        >
 - [stage_3a_hist_based_classification](apidocs/chimcla/chimcla.stage_3a_hist_based_classification.md)
     - Lines: 190
     - Docstring:
-        > ```
+        >
         > [could not import]
-        > ```
+        >
 - [stage_3b_hist_area_based_classification](apidocs/chimcla/chimcla.stage_3b_hist_area_based_classification.md)
     - Lines: 203
     - Docstring:
-        > ```
+        >
         > [could not import]
-        > ```
+        >
 - [stage_3c_create_file_names](apidocs/chimcla/chimcla.stage_3c_create_file_names.md)
     - Lines: 239
     - Docstring:
-        > ```
+        >
         > [could not import]
-        > ```
+        >
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
     - Lines: 403
     - Docstring:
-        > ```
+        >
         >
         > This file serves for
         > - creating images for Romys Chocolate Experiment (as discussed in Nov. 2023)
         > - creating data (images and numerical) for history evaluation
         >
         >
-        > ```
+        >
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
     - Lines: 227
     - Docstring:
-        > ```
+        >
         >
         > Script to generate csv data files for Romys Chocolate experiments (late 2024/early 2024)"
         >
-        > ```
+        >
 - [util](apidocs/chimcla/chimcla.util.md)
     - Lines: 81
     - Docstring:
-        > ```
+        >
         >
         > Important:
         >
@@ -158,42 +158,42 @@
         >
         > **TODO**: code from other (util) modules might be ported to here to improve code architecture
         >
-        > ```
+        >
 - [util_bgr_convert](apidocs/chimcla/chimcla.util_bgr_convert.md)
     - Lines: 53
     - Docstring:
-        > ```
+        >
         >
         > This script converts jpg files from BGR TO RGB and vice versa.
         >
         > Not yet included in cli.py.
         >
-        > ```
+        >
 - [util_doc](apidocs/chimcla/chimcla.util_doc.md)
     - Lines: 113
     - Docstring:
-        > ```
+        >
         >
         > Module to prepare and execute the generation of documentation (via sphinx).
         >
         > used by some `chimcla_main ...` commands.
         >
-        > ```
+        >
 - [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)
     - Lines: 163
     - Docstring:
-        > ```
+        >
         >
         > This Module contains classes and functions for the *Lot Preparation*
         > step of the processing pipeline.
         >
         > used by cli.py.
         >
-        > ```
+        >
 - [util_img](apidocs/chimcla/chimcla.util_img.md)
     - Lines: 29
     - Docstring:
-        > ```
+        >
         >
         > Contains two image short related utility functions.
         >
@@ -201,22 +201,22 @@
         >
         > TODO: merge into util.py?
         >
-        > ```
+        >
 - [util_sort_into_folder](apidocs/chimcla/chimcla.util_sort_into_folder.md)
     - Lines: 59
     - Docstring:
-        > ```
+        >
         >
         > Helper script to copy images into different class directories based on
         > a hardcoded csv file (e.g. containing the result of manual labeling).
         >
         > Not yet included in cli.py.
         >
-        > ```
+        >
 - [util_step_history_from_logfile](apidocs/chimcla/chimcla.util_step_history_from_logfile.md)
     - Lines: 712
     - Docstring:
-        > ```
+        >
         >
         > This script is used to evaluate the logfile to create the step history images.
         >
@@ -226,4 +226,4 @@
         > Not yet included in cli.py.
         >
         >
-        > ```
+        >
