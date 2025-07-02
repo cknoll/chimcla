@@ -87,7 +87,7 @@
         >
         >
 - [stage_2a_bar_selection](apidocs/chimcla/chimcla.stage_2a_bar_selection.md)
-    - Lines: 2614
+    - Lines: 2617
     - Docstring:
         >
         >
