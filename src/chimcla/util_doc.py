@@ -39,7 +39,7 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
                 module = importlib.import_module(full_module_name)
                 module_docstring = module.__doc__ or "[empty]"
             except Exception:
-                module_docstring = "[empty]"
+                module_docstring = "[could not import]"
 
             # quoting prefix
             qq = f"{' '*8}> "
