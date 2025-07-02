@@ -1,3 +1,10 @@
+"""
+This script creates histogram style plots for every unusual cell (also considering the area)
+
+- uses asyncio_tools to spawn multiple workers
+- Not yet included in chimcla.cli.py
+"""
+
 import os
 import sys
 import numpy as np
@@ -31,8 +38,6 @@ from .stage_2a_bar_selection import (
 )
 
 from . import stage_2a_bar_selection as bs
-
-
 from . import asyncio_tools as aiot
 
 

@@ -133,16 +133,29 @@
         >
         >
 - [stage_3b_hist_area_based_classification](apidocs/chimcla/chimcla.stage_3b_hist_area_based_classification.md)
-    - Lines: 202
+    - Lines: 207
     - Docstring:
         >
-        > [empty]
+        >
+        > This script creates histogram style plots for every unusual cell (also considering the area)
+        >
+        > - uses asyncio_tools to spawn multiple workers
+        > - Not yet included in chimcla.cli.py
+        >
         >
 - [stage_3c_create_file_names](apidocs/chimcla/chimcla.stage_3c_create_file_names.md)
-    - Lines: 238
+    - Lines: 248
     - Docstring:
         >
-        > [empty]
+        >
+        > This program creates copies or symlinks of files to enable simple sorting wrt.
+        > one numeric feature (s-value).
+        >
+        > Also contains `create_json_data(...)`
+        >
+        > - Not yet included in `chimcla.cli`.
+        >
+        >
         >
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
     - Lines: 403

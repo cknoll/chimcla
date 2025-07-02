@@ -1,3 +1,13 @@
+"""
+This program creates copies or symlinks of files to enable simple sorting wrt.
+one numeric feature (s-value).
+
+Also contains `create_json_data(...)`
+
+- Not yet included in `chimcla.cli`.
+
+"""
+
 import os
 import sys
 import numpy as np
