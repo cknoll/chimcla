@@ -22,8 +22,6 @@ def main():
         help="directory",
     )
 
-
-
     args = parser.parse_args()
     fnames = os.listdir(args.dir)
 

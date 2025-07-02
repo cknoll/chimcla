@@ -13,7 +13,7 @@ from ipydex import IPS, activate_ips_on_exception
 
 # activate_ips_on_exception()
 
-from stage_2a_bar_selection import (
+from .stage_2a_bar_selection import (
     load_img,
     rgb,
     get_bbox_list,
@@ -30,10 +30,10 @@ from stage_2a_bar_selection import (
     Container,
 )
 
-import stage_2a_bar_selection as bs
+from . import stage_2a_bar_selection as bs
 
 
-import asyncio_tools as aiot
+from . import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
@@ -102,12 +102,8 @@ parser.add_argument(
     action="store_true",
 )
 
-args = parser.parse_args()
-
 
 dict_dir = "dicts"
-os.makedirs(dict_dir, exist_ok=True)
-
 
 def process_img(img_fpath):
 
@@ -189,6 +185,8 @@ def aio_main():
 
 
 def main():
+    os.makedirs(dict_dir, exist_ok=True)
+
 
     bs.HistEvaluation.reset_result_files(suffix=args.suffix)
 
@@ -200,4 +198,5 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     main()

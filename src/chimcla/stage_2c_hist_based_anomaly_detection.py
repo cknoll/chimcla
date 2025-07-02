@@ -10,7 +10,7 @@ import itertools as it
 import collections
 import argparse
 
-import stage_2a_bar_selection as bs
+from . import stage_2a_bar_selection as bs
 
 
 def main():

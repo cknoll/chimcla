@@ -14,12 +14,12 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
-from stage_2a_bar_selection import (
+from .stage_2a_bar_selection import (
     Container,
 )
 
-import stage_2a_bar_selection as bs
-import asyncio_tools as aiot
+from . import stage_2a_bar_selection as bs
+from . import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
@@ -56,8 +56,6 @@ parser.add_argument(
     metavar="cell_img_dir"
 )
 
-
-args = parser.parse_args()
 
 
 def get_dirname(keys):
@@ -236,4 +234,5 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     main()

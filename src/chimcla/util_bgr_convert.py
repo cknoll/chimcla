@@ -27,7 +27,6 @@ parser.add_argument(
 
 def main():
 
-    args = parser.parse_args()
     fnames = os.listdir(args.dir)
 
     fnames.sort()
@@ -50,4 +49,5 @@ def main():
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     main()

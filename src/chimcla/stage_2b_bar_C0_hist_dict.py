@@ -1,7 +1,7 @@
 """
 Command line interface script for functionality from stage_2a_bar_selection.
 
-Main feature: run time-consuming tasks in parallel (using asyncio_tools)
+Main feature: run the time-consuming tasks in parallel (using asyncio_tools)
 
 Not yet included in chimcla.cli
 
@@ -18,7 +18,7 @@ import argparse
 
 import dill
 
-from stage_2a_bar_selection import (
+from .stage_2a_bar_selection import (
     load_img,
     rgb,
     get_bbox_list,
@@ -36,7 +36,7 @@ from stage_2a_bar_selection import (
 )
 
 
-import asyncio_tools as aiot
+from . import asyncio_tools as aiot
 
 parser = argparse.ArgumentParser(
     prog='stage_2b_bar_C0_hist_dict',
@@ -57,17 +57,12 @@ parser.add_argument(
     default=None,
 )
 
-args = parser.parse_args()
-
-
 
 END = None
 cell_tups = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:END]
 
 
 dict_dir = "dicts"
-os.makedirs(dict_dir, exist_ok=True)
-
 
 def process_img(img_fpath):
 
@@ -136,6 +131,9 @@ def aio_main():
 
 def main():
 
+    os.makedirs(dict_dir, exist_ok=True)
+
+
     if args.img:
         process_img(args.img)
     elif args.img_dir:
@@ -144,4 +142,5 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     main()

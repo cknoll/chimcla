@@ -17,7 +17,7 @@ from colorama import Fore, Style
 
 import dill
 
-from stage_2a_bar_selection import (
+from .stage_2a_bar_selection import (
     load_img,
     rgb,
     get_bbox_list,
@@ -34,10 +34,10 @@ from stage_2a_bar_selection import (
     Container,
 )
 
-import stage_2a_bar_selection as bs
+from . import stage_2a_bar_selection as bs
 
 
-import asyncio_tools as aiot
+from . import asyncio_tools as aiot
 
 
 exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
@@ -84,7 +84,7 @@ parser.add_argument(
     type=int,
 )
 
-args = parser.parse_args()
+
 
 
 
@@ -93,7 +93,6 @@ cell_keys = list(it.product("abc", np.array(range(1, 28), dtype=str)))[:CELL_KEY
 
 
 dict_dir = "dicts"
-os.makedirs(dict_dir, exist_ok=True)
 
 
 def process_img(img_fpath):
@@ -187,4 +186,6 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+    os.makedirs(dict_dir, exist_ok=True)
     main()

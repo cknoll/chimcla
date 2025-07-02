@@ -9,7 +9,7 @@
         >
         >
 - [aux_rename_cell_imgs](apidocs/chimcla/chimcla.aux_rename_cell_imgs.md)
-    - Lines: 46
+    - Lines: 44
     - Docstring:
         >
         >
@@ -17,9 +17,11 @@
         >
         >
 - [cli](apidocs/chimcla/chimcla.cli.md)
-    - Lines: 201
+    - Lines: 203
     - Docstring:
         >
+        >
+        > **Important**
         >
         > Command line interface.
         >
@@ -97,34 +99,50 @@
         >
         >
 - [stage_2b_bar_C0_hist_dict](apidocs/chimcla/chimcla.stage_2b_bar_C0_hist_dict.md)
-    - Lines: 147
+    - Lines: 146
     - Docstring:
         >
-        > [could not import]
+        >
+        > Command line interface script for functionality from stage_2a_bar_selection.
+        >
+        > Main feature: run the time-consuming tasks in parallel (using asyncio_tools)
+        >
+        > Not yet included in chimcla.cli
+        >
+        > Maybe obsolete?
+        >
         >
 - [stage_2c_hist_based_anomaly_detection](apidocs/chimcla/chimcla.stage_2c_hist_based_anomaly_detection.md)
     - Lines: 23
     - Docstring:
         >
-        > [could not import]
+        >
+        > Very short wrapper for `HistEvaluation.find_critical_cells()`
+        >
         >
 - [stage_3a_hist_based_classification](apidocs/chimcla/chimcla.stage_3a_hist_based_classification.md)
-    - Lines: 190
+    - Lines: 191
     - Docstring:
         >
-        > [could not import]
+        >
+        > This script creates histogram style plots for every unusual cell
+        > (without considering the area (=number of affected pixels))
+        >
+        > - uses `asyncio_tools` to spawn multiple workers
+        > - not so important (maybe obsolete?)
+        >
         >
 - [stage_3b_hist_area_based_classification](apidocs/chimcla/chimcla.stage_3b_hist_area_based_classification.md)
-    - Lines: 203
+    - Lines: 202
     - Docstring:
         >
-        > [could not import]
+        > [empty]
         >
 - [stage_3c_create_file_names](apidocs/chimcla/chimcla.stage_3c_create_file_names.md)
-    - Lines: 239
+    - Lines: 238
     - Docstring:
         >
-        > [could not import]
+        > [empty]
         >
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
     - Lines: 403
@@ -138,7 +156,7 @@
         >
         >
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
-    - Lines: 227
+    - Lines: 226
     - Docstring:
         >
         >

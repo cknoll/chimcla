@@ -61,9 +61,6 @@ parser.add_argument(
 )
 
 
-args = parser.parse_args()
-
-
 def get_all_files_for_basename(dirname: str, basename: str):
 
     # example:
@@ -215,6 +212,7 @@ def generate_diagram():
 
 def main():
 
+
     if args.csv:
         generate_csv()
     elif args.diagram:
@@ -224,4 +222,5 @@ def main():
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     main()
