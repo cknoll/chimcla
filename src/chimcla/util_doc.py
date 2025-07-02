@@ -24,6 +24,7 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
         module_dir = output_dir/"modules"
 
     import pkgutil
+    import importlib
     index_path = os.path.join(output_dir, 'api_links.md')
 
     os.makedirs(module_dir, exist_ok=True)
@@ -32,8 +33,13 @@ def generate_module_docs(package_path: str|None = None, output_dir: str|None = N
         index_file.write('# Module Documentation\n\n')
         for module_info in pkgutil.walk_packages([package_path]):
             module_name = module_info.name
-            # TODO-AIDER: extract the actual module docstring (use "[empty]" if there is none)
-            module_docstring = "*placeholder_for_module_docstring*"
+            # Extract the actual module docstring
+            try:
+                full_module_name = f"{package_name}.{module_name}"
+                module = importlib.import_module(full_module_name)
+                module_docstring = module.__doc__ or "[empty]"
+            except Exception:
+                module_docstring = "[empty]"
 
             # quoting prefix
             qq = f"{' '*8}> "
