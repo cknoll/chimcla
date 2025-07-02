@@ -1,3 +1,11 @@
+"""
+This script creates histogram style plots for every unusual cell
+(without considering the area (=number of affected pixels))
+
+- uses `asyncio_tools` to spawn multiple workers
+- not so important (maybe obsolete?)
+"""
+
 import os
 import sys
 import numpy as np
