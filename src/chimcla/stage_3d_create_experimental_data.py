@@ -56,10 +56,11 @@ def process_img(img_fpath):
         "crit_score_thresh": 40,
         # determine how much the crit_score_thresh is lowered for every crit pixel
         "crit_score_slope": -.25,
-        "save_cell_plots": True,
+        "paper_mode": True,
         "save_plot": True,
         "push_db": False,
         "adgen_mode": False,
+        "desired_cells": ["b16", "b14"],
 
     }
 

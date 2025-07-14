@@ -196,7 +196,6 @@ def vertical_detrend(img, y_start, y_end, dc=None):
     return multiplied_img
 
 
-
 def get_bbox_list_robust(img, expected_number, plot=False, return_all=False, dc=None):
 
     bbox_list = get_bbox_list(img, plot, return_all, dc)
@@ -212,8 +211,6 @@ def get_bbox_list_robust(img, expected_number, plot=False, return_all=False, dc=
 
     msg = "could not find bbox, even with detrend and different threshold"
     raise MissingBoundingBoxes(msg)
-
-
 
 
 def get_bbox_list(img, plot=False, return_all=False, thresh=75, dc=None):
@@ -414,7 +411,6 @@ def get_raw_cell(fpath, hr_row, hr_col, e=0, f=0, plot=False):
     return L
 
 
-
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 
@@ -471,7 +467,6 @@ def _rotate_img(img, angle, border_value=255):
     # Apply the rotation to the image
     rotated_image = cv2.warpAffine(img, rotation_matrix, (width, height), borderValue=border_value)
     return rotated_image
-
 
 
 def piecewise_linear2(x, x0, y0, k1, k2):
@@ -637,8 +632,6 @@ class Fitter:
         total_diff = np.mean(diff)
 
         return fractions, section_diffs, total_diff
-
-
 
 
 def process_column(img, j, plot=False):
@@ -905,7 +898,6 @@ def get_angle_from_hough(cell):
     angle = np.rad2deg(np.mean(angles))
 
     return angle
-
 
 
 def adapt_rotation_and_margin(bbox, img, forced_angle=None, plot=True):
@@ -1804,7 +1796,6 @@ def get_original_image_fpath(img_fpath, cropped=True, resized=True) -> str:
 # ####################################################################################
 
 
-
 def get_hist_for_cell_pict(fpath):
     pfn = analyze_img_fpath(fpath)
 
@@ -1815,7 +1806,6 @@ def get_hist_for_cell_pict(fpath):
 
     cell_key = (pfn.cell[0], pfn.cell[1:])
     return hist_dict[cell_key][0]
-
 
 
 class HistEvaluation:
@@ -1893,7 +1883,6 @@ class HistEvaluation:
         )
         assert len(self.criticality_container_cache) > 20
 
-
         # iterate over critical cells
         for key, cc in self.criticality_container_cache.items():
             if cc.is_critical and cc.crit_pix_nbr >= CRIT_PIX_THRESHOLD:
@@ -1929,13 +1918,12 @@ class HistEvaluation:
         del summary.crit_pix_vals
 
         if save_to_db:
-            #db["criticality_summary"][self.img_basename] = dict(summary.item_list())
+            # db["criticality_summary"][self.img_basename] = dict(summary.item_list())
             db.put("criticality_summary", self.img_basename, value=dict(summary.item_list()), commit=True)
             db.put("meta_data", "output_dir", self.output_dir)
             db.commit()
 
         return summary
-
 
     def get_bbox_for_cell(self, hr_row, hr_col):
         return self.ccia.get_bbox_for_cell(hr_row, hr_col)
@@ -2026,7 +2014,6 @@ class HistEvaluation:
         :param q:  quantile container (with attributes q.lower, ...)
         """
 
-
         # estimate the index which marks the border between dark side and bright side
         midpoint = int(np.average((np.argmax(q.lower), np.argmax(q.upper))))
 
@@ -2109,8 +2096,6 @@ class HistEvaluation:
 
         return res
 
-
-
     def find_critical_cells(self):
         raise NotImplementedError("Outdated due to changed interface, use git blame if necessary")
         for hist_dict_path in self.hist_dict_list:
@@ -2152,7 +2137,6 @@ class HistEvaluation:
             if res.is_critical:
                 crit_cell_list.append(cell_key + (res.criticality_score,))
         return crit_cell_list
-
 
     def preprocess_cell_borders(self, cell_key, border_value=65):
         cell = self.get_corrected_cell(cell_key)
@@ -2199,7 +2183,7 @@ class HistEvaluation:
             criticality_container.is_critical = True
         if save_options.get("create_experimental_img"):
             self.save_cell_for_experimental_img(cell_key, cell_hist, q, criticality_container, save_options)
-            if save_options.get("save_cell_plots") and res.is_critical or force_plot:
+            if save_options.get("save_plot") and res.is_critical or force_plot or save_options.get("paper_mode"):
                 self.save_and_plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, save_options=save_options)
         elif res.is_critical or force_plot:
             print(self.img_fpath, cell_key, criticality_container.score)
@@ -2333,7 +2317,6 @@ class HistEvaluation:
 
         print(f"File written: {self.total_res_fpath}")
 
-
     def fp_correct_for_cell(self, cell_pict_fpath):
         """
         False Positive Correction
@@ -2394,14 +2377,16 @@ class HistEvaluation:
             # no reason to create image
             return
 
-
         c.cell_key =  (hr_row, hr_col)
+        c.cell_name = "".join((hr_row, hr_col))
         c.cell_mono = self.ccia.get_raw_cell(*c.cell_key, uncorrected=True)
         c.corrected_cell = self.get_corrected_cell(c.cell_key)
 
         adgen_mode = save_options["adgen_mode"]
         if adgen_mode:
             self._plot_cell_annotation_data_image(cell_data)
+        elif save_options.get("paper_mode"):
+            self._plot_cell_analysis_image__paper(cell_data)
         else:
             self._plot_cell_analysis_image(cell_data)
 
@@ -2422,6 +2407,105 @@ class HistEvaluation:
             res = cv2.imwrite(multicell_fpath, multicell, [cv2.IMWRITE_JPEG_QUALITY, 98])
             assert res, f"Something went wrong during the creation of {multicell_fpath}"
             print(f"file written: {multicell_fpath}")
+
+    def _plot_cell_analysis_image__paper(self, cell_data: Container):
+        """
+        This version of the method is adapted for the needs of the paper
+        """
+
+
+        desired_cells: list
+        if desired_cells := cell_data.save_options.get("desired_cells"):
+            if cell_data.cell_name not in desired_cells:
+                return
+        IPS()
+
+        c = cell_data
+
+        # create all axis objects
+        fig = plt.figure(figsize=(9, 10))
+        gs0 = fig.add_gridspec(2, 8, wspace=1.5, hspace=0.05)
+        ax0 = fig.add_subplot(gs0[0, :])
+        gssub = gs0[1, :4].subgridspec(1, 4, wspace=0.1)
+        ax1, ax2, ax3, ax4 = [fig.add_subplot(gssub[0, i]) for i in range(4)]
+        ax5 = fig.add_subplot(gs0[1, 4:])
+
+        # trim border (which was increased before rotation)
+        x, y, w, h = self.ccia.get_bbox_for_cell(*c.cell_key)[:4]
+        new_img = self.ccia.img_uncorrected.copy()
+        dx = dy = 3
+        lw = 2  # linewidth
+        cv2.rectangle(new_img,(x - dx - 1, y - dy - 1),(x + w + dx,y + h + dy),(255, 0, 50), lw)
+        ax0.imshow(new_img)
+        ax0.axis("off")
+
+        cell_rgb = self.ccia.get_raw_cell(*c.cell_key, rgb=True, uncorrected=True)
+
+        # in general the corrected cell might have less rows and columns than the original cell
+        # ignore missing rows for now
+        # -> fill up the missing columns with nan to achieve equally looking bars
+
+        col_diff = c.cell_mono.shape[1] - c.corrected_cell.shape[1]
+
+        correction_angle = c.corrected_cell.angle
+
+        def add_nan(cell):
+            nan_arr = np.zeros(cell.shape[0]) + np.nan
+            return np.column_stack([cell, *([nan_arr]*col_diff)])
+
+        ax1.imshow(cell_rgb)
+        ax1.axis("off")
+
+        ax2.imshow(c.cell_mono, **vv)
+        ax2.axis("off")
+        ax2.set_title(str(c.cell_mono.shape))
+
+        ax3.imshow(add_nan(c.corrected_cell), **vv)
+        ax3.axis("off")
+        ax3.set_title(f"{c.corrected_cell.shape}")
+
+        ax4.imshow(add_nan(c.corrected_cell), **vv)
+        ax4.axis("off")
+        ax4.set_title(f"{c.corrected_cell.shape}")
+
+        plt.sca(ax5)  # set current axis
+
+        plt.plot(c.q.ii, c.q.upper, color="tab:green", lw=3, label=r"95% quantile of brightness")
+        plt.plot(c.q.ii, c.cell_hist, color="tab:red", alpha=0.9, lw=3, ls="--", label="current bar")
+        x_offset = 40
+        y_offset = 8.7
+        plt.axis([-5, 260, 0, 9.5])
+
+        ff = {"fontfamily": "monospace"}
+
+        plt.text(x_offset, y_offset, f"{c.cc.area_str}", **ff)
+
+        plt.subplots_adjust(
+            left=0.01,
+            bottom=0.03,
+            right=0.99,
+            top=0.999,
+            # wspace=0,
+        )
+
+        plt.legend()
+
+        # visualize information about critical pixels (see self.get_critical_pixel_info())
+        plt.sca(ax5)
+
+        # highlight of critical pixels
+        plt.sca(ax4)
+
+        corrected_cell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend=True)
+        # https://matplotlib.org/stable/gallery/color/colormap_reference.html
+        plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
+
+        if c.save_options["save_plot"]:
+            os.makedirs(self.critical_hist_dir, exist_ok=True)
+            plt.savefig(c.new_fpath)
+            print("saved cell_analysis:", c.new_fpath)
+            plt.close()
+            # self.create_symlink(new_fpath, cc.score)
 
     def _plot_cell_analysis_image(self, cell_data: Container):
 
@@ -2528,7 +2612,6 @@ class HistEvaluation:
                 plt.plot([x]*2, [0, y], ":", color="0.6")
                 plt.text(x, y, "qnt", **ff)
 
-
                 x_offset = 122
                 dy = 0.5
                 plt.text(x_offset, y_offset, f"#crit-pixels = {c.cc.crit_pix_nbr}", **ff)
@@ -2551,14 +2634,12 @@ class HistEvaluation:
             # https://matplotlib.org/stable/gallery/color/colormap_reference.html
             plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
-
             if c.save_options["save_plot"]:
                 os.makedirs(self.critical_hist_dir, exist_ok=True)
                 plt.savefig(c.new_fpath)
                 print("saved cell_analysis:", c.new_fpath)
                 plt.close()
                 # self.create_symlink(new_fpath, cc.score)
-
 
     @staticmethod
     def highlight_cell(corrected_cell, cc, hard_blend=True, blend_value=120):
@@ -2577,8 +2658,6 @@ class HistEvaluation:
             corrected_cell_hl[cc.crit_pix_mask] = critical_pixels
         return corrected_cell_hl
 
-
-
     def create_symlink(self, existing_fpath, crit_score):
 
         basepath, fname = os.path.split(existing_fpath)
@@ -2596,7 +2675,6 @@ class HistEvaluation:
             os.symlink(os.path.join("..", fname), os.path.join(dst_dir, fname))
         except FileExistsError:
             pass
-
 
 
 from colorama import Style, Fore
