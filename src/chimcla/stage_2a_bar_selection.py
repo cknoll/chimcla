@@ -2480,8 +2480,9 @@ class HistEvaluation:
         if not flag_2025_07:
             plt.plot(c.q.ii, c.q.mid)
             plt.plot(c.q.ii, c.q.lower)
-        plt.plot(c.q.ii, c.q.upper)
-        plt.plot(c.q.ii, c.cell_hist, alpha=0.9, lw=3, ls="--")
+
+        plt.plot(c.q.ii, c.q.upper, color="tab:green", lw=3, label=r"95% quantile of brightness")
+        plt.plot(c.q.ii, c.cell_hist, color="tab:red", alpha=0.9, lw=3, ls="--", label="current bar")
         x_offset = 40
         y_offset = 8.7
         plt.axis([-5, 260, 0, 9.5])
@@ -2499,6 +2500,9 @@ class HistEvaluation:
         )
 
         plt.title(f"{correction_angle:01.2f}° A={c.cc.score:04.2f}")
+
+        if flag_2025_07:
+            plt.legend()
 
         if 1 or self.ev_crit_pix:
             # visualize information about critical pixels (see self.get_critical_pixel_info())
