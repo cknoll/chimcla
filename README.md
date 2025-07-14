@@ -116,7 +116,11 @@ This tool suite deals with the creation of images aimed for a particular user st
 - overview:
     - `chimcla_ced --help`
 - usage example:
-    - `chimcla_ced --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_y -H`
+    - `chimcla_ced --img_dir /home/ck/mnt/XAI-DIA-gl/Carsten/data_images/jpg1000/bilder_jpg2a/cropped/chunk001_shading_corrected/ --suffix _history_test_y -H`
+    - `chimcla_ced --img /home/ck/mnt/XAI-DIA-gl/Carsten/data_images/jpg1000/bilder_jpg2a//cropped/chunk002_shading_corrected/2023-06-26_20-59-13_C50.jpg --suffix _history_test_y`
+
+
+
     - explanation:
         - `--img_dir <path>`: specify source directory
         - `--suffix <path>`: specify target directory

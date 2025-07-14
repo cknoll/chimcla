@@ -2199,6 +2199,8 @@ class HistEvaluation:
             criticality_container.is_critical = True
         if save_options.get("create_experimental_img"):
             self.save_cell_for_experimental_img(cell_key, cell_hist, q, criticality_container, save_options)
+            if save_options.get("save_cell_plots") and res.is_critical or force_plot:
+                self.save_and_plot_critical_cell(self.img_fpath, *cell_key, cell_hist, q, criticality_container, save_options=save_options)
         elif res.is_critical or force_plot:
             print(self.img_fpath, cell_key, criticality_container.score)
             try:
@@ -2473,8 +2475,11 @@ class HistEvaluation:
 
         plt.sca(ax5)  # set current axis
 
-        plt.plot(c.q.ii, c.q.mid)
-        plt.plot(c.q.ii, c.q.lower)
+        flag_2025_07 = True
+
+        if not flag_2025_07:
+            plt.plot(c.q.ii, c.q.mid)
+            plt.plot(c.q.ii, c.q.lower)
         plt.plot(c.q.ii, c.q.upper)
         plt.plot(c.q.ii, c.cell_hist, alpha=0.9, lw=3, ls="--")
         x_offset = 40
@@ -2500,10 +2505,11 @@ class HistEvaluation:
             plt.sca(ax5)
 
             # vertical line, where critical pixels begin
-            plt.plot([c.cc.crit_lightness]*2, [0, 8], "k--")
+            if not flag_2025_07:
+                plt.plot([c.cc.crit_lightness]*2, [0, 8], "k--")
 
             # more text information
-            if c.cc.crit_pix_nbr >= 5:
+            if c.cc.crit_pix_nbr >= 5 and not flag_2025_07:
                 # not all information is available for cells with few critical pixels
 
                 x, y = c.cc.crit_pix_mean, 4
@@ -2545,7 +2551,7 @@ class HistEvaluation:
             if c.save_options["save_plot"]:
                 os.makedirs(self.critical_hist_dir, exist_ok=True)
                 plt.savefig(c.new_fpath)
-                print(c.new_fpath)
+                print("saved cell_analysis:", c.new_fpath)
                 plt.close()
                 # self.create_symlink(new_fpath, cc.score)
 

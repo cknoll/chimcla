@@ -50,12 +50,16 @@ def process_img(img_fpath):
     # default values:
     save_options = {
         "create_experimental_img": True,
-        "blend_hard": args.blend_mode == 1,
-        "blend_value": args.blend_value,
-        "print_std_deviation": args.print_std_deviation,
+        "blend_hard": mm.args.blend_mode == 1,
+        "blend_value": mm.args.blend_value,
+        "print_std_deviation": mm.args.print_std_deviation,
         "crit_score_thresh": 40,
         # determine how much the crit_score_thresh is lowered for every crit pixel
         "crit_score_slope": -.25,
+        "save_cell_plots": True,
+        "save_plot": True,
+        "push_db": False,
+        "adgen_mode": False,
 
     }
 
@@ -66,7 +70,7 @@ def process_img(img_fpath):
         if not debug:
             ipydex.sys.excepthook = ipydex.sys_orig_excepthook
         he = bs.HistEvaluation(
-            img_fpath, suffix=args.suffix, ev_crit_pix=True, history_eval_flag=args.history_evaluation,
+            img_fpath, suffix=mm.args.suffix, ev_crit_pix=True, history_eval_flag=mm.args.history_evaluation,
         )
         he.initialize_hist_cache()
     except (bs.MissingBoundingBoxes, ValueError) as ex:
@@ -76,18 +80,18 @@ def process_img(img_fpath):
             raise ex
 
     try:
-        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=exclude_cell_keys, save_options=save_options)
+        crit_cell_list = he.find_critical_cells_for_img(exclude_cell_keys=mm.exclude_cell_keys, save_options=save_options)
     except Exception as ex:
         print(img_fpath, ex)
         err_list.extend([img_fname, str(ex)])
         crit_cell_list = None
         raise
 
-    if args.blend_mode:
+    if mm.args.blend_mode:
         fsuffix = f"hard"
     else:
         fsuffix = f"soft"
-    fsuffix = f"{fsuffix}_{args.blend_value}"
+    fsuffix = f"{fsuffix}_{mm.args.blend_value}"
     summary = he.get_criticality_summary(save_to_db=True)
     if summary.crit_score_avg > 50:
 
@@ -95,7 +99,7 @@ def process_img(img_fpath):
         # bs.db.commit()
         bs.db.put("criticality_summary", he.img_basename, value=dict(summary.item_list()), commit=True)
 
-        if args.history_evaluation:
+        if mm.args.history_evaluation:
             sum_score_str = f"{(int(sum(summary.crit_score_list))):06d}"
             fprefix=f"S{sum_score_str}_"
             he.copy_original_image_to_output_folder(fprefix=fprefix)
@@ -150,12 +154,12 @@ def run_this_script(img_path, **kwargs):
 
     if "--history-evaluation" in options:
         option_str_elements = []
-        new_suffix = args.suffix
+        new_suffix = mm.args.suffix
     else:
         # original mode (for Romys experimental images)
         # these two options are default
-        option_str_elements = [f"-bm {args.blend_mode}", f"-bv {args.blend_value}"]
-        new_suffix = f"{args.suffix}_bm{args.blend_mode}_bv{args.blend_value}"
+        option_str_elements = [f"-bm {mm.args.blend_mode}", f"-bv {mm.args.blend_value}"]
+        new_suffix = f"{mm.args.suffix}_bm{mm.args.blend_mode}_bv{mm.args.blend_value}"
 
     for option, value in options.items():
         if value is True:
@@ -178,33 +182,33 @@ def run_this_script(img_path, **kwargs):
 
     if res != 0:
         print("ERROR\n", cmd)
-        ERROR_CMDS.append(cmd)
+        mm.ERROR_CMDS.append(cmd)
 
 
 def aio_main():
 
     update_cell_mappings()
 
-    if args.img_dir:
-        arg_list = bs.get_img_list(args.img_dir, limit=args.limit)
+    if mm.args.img_dir:
+        arg_list = bs.get_img_list(mm.args.img_dir, limit=mm.args.limit)
 
         # this once was a special use case (might become relevant again): only consider known critical images
         # arg_list = get_known_critical_images(bs.get_img_list(args.img_dir))[:args.limit]
 
     else:
-        assert args.img_dir_base
-        assert args.img_dir_src
-        arg_list = get_img_list_from_src_dir()[:args.limit]
+        assert mm.args.img_dir_base
+        assert mm.args.img_dir_src
+        arg_list = get_img_list_from_src_dir()[:mm.args.limit]
 
 
     # prepare options for passing to individual calls
 
     # TODO: this could be more general but currently we only need few options
     options = {
-        "--history-evaluation": args.history_evaluation,
+        "--history-evaluation": mm.args.history_evaluation,
     }
 
-    if args.no_parallel:
+    if mm.args.no_parallel:
         func = run_this_script
         for i, arg in enumerate(arg_list):
             # print(i)
@@ -213,14 +217,14 @@ def aio_main():
         wrapped_func=aiot.background(run_this_script)
         aiot.run(aiot.main(func=wrapped_func, arg_list=arg_list, options=options))
 
-    if args.history_evaluation:
+    if mm.args.history_evaluation:
         generate_criticality_list(arg_list)
 
-    if ERROR_CMDS:
+    if mm.ERROR_CMDS:
         print(
             f"\n{Fore.RED}There where errors with the following commands:\n\n",
             Style.RESET_ALL,
-            "\n".join(ERROR_CMDS),
+            "\n".join(mm.ERROR_CMDS),
         )
 
 
@@ -266,14 +270,14 @@ def generate_criticality_list(img_fpaths: list):
 def get_img_list_from_src_dir():
 
     # taken from stage_3e
-    dn = args.img_dir_src
+    dn = mm.args.img_dir_src
     # IPS()
     paths = glob.glob(f"{dn}/*jpg")
     base_names0 = [p.replace(f"{dn}/", "") for p in paths if "exp_" not in p]
     base_names = ["_".join(bn.split("_")[1:]) for bn in base_names0]
     base_names_set = set(base_names)
 
-    dn2 = args.img_dir_base
+    dn2 = mm.args.img_dir_base
     original_img_paths = glob.glob(f"{dn2}/*_shading_corrected/*jpg")
 
     relevant_img_paths = []
@@ -285,42 +289,48 @@ def get_img_list_from_src_dir():
 
 
 
-def main():
+def main2():
 
-    if args.img:
-        process_img(args.img)
-    elif args.img_dir:
+    if mm.args.img:
+        process_img(mm.args.img)
+    elif mm.args.img_dir:
         aio_main()
-    elif args.img_dir_base:
+    elif mm.args.img_dir_base:
         # only process images which have been found to be relevant by another run
         # used to create new color variations
 
         # py3 stage_3d_create_experimental_data.py --img_dir_base /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped --img_dir_src experimental_imgs_psy01_bm0_bv60 --suffix _psy01 -bm 0 -bv 60
         # py3 stage_3d_create_experimental_data.py --img_dir_base /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped --img_dir_src experimental_imgs_psy01_bm0_bv60 --suffix _psy01 -bm 1 -bv 110
-        assert not args.img_dir
+        assert not mm.args.img_dir
         aio_main()
     else:
-        parser.print_help()
+        mm.parser.print_help()
 
-if __name__ == "__main__":
+
+class MainManager:
+    def __init__(self):
+        self.exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
+        self.ERROR_CMDS = []
+
+        self.parser = argparse.ArgumentParser(
+                prog=sys.argv[0],
+                description='This program evaluates single or multiple chocolate images. See docstring for more details.',
+            )
+        self.args = None
+mm = MainManager()
+
+
+def main():
     # TODO: move this into ManagerClass
 
-    exclude_cell_keys = [("a", "1"), ("b", "1"), ("c", "1")]
-    ERROR_CMDS = []
-
-    parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-        description='This program evaluates single or multiple chocolate images. See docstring for more details.',
-    )
-
-    parser.add_argument(
+    mm.parser.add_argument(
         '--img_dir',
         help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0",
         default=None,
     )
 
     # see usage example below
-    parser.add_argument(
+    mm.parser.add_argument(
         '--img_dir_base',
         help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/",
         default=None,
@@ -328,19 +338,19 @@ if __name__ == "__main__":
 
 
     # see usage example below
-    parser.add_argument(
+    mm.parser.add_argument(
         '--img_dir_src',
         help="directory with already processed images -> extract the basename",
         default=None,
     )
 
-    parser.add_argument(
+    mm.parser.add_argument(
         '--img',
         help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped/chunk000_stage1_completed/C0/2023-06-26_06-17-41_C50.jpg",
         default=None,
     )
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--suffix",
         "-s",
         help="specify suffix for output folder",
@@ -348,14 +358,14 @@ if __name__ == "__main__":
     )
 
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--no-parallel",
         "-np",
         help="sequential mode (no parallelization)",
         action="store_true",
     )
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--limit",
         help="limit the number of processed files",
         default=None,
@@ -364,14 +374,14 @@ if __name__ == "__main__":
 
 
     # parameters for Romys experiments
-    parser.add_argument(
+    mm.parser.add_argument(
         "--blend-value",
         "-bv",
         default=120,
         type=int,
     )
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--blend-mode",
         "-bm",
         help= "0 (soft, default) or 1 (hard)",
@@ -379,7 +389,7 @@ if __name__ == "__main__":
         type=int,
     )
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--print-std-deviation",
         "-std",
         help= "print standard deviation of critical pixels for each critical cell onto the image",
@@ -392,12 +402,16 @@ if __name__ == "__main__":
     # - _criticality_list.csv: col1 a sorted list (summed criticality score) col2: filename
     # - output directory with critical images with Filenames S2801_<basename>.jpg
 
-    parser.add_argument(
+    mm.parser.add_argument(
         "--history-evaluation",
         "-H",
         help= "generate data for history evaluation",
         action="store_true",
     )
 
-    args = parser.parse_args()
-    main()
+    mm.args = mm.parser.parse_args()
+    main2()
+
+
+if __name__ == "__main__":#
+    main()  # parse args, then call main
