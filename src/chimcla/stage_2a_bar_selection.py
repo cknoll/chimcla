@@ -2413,12 +2413,10 @@ class HistEvaluation:
         This version of the method is adapted for the needs of the paper
         """
 
-
         desired_cells: list
         if desired_cells := cell_data.save_options.get("desired_cells"):
             if cell_data.cell_name not in desired_cells:
                 return
-        IPS()
 
         c = cell_data
 
@@ -2427,8 +2425,8 @@ class HistEvaluation:
         gs0 = fig.add_gridspec(2, 8, wspace=1.5, hspace=0.05)
         ax0 = fig.add_subplot(gs0[0, :])
         gssub = gs0[1, :4].subgridspec(1, 4, wspace=0.1)
-        ax1, ax2, ax3, ax4 = [fig.add_subplot(gssub[0, i]) for i in range(4)]
-        ax5 = fig.add_subplot(gs0[1, 4:])
+        ax1, ax2, ax3 = [fig.add_subplot(gssub[0, i]) for i in range(3)]
+        ax5 = fig.add_subplot(gs0[1, 3:])
 
         # trim border (which was increased before rotation)
         x, y, w, h = self.ccia.get_bbox_for_cell(*c.cell_key)[:4]
@@ -2447,58 +2445,71 @@ class HistEvaluation:
 
         col_diff = c.cell_mono.shape[1] - c.corrected_cell.shape[1]
 
-        correction_angle = c.corrected_cell.angle
+        # hard_blend_flag = c.save_options.get("blend_hard")
+        hard_blend_flag = False
 
-        def add_nan(cell):
-            nan_arr = np.zeros(cell.shape[0]) + np.nan
-            return np.column_stack([cell, *([nan_arr]*col_diff)])
+        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=c.save_options.get("blend_value", 120))
+        ccell_hl = np.astype(ccell_hl, float)/255.0
+        ccell_rgb_soft = self.cmap_hl(ccell_hl)[:, :, :3] ##:i
 
-        ax1.imshow(cell_rgb)
+        hard_blend_flag = True
+        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=c.save_options.get("blend_value", 120))
+        ccell_hl = np.astype(ccell_hl, float)/255.0
+        ccell_rgb_hard = self.cmap_hl(ccell_hl)[:, :, :3] ##:i
+
+        ax1.imshow(cell_rgb[:, 1:-1], **vv)
         ax1.axis("off")
+        ax1.set_title(f"original")
 
-        ax2.imshow(c.cell_mono, **vv)
+        # IPS()
+
+        ax2.imshow(ccell_rgb_hard, **vv)
         ax2.axis("off")
-        ax2.set_title(str(c.cell_mono.shape))
+        ax2.set_title(f"uniform")
 
-        ax3.imshow(add_nan(c.corrected_cell), **vv)
+        ax3.imshow(ccell_rgb_soft, **vv)
         ax3.axis("off")
-        ax3.set_title(f"{c.corrected_cell.shape}")
-
-        ax4.imshow(add_nan(c.corrected_cell), **vv)
-        ax4.axis("off")
-        ax4.set_title(f"{c.corrected_cell.shape}")
+        ax3.set_title("gradual")
 
         plt.sca(ax5)  # set current axis
 
         plt.plot(c.q.ii, c.q.upper, color="tab:green", lw=3, label=r"95% quantile of brightness")
         plt.plot(c.q.ii, c.cell_hist, color="tab:red", alpha=0.9, lw=3, ls="--", label="current bar")
-        x_offset = 40
-        y_offset = 8.7
-        plt.axis([-5, 260, 0, 9.5])
 
-        ff = {"fontfamily": "monospace"}
+        i1 = 80
+        i2 = 255
 
-        plt.text(x_offset, y_offset, f"{c.cc.area_str}", **ff)
+        plt.fill_between(c.q.ii[i1:i2], c.cell_hist[i1:i2], c.q.upper[i1:i2], color='tab:red', alpha=0.2)
+
+
+        x_offset = 110
+        y_offset = 2
+        plt.axis([-5, 260, 0, 9.9])
+
+        # ff = {"fontfamily": "monospace", "fontsize": 20}
+        ff = {"fontsize": 12}
+
+        plt.text(x_offset, y_offset, f"A = {c.cc.a2:3.0f}", **ff)
+
+        plt.xticks([50, 100, 150, 200, 255])
+
+        plt.legend(frameon=False, **ff)
+        plt.xlabel("Brightness", **ff)
+        plt.ylabel("Frequency", **ff)
+
+        # IPS()
 
         plt.subplots_adjust(
-            left=0.01,
-            bottom=0.03,
+            left=0.05,
+            bottom=0.1,
             right=0.99,
             top=0.999,
             # wspace=0,
         )
 
-        plt.legend()
-
-        # visualize information about critical pixels (see self.get_critical_pixel_info())
-        plt.sca(ax5)
-
-        # highlight of critical pixels
-        plt.sca(ax4)
-
         corrected_cell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend=True)
         # https://matplotlib.org/stable/gallery/color/colormap_reference.html
-        plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
+        # plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
 
         if c.save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)

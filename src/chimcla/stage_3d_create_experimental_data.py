@@ -61,7 +61,6 @@ def process_img(img_fpath):
         "push_db": False,
         "adgen_mode": False,
         "desired_cells": ["b16", "b14"],
-
     }
 
     err_list = []
