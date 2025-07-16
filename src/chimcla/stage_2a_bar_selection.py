@@ -2448,12 +2448,16 @@ class HistEvaluation:
         # hard_blend_flag = c.save_options.get("blend_hard")
         hard_blend_flag = False
 
-        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=c.save_options.get("blend_value", 120))
+        # these values were used for the final dataset and are thus hardcoded here
+        blend_value_soft = 60
+        blend_value_hard = 110
+
+        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=blend_value_soft)
         ccell_hl = np.astype(ccell_hl, float)/255.0
         ccell_rgb_soft = self.cmap_hl(ccell_hl)[:, :, :3] ##:i
 
         hard_blend_flag = True
-        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=c.save_options.get("blend_value", 120))
+        ccell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend_flag, blend_value=blend_value_hard)
         ccell_hl = np.astype(ccell_hl, float)/255.0
         ccell_rgb_hard = self.cmap_hl(ccell_hl)[:, :, :3] ##:i
 
@@ -2654,6 +2658,11 @@ class HistEvaluation:
 
     @staticmethod
     def highlight_cell(corrected_cell, cc, hard_blend=True, blend_value=120):
+        """
+        This function creates a "cell-shaped" 2d-array (e.g. (105, 25)) where the
+        critical pixels (specified by `cc.crit_pix_mask`) are highlighted according
+        to `hard_blend_flag` and `blend_value`.
+        """
         corrected_cell_hl = corrected_cell*0
         if hard_blend:
             corrected_cell_hl[cc.crit_pix_mask] = blend_value
