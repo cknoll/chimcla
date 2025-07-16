@@ -216,6 +216,7 @@ def main():
     if args.csv:
         generate_csv()
     elif args.diagram:
+        # original diagram (from when creating the experimental data)
         generate_diagram()
     else:
         parser.print_help()

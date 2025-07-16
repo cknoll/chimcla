@@ -303,8 +303,23 @@ def main2():
         # py3 stage_3d_create_experimental_data.py --img_dir_base /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_jpg2a/cropped --img_dir_src experimental_imgs_psy01_bm0_bv60 --suffix _psy01 -bm 1 -bv 110
         assert not mm.args.img_dir
         aio_main()
+    elif mm.args.plot_stats:
+        plot_statistics__paper(data_fpath=mm.args.plot_stats)
     else:
         mm.parser.print_help()
+
+def plot_statistics__paper(data_fpath: str):
+    """
+    publication-tailored dot diagram
+    (based on stage_3e_create_experimental_data_csv.py)
+    """
+
+    import pandas as pd
+    df = pd.read_excel(data_fpath)
+    # chimcla_ced --plot-stats ~/Nextcloud/IEE-GE/sharing/xaidia_besprechungen/2025-07-14/paper-figure-drafts/Stimuli_statistics.xlsx
+
+    IPS()
+    pass
 
 
 class MainManager:
@@ -394,6 +409,11 @@ def main():
         "-std",
         help= "print standard deviation of critical pixels for each critical cell onto the image",
         action="store_true",
+    )
+
+    mm.parser.add_argument(
+        "--plot-stats",
+        help= "plot statistics from excel file tailored for publication in the paper",
     )
 
     # parameters for history evaluation
