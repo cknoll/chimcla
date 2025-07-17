@@ -315,11 +315,27 @@ def plot_statistics__paper(data_fpath: str):
     """
 
     import pandas as pd
+    import matplotlib.pyplot as plt
+
+    assert data_fpath.endswith(".xlsx")
     df = pd.read_excel(data_fpath)
     # chimcla_ced --plot-stats ~/Nextcloud/IEE-GE/sharing/xaidia_besprechungen/2025-07-14/paper-figure-drafts/Stimuli_statistics.xlsx
 
-    IPS()
-    pass
+
+    idx = 70
+    xx = df["crit_pix"][:idx]
+    yy = df["crit_pix_mean"][:idx]
+
+
+    plt.figure(figsize=(11.65, 12))
+    plt.plot(xx, yy, "o", color="tab:red")
+    plt.xlabel("Area (sum of affected pixels)")
+    plt.ylabel("Brightness (mean of affected pixels)")
+
+    img_fpath = data_fpath.replace(".xlsx", ".png")
+    plt.savefig(img_fpath, bbox_inches='tight')
+    print(f"File written: {img_fpath}")
+    plt.show()
 
 
 class MainManager:

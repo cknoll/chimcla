@@ -2079,6 +2079,8 @@ class HistEvaluation:
         res.crit_pix_mask = cell*0
         res.crit_pix_mask[cell > res.crit_lightness] = 1
         res.crit_pix_mask.dtype = bool
+
+        # store the (absolute) values of those pixels which are above the threshold
         res.crit_pix_vals = cell[cell > res.crit_lightness].flatten()
 
         # number of critical pixels -> area
