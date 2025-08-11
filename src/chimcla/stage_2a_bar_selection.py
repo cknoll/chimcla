@@ -2672,7 +2672,7 @@ class HistEvaluation:
             # copy the original lightness values
 
             critical_pixels = corrected_cell[cc.crit_pix_mask] - cc.crit_lightness
-            norm_0_1 = plt.Normalize(vmax=255-cc.crit_lightness)
+            norm_0_1 = plt.Normalize(vmin=0, vmax=255-cc.crit_lightness)
 
             offset = blend_value
             critical_pixels = norm_0_1(critical_pixels)*(255 - offset) + offset
