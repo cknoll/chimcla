@@ -2424,11 +2424,16 @@ class HistEvaluation:
 
         # create all axis objects
         fig = plt.figure(figsize=(9, 10))
-        gs0 = fig.add_gridspec(2, 8, wspace=1.5, hspace=0.05)
+        gs0 = fig.add_gridspec(2, 8, wspace=0.1, hspace=0.12)
         ax0 = fig.add_subplot(gs0[0, :])
-        gssub = gs0[1, :4].subgridspec(1, 4, wspace=0.1)
+        gssub = gs0[1, :3].subgridspec(1, 3, wspace=0.1)
         ax1, ax2, ax3 = [fig.add_subplot(gssub[0, i]) for i in range(3)]
-        ax5 = fig.add_subplot(gs0[1, 3:])
+        # gssub2 = gs0[1, 3:].subgridspec(1, 1, wspace=0.1)
+        # ax5 = fig.add_subplot(gs0[1, 3:])
+        # ax5.set_position([left, bottom, width, height])
+        ax5 = fig.add_axes([0.49, 0.101, 0.49, 0.423])
+
+
 
         # trim border (which was increased before rotation)
         x, y, w, h = self.ccia.get_bbox_for_cell(*c.cell_key)[:4]
@@ -2463,23 +2468,26 @@ class HistEvaluation:
         ccell_hl = np.astype(ccell_hl, float)/255.0
         ccell_rgb_hard = self.cmap_hl(ccell_hl)[:, :, :3] ##:i
 
+        fs = 16
+        fontdict={"size": fs}
+
         ax1.imshow(cell_rgb[:, 1:-1], **vv)
         ax1.axis("off")
-        ax1.set_title(f"original")
+        ax1.set_title(f"original", fontdict=fontdict)
 
         # IPS()
 
         ax2.imshow(ccell_rgb_hard, **vv)
         ax2.axis("off")
-        ax2.set_title(f"uniform")
+        ax2.set_title(f"uniform", fontdict=fontdict)
 
         ax3.imshow(ccell_rgb_soft, **vv)
         ax3.axis("off")
-        ax3.set_title("gradual")
+        ax3.set_title("gradual", fontdict=fontdict)
 
         plt.sca(ax5)  # set current axis
 
-        plt.plot(c.q.ii, c.q.upper, color="tab:green", lw=3, label=r"95% quantile of brightness")
+        plt.plot(c.q.ii, c.q.upper, color="tab:green", lw=3, label="95%% quantile of\nbrightness")
         plt.plot(c.q.ii, c.cell_hist, color="tab:red", alpha=0.9, lw=3, ls="--", label="current bar")
 
         i1 = 80
@@ -2493,17 +2501,27 @@ class HistEvaluation:
         plt.axis([-5, 260, 0, 9.9])
 
         # ff = {"fontfamily": "monospace", "fontsize": 20}
-        ff = {"fontsize": 12}
+        ff = {"fontsize": fs}
 
         plt.text(x_offset, y_offset, f"A = {c.cc.a2:3.0f}", **ff)
 
-        plt.xticks([50, 100, 150, 200, 255])
+        # apply fontsize of 16
 
-        plt.legend(frameon=False, **ff)
+        tick_fs = 14
+        plt.xticks([50, 100, 150, 200, 255], fontsize=tick_fs)
+        plt.yticks(fontsize=tick_fs)
+
+        plt.legend(loc="upper right", frameon=False, fontsize=tick_fs, labelspacing=.8)
         plt.xlabel("Brightness", **ff)
         plt.ylabel("Frequency", **ff)
 
         # IPS()
+
+        ff = {"fontsize": 18}
+
+
+        for ax, X, Y, txt in [(ax0, -.05, 0.95, "A"), (ax1, -.25, 0.95, "B"), (ax5, -.07, 0.95, "C"),  ]:
+            ax.text(X, Y, txt, **ff, transform=ax.transAxes)
 
         plt.subplots_adjust(
             left=0.05,
@@ -2512,6 +2530,7 @@ class HistEvaluation:
             top=0.999,
             # wspace=0,
         )
+
 
         corrected_cell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend=True)
         # https://matplotlib.org/stable/gallery/color/colormap_reference.html
