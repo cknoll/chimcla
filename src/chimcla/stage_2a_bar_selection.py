@@ -2424,8 +2424,9 @@ class HistEvaluation:
 
         # create all axis objects
         fig = plt.figure(figsize=(9, 10))
-        gs0 = fig.add_gridspec(2, 8, wspace=0.1, hspace=0.12)
-        ax0 = fig.add_subplot(gs0[0, :])
+        gs0 = fig.add_gridspec(2, 8, wspace=0.0, hspace=0.12)
+        # ax0 = fig.add_subplot(gs0[0, :])
+        ax0 = fig.add_axes([0.031, 0.57, 0.971, 0.427])
         gssub = gs0[1, :3].subgridspec(1, 3, wspace=0.1)
         ax1, ax2, ax3 = [fig.add_subplot(gssub[0, i]) for i in range(3)]
         # gssub2 = gs0[1, 3:].subgridspec(1, 1, wspace=0.1)
@@ -2520,7 +2521,7 @@ class HistEvaluation:
         ff = {"fontsize": 18}
 
 
-        for ax, X, Y, txt in [(ax0, -.05, 0.95, "A"), (ax1, -.25, 0.95, "B"), (ax5, -.07, 0.95, "C"),  ]:
+        for ax, X, Y, txt in [(ax0, -.0305, 0.95, "A"), (ax1, -.25, 0.95, "B"), (ax5, -.07, 0.95, "C"),  ]:
             ax.text(X, Y, txt, **ff, transform=ax.transAxes)
 
         plt.subplots_adjust(
@@ -2535,6 +2536,8 @@ class HistEvaluation:
         corrected_cell_hl = self.highlight_cell(c.corrected_cell, c.cc, hard_blend=True)
         # https://matplotlib.org/stable/gallery/color/colormap_reference.html
         # plt.imshow(add_nan(corrected_cell_hl), **vv, cmap="copper")# , alpha=cc.crit_pix_mask)
+
+        c.new_fpath = c.new_fpath.replace(".jpg", ".png")
 
         if c.save_options["save_plot"]:
             os.makedirs(self.critical_hist_dir, exist_ok=True)

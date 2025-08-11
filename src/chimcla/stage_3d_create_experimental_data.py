@@ -27,7 +27,6 @@ from chimcla import stage_2a_bar_selection as bs
 from chimcla import asyncio_tools as aiot
 
 
-
 def process_img(img_fpath):
 
     # ignore cells where only a few pixels are critical
@@ -288,7 +287,6 @@ def get_img_list_from_src_dir():
     return relevant_img_paths
 
 
-
 def main2():
 
     if mm.args.img:
@@ -321,21 +319,58 @@ def plot_statistics__paper(data_fpath: str):
     df = pd.read_excel(data_fpath)
     # chimcla_ced --plot-stats ~/Nextcloud/IEE-GE/sharing/xaidia_besprechungen/2025-07-14/paper-figure-drafts/Stimuli_statistics.xlsx
 
-
     idx = 70
     xx = df["crit_pix"][:idx]
     yy = df["crit_pix_mean"][:idx]
 
-
-    plt.figure(figsize=(11.65, 12))
+    # plt.figure(figsize=(11.65, 12))
+    fig = plt.figure(figsize=(9, 10))
     plt.plot(xx, yy, "o", color="tab:red")
-    plt.xlabel("Area (sum of affected pixels)")
-    plt.ylabel("Brightness (mean of affected pixels)")
+
+    ff = {"fontsize": 16}
+    plt.xlabel("Area (sum of affected pixels)", **ff)
+    plt.ylabel("Brightness (mean of affected pixels)", **ff)
+
+    tick_fs = 14
+    plt.xticks(fontsize=tick_fs)
+    plt.yticks(fontsize=tick_fs)
+
+    plt.subplots_adjust(
+        left=0.1,
+        bottom=0.1,
+        right=0.99,
+        top=0.999,
+        # wspace=0,
+    )
+
+    ff = {"fontsize": 18}
+    for ax, X, Y, txt in [(plt.gca(), -.04, 0.975, "D")]:
+        ax.text(X, Y, txt, **ff, transform=ax.transAxes)
 
     img_fpath = data_fpath.replace(".xlsx", ".png")
-    plt.savefig(img_fpath, bbox_inches='tight')
+    plt.savefig(img_fpath)
     print(f"File written: {img_fpath}")
-    plt.show()
+    # plt.show()
+
+    # stack with existing image
+
+    import cv2
+
+    path, fname = os.path.split(img_fpath)
+    fpath_left_part = os.path.join(path, "s513_2023-06-27_09-38-08_C5_b14.png")
+    img1 = cv2.imread(fpath_left_part)
+    img2 = cv2.imread(img_fpath)
+
+    # Optionally resize images to have the same height
+    assert img1.shape[0] == img2.shape[0]
+
+    # Horizontally concatenate the images
+    result = cv2.hconcat([img1, img2])
+    fpath_result = os.path.join(path, "ABCD_2023-06-27_09-38-08_C5_b14.png")
+
+    # Save or display the result
+    cv2.imwrite(fpath_result, result)
+    print(f"Full ABCD-image written: {img_fpath}")
 
 
 class MainManager:
