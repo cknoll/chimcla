@@ -13,6 +13,8 @@ import os
 import glob
 from functools import wraps
 
+from ipydex import IPS
+
 pjoin = os.path.join
 # assuming that the package is installed with `pip install -e .`
 CHIMCLA_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -81,33 +83,23 @@ def handle_error(func):
     return wrapper
 
 
-def bgr_convert():
+def bgr_convert(dir_path):
+    """
+    Convert jpg files from BGR to RGB and vice versa.
+    """
 
-    # performing this import here speeds up cli usage for all other commands
+    # performing this import here (instead of at the top) speeds up cli usage for all other commands
     import cv2
-    import argparse
     import sys
 
-    parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-        description='This program converts jpg files from BGR TO RGB and vice versa.',
-    )
-
-
-    parser.add_argument(
-        'dir',
-        help="directory",
-    )
-
-    args = parser.parse_args()
-    fnames = os.listdir(args.dir)
+    fnames = os.listdir(dir_path)
 
     fnames.sort()
 
     for fname in fnames:
         if not fname.lower().endswith("jpg"):
             continue
-        fpath = os.path.join(args.dir, fname)
+        fpath = os.path.join(dir_path, fname)
         img  = cv2.imread(fpath)
         if img is None:
             print(f"could not read {fpath}")

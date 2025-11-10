@@ -16,6 +16,7 @@ import addict
 from ipydex import IPS, activate_ips_on_exception
 
 
+# TODO: move this to chimcla_main interface
 def create_groups():
 
     N = 500  # number of
@@ -90,8 +91,19 @@ def main():
         "(for all functions which do not have their own script)",
     )
 
-    parser.add_argument("command", help="general command (see cli.py)")
+    subparsers = parser.add_subparsers(dest="command", help="")
+    parser_prepare_docs = subparsers.add_parser("prepare-docs", help="prepare automatic generation of docs")
+    parser_build_docs = subparsers.add_parser(
+        "build-docs", help="automatic generation of docs (after preparation)"
+    )
+    parser_continuously_build_docs = subparsers.add_parser(
+        "continuously-build-docs", help="continuous automatic generation of docs (after preparation)"
+    )
+    parser_bgr_convert = subparsers.add_parser(
+        "bgr-convert", help="convert jpg files from BGR to RGB and vice versa"
+    )
 
+    parser_bgr_convert.add_argument("img_dir", type=str, help="directory containing jpg files to convert")
     args = parser.parse_args()
 
     if args.command == "prepare-docs":
@@ -105,10 +117,11 @@ def main():
         make_html_doc()
     elif args.command == "bgr-convert":
         from .util import bgr_convert
-        bgr_convert()
+        bgr_convert(args.img_dir)
     else:
         msg = f"unknown chimcla command: {args.command}"
         print(msg)
+        sys.exit(1)
 
 
 def rename_cell_imgs():

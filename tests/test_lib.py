@@ -27,17 +27,21 @@ TEST_LOT_02 = pjoin(TEST_DATA_DIR, "lots", "2024-07-08_06-03-45__2d__56.7k", "pa
 
 class TestCases1(unittest.TestCase):
 
-    # this is to access custom command line options passed to pytest
-    # see also conftest.py
     @pytest.fixture(autouse=True)
-    def manual_setup(self, keep_data, no_parallel):
-        # this is not to be confused with TestCase.setUp
+    def auto_setup(self, keep_data, no_parallel):
+        """
+        This method is called once for each test method (due to the autouse option).
+        Argument values are taken from commandline with default False (see conftest.py).
+
+        This method is not to be confused with `TestCase.setUp`.
+        Note: After each test method `TestCase.tearDown` is called.
+        """
+
         self.keep_data = keep_data
         self.no_parallel = no_parallel
         self.tmp_work_dir = tempfile.mkdtemp()
         self.orig_cwd = os.getcwd()
         os.chdir(self.tmp_work_dir)
-
 
     def tearDown(self):
         if not self.keep_data:
@@ -169,12 +173,16 @@ class TestCases1(unittest.TestCase):
 
     def test_u010__bgr_convert(self):
 
-        jpg_wildcard_path = pjoin(TEST_DATA_DIR, "_jpg_templates/2024-07-08_06-03-45__2d__56.7k/*.jpg")
+        jpg_wildcard_path = pjoin(
+            TEST_DATA_DIR, "_jpg_templates/2024-07-08_06-03-45__2d__56.7k/part000/*.jpg"
+        )
         jpg_files = glob.glob(jpg_wildcard_path)
-        
+
         for jpg_file in jpg_files:
             filename = os.path.basename(jpg_file)
             shutil.copy2(jpg_file, pjoin(self.tmp_work_dir, filename))
 
-        # os.system("chimcla_main convert_bgr")
-        pass
+        res = os.system("chimcla_main bgr-convert ./")
+
+        # we just test that the program exited without error
+        self.assertEqual(res, 0)
