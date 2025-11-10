@@ -2,6 +2,7 @@ import os
 import unittest
 import glob
 import shutil
+import tempfile
 
 import pytest
 
@@ -29,18 +30,24 @@ class TestCases1(unittest.TestCase):
     # this is to access custom command line options passed to pytest
     # see also conftest.py
     @pytest.fixture(autouse=True)
-    def setup(self, keep_data, no_parallel):
+    def manual_setup(self, keep_data, no_parallel):
         # this is not to be confused with TestCase.setUp
         self.keep_data = keep_data
         self.no_parallel = no_parallel
+        self.tmp_work_dir = tempfile.mkdtemp()
+        self.orig_cwd = os.getcwd()
+        os.chdir(self.tmp_work_dir)
+
 
     def tearDown(self):
-        if self.keep_data:
-            return
+        if not self.keep_data:
 
-        dir_list = self.get_tmp_data_dirs()
-        for dir in dir_list:
-            shutil.rmtree(dir, ignore_errors=True)
+            dir_list = self.get_tmp_data_dirs()
+            dir_list.append(self.tmp_work_dir)
+            for dir in dir_list:
+                shutil.rmtree(dir, ignore_errors=True)
+
+        os.chdir(self.orig_cwd)
 
     def get_tmp_data_dirs(self):
         dir_list = glob.glob(pjoin(TEST_DATA_DIR, f"{TEST_PREFIX}*"))
@@ -159,3 +166,15 @@ class TestCases1(unittest.TestCase):
         he = bs.HistEvaluation(img_fpath=tmp_path)
         he.initialize_hist_cache()
         he.find_critical_cells_for_img(save_options={"save_plot": False, "push_db": False})
+
+    def test_u010__bgr_convert(self):
+
+        jpg_wildcard_path = pjoin(TEST_DATA_DIR, "_jpg_templates/2024-07-08_06-03-45__2d__56.7k/*.jpg")
+        jpg_files = glob.glob(jpg_wildcard_path)
+        
+        for jpg_file in jpg_files:
+            filename = os.path.basename(jpg_file)
+            shutil.copy2(jpg_file, pjoin(self.tmp_work_dir, filename))
+
+        # os.system("chimcla_main convert_bgr")
+        pass
