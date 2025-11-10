@@ -1,1 +1,9 @@
-The files `make.bat` and `Makefile` were created by `sphinx-quickstart`. They are not necessary in our scenario.
+Commands to create html version of docs:
+
+- `chimcla_main prepare-docs`
+- `chimcla_main build-docs`
+
+
+Locally serve the documentation:
+
+- `python -m http.server -d ./docs/build/html/`

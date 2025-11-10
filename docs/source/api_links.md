@@ -87,7 +87,7 @@
         >
         >
 - [stage_2a_bar_selection](apidocs/chimcla/chimcla.stage_2a_bar_selection.md)
-    - Lines: 2617
+    - Lines: 2749
     - Docstring:
         >
         >
@@ -160,7 +160,7 @@
         >
         >
 - [stage_3d_create_experimental_data](apidocs/chimcla/chimcla.stage_3d_create_experimental_data.md)
-    - Lines: 403
+    - Lines: 488
     - Docstring:
         >
         >
@@ -171,7 +171,7 @@
         >
         >
 - [stage_3e_create_experimental_data_csv](apidocs/chimcla/chimcla.stage_3e_create_experimental_data_csv.md)
-    - Lines: 226
+    - Lines: 227
     - Docstring:
         >
         >
