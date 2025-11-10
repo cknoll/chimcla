@@ -20,3 +20,4 @@ sphinx-autodoc2
 watchdog
 myst-parser
 sphinxcontrib-mermaid
+sphinx-argparse-cli

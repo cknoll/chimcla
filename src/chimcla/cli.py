@@ -96,6 +96,10 @@ def main():
     parser_build_docs = subparsers.add_parser(
         "build-docs", help="automatic generation of docs (after preparation)"
     )
+
+
+    parser_build_docs.add_argument("docfile", type=str, help="optional file to build (otherwise: build all)", nargs='?', default=None)
+
     parser_continuously_build_docs = subparsers.add_parser(
         "continuously-build-docs", help="continuous automatic generation of docs (after preparation)"
     )
@@ -111,7 +115,7 @@ def main():
         generate_module_docs()
     elif args.command == "build-docs":
         from .util_doc import make_html_doc
-        make_html_doc()
+        make_html_doc(args.docfile)
     elif args.command == "continuously-build-docs":
         from .util_doc import make_html_doc
         make_html_doc()

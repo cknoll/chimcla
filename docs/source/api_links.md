@@ -19,7 +19,7 @@
         >
         >
 - [cli](apidocs/chimcla/chimcla.cli.md)
-    - Lines: 203
+    - Lines: 184
     - Docstring:
         >
         >
@@ -179,7 +179,7 @@
         >
         >
 - [util](apidocs/chimcla/chimcla.util.md)
-    - Lines: 81
+    - Lines: 113
     - Docstring:
         >
         >
@@ -192,18 +192,8 @@
         > **TODO**: code from other (util) modules might be ported to here to improve code architecture
         >
         >
-- [util_bgr_convert](apidocs/chimcla/chimcla.util_bgr_convert.md)
-    - Lines: 53
-    - Docstring:
-        >
-        >
-        > This script converts jpg files from BGR TO RGB and vice versa.
-        >
-        > Not yet included in cli.py.
-        >
-        >
 - [util_doc](apidocs/chimcla/chimcla.util_doc.md)
-    - Lines: 115
+    - Lines: 118
     - Docstring:
         >
         >

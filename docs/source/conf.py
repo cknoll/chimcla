@@ -22,11 +22,11 @@ extensions = [
     'myst_parser',
     'autodoc2',
     'sphinx.ext.autosummary',
-    # 'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinxcontrib.mermaid',
-    # 'sphinx.ext.intersphinx',
+    "sphinx_argparse_cli",
 ]
+
 
 autodoc2_render_plugin = "myst"
 autodoc2_hidden_objects = []

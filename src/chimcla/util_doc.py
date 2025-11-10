@@ -87,8 +87,11 @@ def get_wrapped_quoted_docstring(module_docstring, qq):
     return wrapped_quoted_module_docstring
 
 
-def make_html_doc():
-    subprocess.run(['sphinx-build', '-b', 'html', 'docs/source', 'docs/build'])
+def make_html_doc(docfile=None):
+    if docfile is not None:
+        subprocess.run(['sphinx-build', '-b', 'html', 'docs/source', 'docs/build', docfile])
+    else:
+        subprocess.run(['sphinx-build', '-b', 'html', 'docs/source', 'docs/build'])
 
 
 class DocumentationGenerator(FileSystemEventHandler):
