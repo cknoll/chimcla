@@ -6,4 +6,4 @@ Commands to create html version of docs:
 
 Locally serve the documentation:
 
-- `python -m http.server -d ./docs/build/html/`
+- `python -m http.server -d ./docs/build/`

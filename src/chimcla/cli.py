@@ -83,10 +83,10 @@ def create_groups():
             os.system(cmd)
 
 
-def main():
+def build_parser():
 
     parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
+        prog="chimcla_main",
         description="chimcla main command line interface "
         "(for all functions which do not have their own script)",
     )
@@ -108,6 +108,13 @@ def main():
     )
 
     parser_bgr_convert.add_argument("img_dir", type=str, help="directory containing jpg files to convert")
+
+    return parser
+
+
+def main():
+
+    parser = build_parser()
     args = parser.parse_args()
 
     if args.command == "prepare-docs":

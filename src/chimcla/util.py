@@ -93,7 +93,6 @@ def bgr_convert(dir_path):
     import sys
 
     fnames = os.listdir(dir_path)
-
     fnames.sort()
 
     for fname in fnames:

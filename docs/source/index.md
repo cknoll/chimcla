@@ -17,7 +17,13 @@ See [commented module documentation](api_links.md)
 
 ## Command Line Interface (CLI)
 
-test 123
+
+```{eval-rst}
+.. sphinx_argparse_cli::
+  :module: chimcla.cli
+  :func: build_parser
+  :prog: chimcla_main
+```
 
 
 ## Pipeline Description
