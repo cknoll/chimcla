@@ -1,53 +1,29 @@
 # Module Documentation
 
-This documentation covers the chimcla package, which provides tools for image analysis and classification of cavity carrier images.
+This documentation covers the `chimcla` (**ch**ocolate **im**age **cla**ssification) package, which provides tools for image analysis and classification of cavity carrier images (German: "Formenträgerbilder").
+
 
 
 ```{toctree}
 :maxdepth: 1
 :hidden:
 
+background.md
+cli_doc.md
 api_links
 apidocs/index
 ```
 
-## Main Package
+<!-- add image -->
 
-See [commented module documentation](api_links.md)
-
-## Command Line Interface (CLI)
+![image](img/form_raw_a1.jpg)
 
 
-```{eval-rst}
-.. sphinx_argparse_cli::
-  :module: chimcla.cli
-  :func: build_parser
-  :prog: chimcla_main
-```
 
+## Overview
 
-## Pipeline Description
+This documentation consist of the following parts:
 
-
-<!-- The following is a "mermaid chart". It is automatically rendered by gitlab and github. Locally it can be previewed e.g. in vs code by this plugin: https://docs.mermaidchart.com/plugins/visual-studio-code.  -->
-
-```mermaid
-  graph TD
-    A["Lot Preparation
-    *(chimcla_split_into_lots)*"] --> |separated lots|B[Form Image
-    Preprocessing]
-    B --> C[Bar-Separation]
-    C --> D["Brightness evaluation
-    (S-Value calculation)"]
-    D -->F["Step History
-            Evaluation
-            *(chimcla_step
-            _history_eval)*"]
-    D -->G["Generation of
-            Experimental Images
-            *(chimcla_ced)*"]
-    D --> E["Generation of
-            CNN Training Data
-            *(chimcla_create
-            _work_images)*"]
-```
+- [Background](background.md)
+- [Commented module documentation](api_links.md)
+- [Command line interface documentation ](cli_doc.md)
