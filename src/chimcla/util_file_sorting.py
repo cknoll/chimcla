@@ -59,8 +59,10 @@ class Lot(addict.Addict):
         self.dirname = f"{date_str}__{int(self.duration_days)}d__{number_of_images_str}"
 
 
-def split_into_lots():
+def split_into_lots(pathlist: str):
     """
+
+    :param pathlist: a text file with one path per line
     Distribute a big list of files (with time stamp names) into subdirectories
     """
     import datetime as dt
@@ -71,17 +73,14 @@ def split_into_lots():
         prog=sys.argv[0],
     )
 
-    parser.add_argument(
-        'pathlist',
-        help="txt file containing the paths",
-    )
+
     args = parser.parse_args()
 
-    basedir = os.path.split(args.pathlist)[0]
+    basedir = os.path.split(pathlist)[0]
 
-    print(f"reading {args.pathlist} ...")
+    print(f"reading {pathlist} ...")
 
-    with open(args.pathlist, "r") as fp:
+    with open(pathlist, "r") as fp:
         pathlist = fp.readlines()
 
     def get_fname(path):

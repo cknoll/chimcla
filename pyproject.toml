@@ -23,7 +23,7 @@ chimcla_ced = "chimcla.stage_3d_create_experimental_data:main"
 chimcla_step_history_eval = "chimcla.util_step_history_from_logfile:main"
 
 # prepare the myriads of image files
-chimcla_split_into_lots = "chimcla.util_file_sorting:split_into_lots"
+# chimcla_split_into_lots = "chimcla.util_file_sorting:split_into_lots"
 
 
 # stage0 of image processing

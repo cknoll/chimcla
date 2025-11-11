@@ -97,7 +97,6 @@ def build_parser():
         "build-docs", help="automatic generation of docs (after preparation)"
     )
 
-
     parser_build_docs.add_argument("docfile", type=str, help="optional file to build (otherwise: build all)", nargs='?', default=None)
 
     parser_continuously_build_docs = subparsers.add_parser(
@@ -106,8 +105,17 @@ def build_parser():
     parser_bgr_convert = subparsers.add_parser(
         "bgr-convert", help="convert jpg files from BGR to RGB and vice versa"
     )
-
     parser_bgr_convert.add_argument("img_dir", type=str, help="directory containing jpg files to convert")
+
+    parser_split_into_lots = subparsers.add_parser(
+        "split-into-lots", help="distribute a big list of files into subdirectories",
+    )
+    parser_split_into_lots.add_argument("pathlist", help="txt file containing the paths")
+
+
+    # TODO-AIDER: iterate over all subparsers which have not specified a description string, and assign the same string as the help string.
+
+    IPS()
 
     return parser
 
@@ -129,6 +137,9 @@ def main():
     elif args.command == "bgr-convert":
         from .util import bgr_convert
         bgr_convert(args.img_dir)
+    elif args.command == "split-into-lots":
+        from .util_file_sorting import split_into_lots
+        split_into_lots(args.pathlist)
     else:
         msg = f"unknown chimcla command: {args.command}"
         print(msg)
