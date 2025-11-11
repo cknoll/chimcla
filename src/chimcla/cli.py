@@ -113,9 +113,16 @@ def build_parser():
     parser_split_into_lots.add_argument("pathlist", help="txt file containing the paths")
 
 
-    # TODO-AIDER: iterate over all subparsers which have not specified a description string, and assign the same string as the help string.
-
-    IPS()
+    # Set description to match help string for subparsers that don't have a description
+    for action in parser._subparsers._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            for choice, subparser in action.choices.items():
+                if not hasattr(subparser, 'description') or subparser.description is None:
+                    # Get the help string from the subparser action
+                    for subaction in action._choices_actions:
+                        if subaction.dest == choice:
+                            subparser.description = subaction.help
+                            break
 
     return parser
 
