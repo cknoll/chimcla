@@ -37,10 +37,13 @@ As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` 
 
 ### Split into Lots
 
-#### Background
+#### Motivation and Background
 
-There are many (\>\>100K) raw images. To simplify their handling they are split into "lots". Each lot corresponds to one cycle of production (e.g. 7 days).
-Each lot is subdivided into chunks of (ca.) 1000 raw images.
+There are many (\>\>100K) raw images. If they are located in a single directory typical file browsers
+are very slow or even crash.
+To simplify their handling they are split into "lots".
+Each lot corresponds to one cycle of production without longer interruption (e.g. 3 days).
+Each lot is subdivided into parts of (ca.) 1000 raw images.
 
 
 #### Directory Structure

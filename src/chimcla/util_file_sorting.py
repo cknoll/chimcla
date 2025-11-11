@@ -29,7 +29,7 @@ class Lot(addict.Addict):
     """
     A Lot-instance models a production lot (typically spanning several days)
     """
-    def __init__(self, start_index):
+    def __init__(self, start_index, part_size: int = 1000):
         super().__init__(self)
         self.start_index = start_index
         self.end_index = None
@@ -40,6 +40,7 @@ class Lot(addict.Addict):
         self.duration_hours = None
         self.number_of_images = None
         self.dirname = None
+        self.part_size = part_size
 
     def set_var_values(self, dt_objs: np.ndarray, fnamelist: list[str]):
         assert self.end_index is not None
@@ -55,27 +56,28 @@ class Lot(addict.Addict):
         if self.number_of_images < 1e4:
             number_of_images_str = str(self.number_of_images)
         else:
-            number_of_images_str = f"{(self.number_of_images/1000):3.1f}k"
+            number_of_images_str = f"{(self.number_of_images/self.part_size):3.1f}k"
         self.dirname = f"{date_str}__{int(self.duration_days)}d__{number_of_images_str}"
 
 
-def split_into_lots(pathlist: str):
+def split_into_lots(pathlist: str, part_size: int = 1000):
     """
+    Distribute a big list of files (with time stamp names) into a structure of subdirectories
+    ("lots" which contain "parts").
 
     :param pathlist: a text file with one path per line
-    Distribute a big list of files (with time stamp names) into subdirectories
+    :param lot_size: number of files per lot
+
+    Each lot corresponds to a production cycle without major interruptions (e.g. 3 days).
     """
+
     import datetime as dt
     import numpy as np
     import collections
 
-    parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-    )
+    assert part_size > 0 and isinstance(part_size, int)
 
-
-    args = parser.parse_args()
-
+    activate_ips_on_exception()
     basedir = os.path.split(pathlist)[0]
 
     print(f"reading {pathlist} ...")
@@ -116,11 +118,11 @@ def split_into_lots(pathlist: str):
     metadata = addict.Addict()
     metadata.pauses = []
 
-    metadata.lots = [Lot(start_index=0)]
+    metadata.lots = [Lot(start_index=0, part_size=part_size)]
 
     for i, diff in enumerate(diffs):
         if diff >=  dt.timedelta(days=1):
-            metadata.lots.append(Lot(start_index=i + 1))
+            metadata.lots.append(Lot(start_index=i + 1, part_size=part_size))
 
             metadata.lots[-1].start_index = i + 1
             metadata.lots[-1].pause_days = diff_to_days(diff)
@@ -147,9 +149,9 @@ def split_into_lots(pathlist: str):
         for i in tqdm(range(lot.start_index, lot.end_index + 1)):
             counter = i - lot.start_index
 
-            part_dir = f"part{(counter//1000):03d}"
+            part_dir = f"part{(counter//part_size):03d}"
 
-            if counter % 1000 == 0:
+            if counter % part_size == 0:
                 part_dir_path = os.path.join(basedir, "lots", lot.dirname, part_dir)
                 os.makedirs(part_dir_path, exist_ok=True)
 

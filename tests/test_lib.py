@@ -3,6 +3,7 @@ import unittest
 import glob
 import shutil
 import tempfile
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -186,3 +187,43 @@ class TestCases1(unittest.TestCase):
 
         # we just test that the program exited without error
         self.assertEqual(res, 0)
+
+    def test_u020__split_into_lots(self):
+
+        target_dir = "./raw_jpg"
+        os.makedirs(target_dir, exist_ok=True)
+        # Create 100 empty files with timestamp filenames
+
+        self._create_time_stamp_files(target_dir=target_dir, start_time=datetime(2025, 10, 1, 6, 0, 0))
+        self._create_time_stamp_files(
+            target_dir=target_dir, start_time=datetime(2025, 11, 1, 12, 0, 0), N=130
+        )
+
+        cmd = "chimcla_main split-into-lots ./raw_jpg/path_list.txt 25"
+        res = os.system(cmd)
+        self.assertEqual(res, 0)
+
+        expected_paths = [
+            'raw_jpg/lots/2025-10-01_06-00-00__0d__100/part000',
+            'raw_jpg/lots/2025-10-01_06-00-00__0d__100/part003',
+            'raw_jpg/lots/2025-11-01_12-00-00__0d__130/part000',
+            'raw_jpg/lots/2025-11-01_12-00-00__0d__130/part005',
+        ]
+        for path in expected_paths:
+            self.assertTrue(os.path.isdir(path))
+
+    def _create_time_stamp_files(self, target_dir, start_time: datetime, N=100):
+
+        fname_list = []
+
+        for i in range(N):
+            timestamp = start_time + timedelta(seconds=i * 5)
+            filename = timestamp.strftime(r"%Y-%m-%d_%H-%M-%S_C0.jpg")
+            filepath = pjoin(target_dir, filename)
+            fname_list.append(filename)
+            # Create empty file
+            open(filepath, 'a').close()
+
+        with open(pjoin(target_dir, "path_list.txt"), "a") as fp:
+            for fname in fname_list:
+                fp.write(f"{fname}\n")

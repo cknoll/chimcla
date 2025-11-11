@@ -97,7 +97,9 @@ def build_parser():
         "build-docs", help="automatic generation of docs (after preparation)"
     )
 
-    parser_build_docs.add_argument("docfile", type=str, help="optional file to build (otherwise: build all)", nargs='?', default=None)
+    parser_build_docs.add_argument(
+        "docfile", type=str, help="optional file to build (otherwise: build all)", nargs="?", default=None
+    )
 
     parser_continuously_build_docs = subparsers.add_parser(
         "continuously-build-docs", help="continuous automatic generation of docs (after preparation)"
@@ -111,7 +113,13 @@ def build_parser():
         "split-into-lots", help="distribute a big list of files into subdirectories",
     )
     parser_split_into_lots.add_argument("pathlist", help="txt file containing the paths")
-
+    parser_split_into_lots.add_argument(
+        "part_size",
+        type=int,
+        help="number of files per part-subdirectory (default: 1000)",
+        nargs="?",
+        default=1000,
+    )
 
     # Set description to match help string for subparsers that don't have a description
     for action in parser._subparsers._actions:
@@ -146,7 +154,7 @@ def main():
         bgr_convert(args.img_dir)
     elif args.command == "split-into-lots":
         from .util_file_sorting import split_into_lots
-        split_into_lots(args.pathlist)
+        split_into_lots(pathlist=args.pathlist, part_size=args.part_size)
     else:
         msg = f"unknown chimcla command: {args.command}"
         print(msg)
