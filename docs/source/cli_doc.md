@@ -6,5 +6,5 @@ The following section is generated automatically based on the implemented cli co
 .. sphinx_argparse_cli::
   :module: chimcla.cli
   :func: build_parser
-  :prog: chimcla_main
+  :prog: chimcla
 ```

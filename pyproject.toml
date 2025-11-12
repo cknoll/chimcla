@@ -10,11 +10,9 @@ dynamic = ["dependencies", "version"]
 
 
 [project.scripts]
-# convert bgr to rgb
-chimcla_main = "chimcla.cli:main"
 
-# convert bgr to rgb
-# chimcla_bgr_convert = "chimcla.cli:bgr_convert"  # -> chimcla_main bgr_convert
+# new:
+chimcla = "chimcla.cli:main"
 
 # create experimental data
 chimcla_ced = "chimcla.stage_3d_create_experimental_data:main"
@@ -27,7 +25,7 @@ chimcla_step_history_eval = "chimcla.util_step_history_from_logfile:main"
 
 
 # stage0 of image processing
-chimcla_create_work_images = "chimcla.cli:create_work_images"
+# chimcla_create_work_images = "chimcla.cli:create_work_images"
 chimcla_pipeline = "chimcla.cli:pipeline"
 
 

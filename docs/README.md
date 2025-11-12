@@ -1,7 +1,7 @@
 Commands to create html version of docs:
 
-- `chimcla_main prepare-docs`
-- `chimcla_main build-docs`
+- `chimcla prepare-docs`
+- `chimcla build-docs`
 
 
 Locally serve the documentation:

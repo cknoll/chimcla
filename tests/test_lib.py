@@ -183,7 +183,7 @@ class TestCases1(unittest.TestCase):
             filename = os.path.basename(jpg_file)
             shutil.copy2(jpg_file, pjoin(self.tmp_work_dir, filename))
 
-        res = os.system("chimcla_main bgr-convert ./")
+        res = os.system("chimcla bgr-convert ./")
 
         # we just test that the program exited without error
         self.assertEqual(res, 0)
@@ -199,7 +199,7 @@ class TestCases1(unittest.TestCase):
             target_dir=target_dir, start_time=datetime(2025, 11, 1, 12, 0, 0), N=130
         )
 
-        cmd = "chimcla_main split-into-lots ./raw_jpg/path_list.txt 25"
+        cmd = "chimcla split-into-lots ./raw_jpg/path_list.txt 25"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 

@@ -16,7 +16,7 @@ import addict
 from ipydex import IPS, activate_ips_on_exception
 
 
-# TODO: move this to chimcla_main interface
+# TODO: move this to chimcla interface
 def create_groups():
 
     N = 500  # number of
@@ -86,7 +86,7 @@ def create_groups():
 def build_parser():
 
     parser = argparse.ArgumentParser(
-        prog="chimcla_main",
+        prog="chimcla",
         description="chimcla main command line interface "
         "(for all functions which do not have their own script)",
     )
@@ -119,6 +119,10 @@ def build_parser():
         help="number of files per part-subdirectory (default: 1000)",
         nargs="?",
         default=1000,
+    )
+
+    parser_create_work_images = subparsers.add_parser(
+        "create-work-images", help="perform stage 1: creating images for further evaluation",
     )
 
     # Set description to match help string for subparsers that don't have a description

@@ -199,7 +199,7 @@
         >
         > Module to prepare and execute the generation of documentation (via sphinx).
         >
-        > used by some `chimcla_main ...` commands.
+        > used by some `chimcla ...` commands.
         >
         >
 - [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)

@@ -6,8 +6,7 @@
 ```mermaid
   graph TD
     A["Lot Preparation
-    *(chimcla_split_into_lots)*"] --> |separated lots|B[Form Image
-    Preprocessing]
+    *(chimcla split-into-lots)*"] --> |separated lots|B[Form Image Preprocessing]
     B --> C[Bar-Separation]
     C --> D["Brightness evaluation
     (S-Value calculation)"]

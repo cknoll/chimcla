@@ -29,9 +29,9 @@ As of June 2025 it is recommended to use `uv pip ...` instead of just `pip ...` 
 ### Generate the Documentation
 
 - ensure that chimcla (is installed correctly)
-- `chimcla_main prepare-docs`
+- `chimcla prepare-docs`
     - regenerates `docs/source/api_links.md`; only necessary after changing the modules
-- `chimcla_main build-docs`
+- `chimcla build-docs`
     - creates the html documentation inside `docs/build`
     - entrypoint: [`docs/build/index.html`](docs/build/index.html)
 
@@ -77,7 +77,7 @@ data_images
     - manually move all images from `$HOME/mnt/XAI-DIA-gl/Sascha/Images_from_Peine` to `$HOME/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg` (speed: 10K/min)
     - workdir: `$HOME/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg`
     - command: `find . -type f -name '*.jpg' > jpg_paths.txt` (takes approx. 40s for 200K image)
-- usage: `chimcla_split_into_lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
+- usage: `chimcla split-into-lots ~/mnt/XAI-DIA-gl/Carsten/data_images/raw_jpg/jpg_paths.txt` (takes 20m for 200K images)
 - manual post processing
     - move subdirectories of `data_images/raw_jpg/lots/` into `data_images/lots` (make sure that nothing is overwritten)
 
