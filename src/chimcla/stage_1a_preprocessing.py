@@ -9,7 +9,6 @@ Contains class `Stage1Preprocessor` with method pipeline(self, fpath):
 - self.step03_cropping(iic)
 - self.step04_shading_correction(iic)
 
-**TODO:** not yet included in the chimcla command line interface (see `cli.py`)
 """
 
 import os
@@ -311,25 +310,8 @@ class Stage1Preprocessor:
 
 def main(args=None):
 
-    if args is None:
-        parser = argparse.ArgumentParser(
-            prog="stage_0f_resize_and_jpg",
-            description="This program corrects resizes the original png files and converts to jpg",
-        )
 
-        parser.add_argument("img_dir", help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/bilder_roh_aus_peine_ab_2023-07-31")
-        parser.add_argument(
-            "prefix", help="prefix for newly created dirs during preprocessing", nargs="?", default="pp_"
-        )
-        parser.add_argument(
-            "--no-parallel",
-            "-np",
-            help="sequential mode (no parallelization)",
-            action="store_true",
-        )
-
-        args = parser.parse_args()
-
+    IPS()
     s1p = Stage1Preprocessor(args)
     s1p.main()
 

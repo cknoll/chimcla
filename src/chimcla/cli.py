@@ -15,6 +15,9 @@ import addict
 
 from ipydex import IPS, activate_ips_on_exception
 
+# simplify debugging (turn of for production)
+activate_ips_on_exception()
+
 
 # TODO: move this to chimcla interface
 def create_groups():
@@ -122,7 +125,25 @@ def build_parser():
     )
 
     parser_create_work_images = subparsers.add_parser(
-        "create-work-images", help="perform stage 1: creating images for further evaluation",
+        "create-work-images",
+        help="perform stage 1: creating images for further evaluation",
+        description="perform stage 1: size adaption, empty slot detection, "
+        "incomplete form detection, shading correction",
+    )
+
+    parser_create_work_images.add_argument(
+        "img_dir",
+        type=str,
+        help="e.g. /home/ck/mnt/XAI-DIA-gl/Carsten/data_images/lots/2025-09-15_06-17-16__1d__27.9k/part001",
+    )
+    parser_create_work_images.add_argument(
+        "prefix", help="prefix for newly created dirs during preprocessing", nargs="?", default="pp_"
+    )
+    parser_create_work_images.add_argument(
+        "--no-parallel",
+        "-np",
+        help="sequential mode (no parallelization)",
+        action="store_true",
     )
 
     # Set description to match help string for subparsers that don't have a description
@@ -159,6 +180,9 @@ def main():
     elif args.command == "split-into-lots":
         from .util_file_sorting import split_into_lots
         split_into_lots(pathlist=args.pathlist, part_size=args.part_size)
+    elif args.command == "create-work-images":
+        from . import stage_1a_preprocessing as s1a
+        s1a.main(args=args)
     else:
         msg = f"unknown chimcla command: {args.command}"
         print(msg)
@@ -200,14 +224,6 @@ def _rename_cell_imgs(dirname):
         os.system(cmd)
         # print(cmd)
         # break
-
-
-def create_work_images():
-    """
-    Perform stage 1 creating images for further research.
-    """
-    from . import stage_1a_preprocessing as s1a
-    s1a.main()
 
 
 def pipeline():

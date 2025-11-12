@@ -27,3 +27,8 @@ This documentation consist of the following parts:
 - [Background](background.md)
 - [Commented module documentation](api_links.md)
 - [Command line interface documentation ](cli_doc.md)
+
+## Software Status
+
+This package has evolved over several years during a research project and consists largely of **experimental code**.
+It underwent very little refactoring. It was tested mainly on a debian12 operating system and has some respective dependencies.
