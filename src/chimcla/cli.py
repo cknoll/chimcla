@@ -146,6 +146,8 @@ def build_parser():
         action="store_true",
     )
 
+    parser.add_argument("--version", action="store_true", help="show chimcla version and exit")
+
     # Set description to match help string for subparsers that don't have a description
     for action in parser._subparsers._actions:
         if isinstance(action, argparse._SubParsersAction):
@@ -165,7 +167,10 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.command == "prepare-docs":
+    if args.version:
+        from .release import __version__
+        print(__version__)
+    elif args.command == "prepare-docs":
         from .util_doc import generate_module_docs
         generate_module_docs()
     elif args.command == "build-docs":

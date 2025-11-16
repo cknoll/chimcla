@@ -1,0 +1,64 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+    - develop
+  pull_request:
+    branches:
+    - main
+    - develop
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python
+        run: |
+          uv python install
+          uv venv
+
+
+# The following command allows to connect to the ci-container via ssh
+# very useful for debugging
+# move this step before the failing step
+# source: https://github.com/marketplace/actions/debugging-with-tmate
+
+#    - name: Setup tmate session
+#       uses: mxschmitt/action-tmate@v3
+
+      - name: debugging
+        run: |
+          uv --version
+          python --version
+
+      - name: activate venv for every step
+        run: |
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+
+      - name: Install requirements and this package
+        run: |
+          uv pip install -r requirements.txt
+          uv pip install .
+
+      - name: Run cli
+        run: |
+          chimcla --version
+
+      - name: Run selected tests
+        run: |
+          pytest -k test_u
