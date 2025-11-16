@@ -19,7 +19,7 @@
         >
         >
 - [cli](apidocs/chimcla/chimcla.cli.md)
-    - Lines: 184
+    - Lines: 239
     - Docstring:
         >
         >
@@ -60,7 +60,7 @@
         >
         >
 - [stage_1a_preprocessing](apidocs/chimcla/chimcla.stage_1a_preprocessing.md)
-    - Lines: 337
+    - Lines: 319
     - Docstring:
         >
         >
@@ -74,7 +74,6 @@
         > - self.step03_cropping(iic)
         > - self.step04_shading_correction(iic)
         >
-        > **TODO:** not yet included in the chimcla command line interface (see `cli.py`)
         >
         >
 - [stage_2a1_bar_selection_new](apidocs/chimcla/chimcla.stage_2a1_bar_selection_new.md)
@@ -179,7 +178,7 @@
         >
         >
 - [util](apidocs/chimcla/chimcla.util.md)
-    - Lines: 113
+    - Lines: 112
     - Docstring:
         >
         >
@@ -203,7 +202,7 @@
         >
         >
 - [util_file_sorting](apidocs/chimcla/chimcla.util_file_sorting.md)
-    - Lines: 163
+    - Lines: 164
     - Docstring:
         >
         >
