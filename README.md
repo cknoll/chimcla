@@ -1,3 +1,8 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Documentation Status](https://readthedocs.org/projects/chimcla/badge/?version=latest)](https://chimcla.readthedocs.io/en/latest)
+![ci](https://github.com/cknoll/chimcla/actions/workflows/python-app.yml/badge.svg)
+
+
 # `chimcla` Chocolate Image Classification
 
 
