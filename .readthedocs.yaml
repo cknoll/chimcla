@@ -17,6 +17,7 @@ build:
   jobs:
     build:
       html:
+        - python -m pip install --exists-action=w --no-cache-dir .
         - chimcla --version
         - chimcla prepare-docs
         - chimcla build-docs
