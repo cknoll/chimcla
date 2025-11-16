@@ -13,6 +13,9 @@ tqdm
 ipydex
 pyyaml
 
+# for testing
+pytest
+
 # for documentation
 sphinx
 sphinx-autodoc-typehints

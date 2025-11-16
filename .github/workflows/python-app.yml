@@ -50,30 +50,15 @@ jobs:
           . .venv/bin/activate
           echo PATH=$PATH >> $GITHUB_ENV
 
-      - name: Install requirements
+      - name: Install requirements and this package
         run: |
           uv pip install -r requirements.txt
+          uv pip install .
 
-    # - name: Install pip
-    #   run: |
-    #     python -m pip install --upgrade pip
+      - name: Run cli
+        run: |
+          chimcla --help
 
-    # - name: debug env
-    #   run: |
-    #     echo "$PYERK_TEST_DATA_PARENT_PATH"
-
-    # - name: Installing requirements
-    #   run: |
-    #     # install this package
-    #     pwd
-    #     pip install -r requirements.txt
-
-
-    # - name: install pyerk
-    #   run: |
-    #     # install in editable mode -> simplify the discovery of the (internal) test data
-    #     pip install -e .
-
-    # - name: run all tests
-    #   run: |
-    #     python -m unittest
+      - name: Run selected tests
+        run: |
+          pytest -k test_u
