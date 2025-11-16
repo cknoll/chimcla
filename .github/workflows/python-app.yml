@@ -27,7 +27,9 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Python
-        run: uv python install
+        run: |
+          uv python install
+          uv venv
 
 
 # The following command allows to connect to the ci-container via ssh
@@ -42,6 +44,11 @@ jobs:
         run: |
           uv --version
           python --version
+
+      - name: activate venv for every step
+        run: |
+          . .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Install requirements
         run: |
