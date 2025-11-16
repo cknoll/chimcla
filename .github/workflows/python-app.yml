@@ -57,7 +57,7 @@ jobs:
 
       - name: Run cli
         run: |
-          chimcla --help
+          chimcla --version
 
       - name: Run selected tests
         run: |
