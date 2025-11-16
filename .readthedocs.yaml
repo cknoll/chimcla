@@ -21,6 +21,7 @@ build:
         - chimcla --version
         - chimcla prepare-docs
         - chimcla build-docs
+        - mv docs/build/* $READTHEDOCS_OUTPUT/html/
 
 
 
